@@ -192,6 +192,40 @@ function pickBestRecipe({
   return bestRecipe;
 }
 
+// « Changer » tire au sort parmi les meilleurs candidats au lieu de prendre toujours le premier :
+// les mieux notés restent favoris (prix, calories, protéines), mais le choix tourne vraiment.
+const SWAP_POOL_SIZE = 8;
+const SWAP_SCORE_TEMPERATURE = 1.0;
+
+function pickVariedRecipe({ allowedRecipes, chosenRecipes, random, settings, preferCheap, purchaseTracker, servingCount }) {
+  const rankedCandidates = allowedRecipes
+    .map((candidate) => ({
+      candidate,
+      score: scoreCandidate({ candidate, chosenRecipes, random, settings, preferCheap, purchaseTracker, servingCount }),
+    }))
+    .sort((first, second) => second.score - first.score)
+    .slice(0, SWAP_POOL_SIZE);
+  if (rankedCandidates.length === 0) {
+    return null;
+  }
+  const bestScore = rankedCandidates[0].score;
+  const weights = rankedCandidates.map(({ score }) => Math.exp((score - bestScore) / SWAP_SCORE_TEMPERATURE));
+  let draw = random() * weights.reduce((total, weight) => total + weight, 0);
+  for (let index = 0; index < rankedCandidates.length; index += 1) {
+    draw -= weights[index];
+    if (draw <= 0) {
+      return rankedCandidates[index].candidate;
+    }
+  }
+  return rankedCandidates.at(-1).candidate;
+}
+
+// Les recettes déjà proposées pour ce créneau sont écartées tant qu'il reste d'autres choix.
+function excludeAvoided(candidates, avoidedRecipeIds) {
+  const freshCandidates = candidates.filter((recipe) => !avoidedRecipeIds.includes(recipe.id));
+  return freshCandidates.length > 0 ? freshCandidates : candidates;
+}
+
 function createTrackerForPlan(plan, settings, { skippedKind = null, skippedMainSlotIndex = -1 } = {}) {
   const purchaseTracker = createPurchaseTracker(settings);
   for (const kind of Object.values(PLAN_KINDS)) {
@@ -377,17 +411,25 @@ export function reconcilePlan(currentPlan, settings, random = Math.random) {
   return fillPlan(keptPlan, settings, random);
 }
 
-function swapWeeklyRecipe(currentPlan, kind, settings, random) {
+function swapWeeklyRecipe(currentPlan, kind, settings, random, avoidedRecipeIds) {
   const planKey = PLAN_KEY_BY_KIND[kind];
-  const weeklyRecipeIds = fillWeeklyRecipe({
-    kind,
-    keptRecipeId: null,
-    settings,
+  const slotCount = getSlotCount(kind, settings);
+  const currentRecipeIds = listRecipeIds(currentPlan, kind);
+  const servingCount = getServingCount(kind, settings) * slotCount;
+  const candidates = listAllowedRecipes(kind, settings).filter((recipe) => !currentRecipeIds.includes(recipe.id));
+  const replacement = pickVariedRecipe({
+    allowedRecipes: excludeAvoided(candidates, avoidedRecipeIds),
+    chosenRecipes: [],
     random,
+    settings,
+    preferCheap: hasBudget(settings),
     purchaseTracker: createTrackerForPlan(currentPlan, settings, { skippedKind: kind }),
-    excludedRecipeIds: new Set(listRecipeIds(currentPlan, kind)),
+    servingCount,
   });
-  return weeklyRecipeIds.length > 0 ? { ...currentPlan, [planKey]: weeklyRecipeIds } : currentPlan;
+  if (!replacement || slotCount === 0) {
+    return currentPlan;
+  }
+  return { ...currentPlan, [planKey]: Array.from({ length: slotCount }, () => replacement.id) };
 }
 
 // Avec un budget, on ne propose que des remplaçants qui tiennent dans le plafond ; s'il n'y en a
@@ -418,23 +460,23 @@ function listAffordableReplacements(candidates, currentPlan, slotIndex, settings
     .map(({ candidate }) => candidate);
 }
 
-export function swapMeal(currentPlan, kind, slotIndex, settings, random = Math.random) {
+export function swapMeal(currentPlan, kind, slotIndex, settings, random = Math.random, { avoidedRecipeIds = [] } = {}) {
   if (WEEKLY_KINDS.includes(kind)) {
-    return swapWeeklyRecipe(currentPlan, kind, settings, random);
+    return swapWeeklyRecipe(currentPlan, kind, settings, random, avoidedRecipeIds);
   }
   const currentRecipeIds = currentPlan.mainRecipeIds;
   if (!Array.isArray(currentRecipeIds) || slotIndex < 0 || slotIndex >= currentRecipeIds.length) {
     return currentPlan;
   }
   const purchaseTracker = createTrackerForPlan(currentPlan, settings, { skippedMainSlotIndex: slotIndex });
-  const candidates = listAllowedRecipes(PLAN_KINDS.MAIN, settings).filter((recipe) => recipe.id !== currentRecipeIds[slotIndex]);
-  const replacement = pickBestRecipe({
-    allowedRecipes: listAffordableReplacements(candidates, currentPlan, slotIndex, settings, purchaseTracker),
+  const candidates = listAllowedRecipes(PLAN_KINDS.MAIN, settings)
+    .filter((recipe) => !currentRecipeIds.includes(recipe.id));
+  const replacement = pickVariedRecipe({
+    allowedRecipes: listAffordableReplacements(excludeAvoided(candidates, avoidedRecipeIds), currentPlan, slotIndex, settings, purchaseTracker),
     chosenRecipes: currentRecipeIds
       .filter((_recipeId, index) => index !== slotIndex)
       .map((recipeId) => RECIPES_BY_ID.get(recipeId))
       .filter(Boolean),
-    excludedRecipeIds: new Set(currentRecipeIds),
     random,
     settings,
     preferCheap: hasBudget(settings),

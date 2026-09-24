@@ -239,3 +239,46 @@ describe('mode hors ligne', () => {
     }
   });
 });
+
+describe('« Changer » varie vraiment', () => {
+  it('propose des recettes différentes à chaque clic en retenant les précédentes', () => {
+    let plan = generatePlan(defaultSettings, createSeededRandom(1000));
+    const random = createSeededRandom(1001);
+    const proposedIds = [];
+    const avoidedRecipeIds = [];
+    for (let click = 0; click < 10; click += 1) {
+      avoidedRecipeIds.unshift(plan.mainRecipeIds[2]);
+      plan = swapMeal(plan, PLAN_KINDS.MAIN, 2, defaultSettings, random, { avoidedRecipeIds });
+      proposedIds.push(plan.mainRecipeIds[2]);
+    }
+    assert.equal(new Set(proposedIds).size, 10);
+  });
+
+  it('ne tourne pas sur deux recettes même sans historique', () => {
+    let distinctTotal = 0;
+    for (let trial = 0; trial < 20; trial += 1) {
+      let plan = generatePlan(defaultSettings, createSeededRandom(trial + 1100));
+      const random = createSeededRandom(trial + 1200);
+      const proposedIds = new Set();
+      for (let click = 0; click < 10; click += 1) {
+        plan = swapMeal(plan, PLAN_KINDS.MAIN, 2, defaultSettings, random);
+        proposedIds.add(plan.mainRecipeIds[2]);
+      }
+      distinctTotal += proposedIds.size;
+    }
+    assert.ok(distinctTotal / 20 >= 5, `${distinctTotal / 20} recettes différentes en moyenne`);
+  });
+
+  it('fait aussi tourner le petit-déjeuner et la collation', () => {
+    let plan = generatePlan(defaultSettings, createSeededRandom(1300));
+    const random = createSeededRandom(1301);
+    const proposedIds = [];
+    const avoidedRecipeIds = [];
+    for (let click = 0; click < 5; click += 1) {
+      avoidedRecipeIds.unshift(plan.snackRecipeIds[0]);
+      plan = swapMeal(plan, PLAN_KINDS.SNACK, 0, defaultSettings, random, { avoidedRecipeIds });
+      proposedIds.push(plan.snackRecipeIds[0]);
+    }
+    assert.equal(new Set(proposedIds).size, 5);
+  });
+});
