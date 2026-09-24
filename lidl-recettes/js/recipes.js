@@ -175,18 +175,6 @@ export const RECIPES = Object.freeze([
       'Assaisonner au paprika et poursuivre 10 min à feu moyen.',
     ],
   }),
-  defineRecipe({
-    id: 'burger-maison',
-    name: 'Burger maison et potatoes',
-    category: CATEGORIES.MEAT,
-    prepMinutes: 40,
-    ingredients: { 'pain-burger': 1, 'boeuf-hache': 125, emmental: 20, tomate: 60, salade: 0.1, oignon: 20, 'pomme-de-terre': 200, paprika: 1, 'huile-olive': 10 },
-    steps: [
-      "Couper les pommes de terre en quartiers, les enrober d'huile et de paprika, cuire 35 min à 210 °C.",
-      'Former les steaks et les cuire 3 min par face, ajouter le fromage en fin de cuisson.',
-      'Monter les burgers avec tomate, salade et oignon.',
-    ],
-  }),
 
   defineRecipe({
     id: 'saumon-riz-brocoli',
@@ -210,18 +198,6 @@ export const RECIPES = Object.freeze([
       'Préparer une purée avec les pommes de terre, le lait et le beurre.',
       'Faire fondre les épinards à la poêle, ajouter la crème.',
       'Cuire le colin 10 min au four à 200 °C avec un filet de citron.',
-    ],
-  }),
-  defineRecipe({
-    id: 'salade-pates-thon',
-    name: 'Salade de pâtes au thon, maïs et tomates',
-    category: CATEGORIES.FISH,
-    prepMinutes: 20,
-    ingredients: { penne: 80, thon: 70, mais: 50, tomate: 100, concombre: 0.25, 'huile-olive': 10, vinaigre: 5, moutarde: 3 },
-    steps: [
-      'Cuire les penne, les rafraîchir sous l’eau froide.',
-      'Couper tomates et concombre en dés, émietter le thon.',
-      'Mélanger avec le maïs et une vinaigrette moutarde-balsamique.',
     ],
   }),
   defineRecipe({
@@ -295,18 +271,6 @@ export const RECIPES = Object.freeze([
       'Faire sauter les courgettes en demi-rondelles 8 min.',
       'Cuire les penne, les mélanger au pesto et aux courgettes.',
       'Ajouter la mozzarella en morceaux et le fromage râpé.',
-    ],
-  }),
-  defineRecipe({
-    id: 'tortillas-haricots-avocat',
-    name: 'Tortillas haricots rouges, avocat et maïs',
-    category: CATEGORIES.VEGETARIAN,
-    prepMinutes: 15,
-    ingredients: { tortilla: 2, 'haricots-rouges': 100, mais: 50, avocat: 0.5, tomate: 80, emmental: 25, cumin: 1 },
-    steps: [
-      'Écraser grossièrement les haricots avec le cumin et les réchauffer.',
-      "Couper l'avocat et la tomate en dés.",
-      'Garnir les tortillas, parsemer de fromage et passer 2 min à la poêle.',
     ],
   }),
   defineRecipe({
@@ -405,32 +369,8 @@ export const RECIPES = Object.freeze([
       'Enfourner 20 min à 210 °C. Servir avec la salade.',
     ],
   }),
-  defineRecipe({
-    id: 'salade-lentilles-feta',
-    name: 'Salade de lentilles, feta et concombre',
-    category: CATEGORIES.VEGETARIAN,
-    prepMinutes: 30,
-    ingredients: { 'lentilles-vertes': 70, feta: 40, concombre: 0.25, tomate: 80, oignon: 15, persil: 0.15, 'huile-olive': 10, vinaigre: 5, moutarde: 3 },
-    steps: [
-      'Cuire les lentilles 25 min, égoutter et laisser tiédir.',
-      'Ajouter concombre, tomate, oignon émincé, persil et feta.',
-      'Assaisonner avec la vinaigrette moutarde-balsamique.',
-    ],
-  }),
 
   // Recettes légères et riches en protéines : elles rassasient sous 500 kcal environ.
-  defineRecipe({
-    id: 'salade-poulet-avocat',
-    name: 'Salade de poulet, avocat et maïs',
-    category: CATEGORIES.MEAT,
-    prepMinutes: 20,
-    ingredients: { 'poulet-filet': 130, salade: 0.3, concombre: 0.25, avocat: 0.25, tomate: 100, mais: 40, 'huile-olive': 5, vinaigre: 5, moutarde: 3 },
-    steps: [
-      'Saisir le poulet 6 min par face, le laisser tiédir puis le trancher.',
-      "Couper concombre, tomate et avocat, laver la salade.",
-      'Assembler avec le maïs et une vinaigrette moutarde-balsamique.',
-    ],
-  }),
   defineRecipe({
     id: 'poulet-haricots-verts',
     name: 'Poulet aux herbes, haricots verts et pommes de terre vapeur',
@@ -465,18 +405,6 @@ export const RECIPES = Object.freeze([
       'Préchauffer le four à 200 °C. Émincer finement poireaux et carottes.',
       'Déposer légumes et colin sur du papier cuisson, arroser de citron et d’huile, fermer.',
       'Cuire 20 min. Servir avec le riz.',
-    ],
-  }),
-  defineRecipe({
-    id: 'salade-nicoise',
-    name: 'Salade niçoise au thon',
-    category: CATEGORIES.FISH,
-    prepMinutes: 25,
-    ingredients: { thon: 90, 'haricots-verts': 150, oeuf: 1, tomate: 120, 'pomme-de-terre': 100, salade: 0.2, 'huile-olive': 8, vinaigre: 5 },
-    steps: [
-      'Cuire les pommes de terre 15 min, l’œuf 9 min et les haricots verts 8 min.',
-      'Rafraîchir le tout, couper en morceaux.',
-      'Dresser sur la salade avec la tomate et le thon, assaisonner.',
     ],
   }),
   defineRecipe({
@@ -552,18 +480,6 @@ export const RECIPES = Object.freeze([
       'Ajouter le riz, pousser sur le côté, brouiller les œufs puis mélanger avec la sauce soja.',
     ],
   }),
-  defineRecipe({
-    id: 'wraps-thon-crudites',
-    name: 'Wraps au thon et crudités',
-    category: CATEGORIES.FISH,
-    prepMinutes: 10,
-    ingredients: { tortilla: 2, thon: 70, salade: 0.15, tomate: 60, 'fromage-blanc': 30 },
-    steps: [
-      'Mélanger le thon émietté avec le fromage blanc et du poivre.',
-      'Garnir les tortillas de salade, de tomate en dés et du mélange au thon.',
-      'Rouler bien serré.',
-    ],
-  }),
 
   // Recettes express (20 min maximum), choisies pour leur petit prix et leurs ingrédients communs.
   defineRecipe({
@@ -576,18 +492,6 @@ export const RECIPES = Object.freeze([
       'Cuire les penne.',
       "Faire sauter les courgettes râpées et l'ail 5 min.",
       'Hors du feu, mélanger pâtes, courgettes, œuf battu et fromage.',
-    ],
-  }),
-  defineRecipe({
-    id: 'taboule-pois-chiches-feta',
-    name: 'Taboulé express aux pois chiches et feta',
-    category: CATEGORIES.VEGETARIAN,
-    prepMinutes: 15,
-    ingredients: { semoule: 60, 'pois-chiches': 80, tomate: 100, concombre: 0.25, feta: 30, citron: 0.25, 'huile-olive': 5 },
-    steps: [
-      'Verser la même quantité d’eau bouillante sur la semoule, couvrir 5 min.',
-      'Couper tomate et concombre en dés.',
-      'Mélanger avec les pois chiches, la feta, le jus de citron et l’huile.',
     ],
   }),
   defineRecipe({
@@ -639,18 +543,6 @@ export const RECIPES = Object.freeze([
     ],
   }),
   defineRecipe({
-    id: 'salade-riz-thon',
-    name: 'Salade de riz au thon, maïs et tomate',
-    category: CATEGORIES.FISH,
-    prepMinutes: 20,
-    ingredients: { riz: 60, thon: 70, mais: 50, tomate: 100, 'huile-olive': 5, vinaigre: 5 },
-    steps: [
-      'Cuire le riz et le rincer à l’eau froide.',
-      'Couper la tomate en dés, émietter le thon.',
-      'Mélanger avec le maïs et assaisonner.',
-    ],
-  }),
-  defineRecipe({
     id: 'shakshuka-express',
     name: 'Œufs pochés à la tomate et au poivron, pain complet',
     category: CATEGORIES.VEGETARIAN,
@@ -672,19 +564,6 @@ export const RECIPES = Object.freeze([
       'Cuire les nouilles 4 min, égoutter.',
       'Saisir le poulet en lanières, ajouter oignon et carotte râpée 5 min.',
       'Ajouter les nouilles et la sauce soja, mélanger 2 min.',
-    ],
-  }),
-  defineRecipe({
-    id: 'croque-monsieur-salade',
-    name: 'Croque-monsieur au pain complet et salade',
-    category: CATEGORIES.MEAT,
-    containsPork: true,
-    prepMinutes: 15,
-    ingredients: { 'pain-complet': 80, jambon: 40, emmental: 20, salade: 0.25, tomate: 80 },
-    steps: [
-      'Garnir le pain de jambon et d’emmental, refermer.',
-      'Dorer 4 min par face à la poêle, couvercle posé.',
-      'Servir avec la salade et la tomate.',
     ],
   }),
   defineRecipe({
@@ -824,18 +703,6 @@ export const RECIPES = Object.freeze([
     ],
   }),
   defineRecipe({
-    id: 'pita-poulet-crudites',
-    name: 'Pita au poulet paprika et crudités',
-    category: CATEGORIES.MEAT,
-    prepMinutes: 15,
-    ingredients: { 'pain-pita': 1.5, 'poulet-filet': 110, tomate: 80, concombre: 0.25, 'fromage-blanc': 40, paprika: 1, 'huile-olive': 5 },
-    steps: [
-      'Saisir le poulet en lanières avec le paprika 6 min.',
-      'Mélanger le fromage blanc avec du poivre, couper tomate et concombre.',
-      'Garnir les pitas tièdes.',
-    ],
-  }),
-  defineRecipe({
     id: 'spaghetti-boulettes',
     name: 'Spaghetti aux boulettes de bœuf',
     category: CATEGORIES.MEAT,
@@ -910,30 +777,6 @@ export const RECIPES = Object.freeze([
     ],
   }),
   defineRecipe({
-    id: 'bowl-boeuf-mexicain',
-    name: 'Bol mexicain au bœuf, haricots et maïs',
-    category: CATEGORIES.MEAT,
-    prepMinutes: 20,
-    ingredients: { riz: 60, 'boeuf-hache': 100, 'haricots-rouges': 60, mais: 40, tomate: 60, salade: 0.15, cumin: 1 },
-    steps: [
-      'Cuire le riz.',
-      'Dorer le bœuf avec le cumin, ajouter les haricots 2 min.',
-      'Dresser le riz, le bœuf, le maïs, la tomate et la salade dans un bol.',
-    ],
-  }),
-  defineRecipe({
-    id: 'salade-dinde-boulgour',
-    name: 'Salade de boulgour à la dinde et au citron',
-    category: CATEGORIES.MEAT,
-    prepMinutes: 20,
-    ingredients: { boulgour: 60, dinde: 110, tomate: 100, concombre: 0.25, citron: 0.25, 'huile-olive': 5 },
-    steps: [
-      'Cuire le boulgour 10 min, le rafraîchir.',
-      'Saisir la dinde et la couper en dés.',
-      'Mélanger avec tomate, concombre, jus de citron et huile.',
-    ],
-  }),
-  defineRecipe({
     id: 'poulet-tikka-express',
     name: 'Poulet tikka express et riz',
     category: CATEGORIES.MEAT,
@@ -943,18 +786,6 @@ export const RECIPES = Object.freeze([
       'Cuire le riz.',
       'Dorer le poulet en dés avec le curry, ajouter les tomates 8 min.',
       'Hors du feu, ajouter le fromage blanc.',
-    ],
-  }),
-  defineRecipe({
-    id: 'wrap-poulet-houmous',
-    name: 'Wraps poulet et houmous',
-    category: CATEGORIES.MEAT,
-    prepMinutes: 15,
-    ingredients: { tortilla: 2, 'poulet-filet': 100, houmous: 30, salade: 0.15, tomate: 60, paprika: 1, 'huile-olive': 5 },
-    steps: [
-      'Saisir le poulet en lanières avec le paprika.',
-      'Tartiner les tortillas de houmous.',
-      'Garnir de salade, tomate et poulet, rouler.',
     ],
   }),
   defineRecipe({
@@ -1008,18 +839,6 @@ export const RECIPES = Object.freeze([
     ],
   }),
   defineRecipe({
-    id: 'tartines-sardines-tomates',
-    name: 'Tartines de sardines et salade de tomates',
-    category: CATEGORIES.FISH,
-    prepMinutes: 10,
-    ingredients: { 'pain-complet': 80, sardines: 90, tomate: 150, salade: 0.2, vinaigre: 5 },
-    steps: [
-      'Griller le pain.',
-      'Écraser les sardines égouttées à la fourchette et les étaler.',
-      'Servir avec les tomates et la salade assaisonnées.',
-    ],
-  }),
-  defineRecipe({
     id: 'maquereau-pommes-de-terre',
     name: 'Maquereau à la tomate, pommes de terre et salade',
     category: CATEGORIES.FISH,
@@ -1029,18 +848,6 @@ export const RECIPES = Object.freeze([
       'Cuire les pommes de terre en morceaux 15 min.',
       'Réchauffer doucement le maquereau dans sa sauce.',
       'Servir avec la salade assaisonnée.',
-    ],
-  }),
-  defineRecipe({
-    id: 'salade-thon-haricots-blancs',
-    name: 'Salade italienne thon et haricots blancs',
-    category: CATEGORIES.FISH,
-    prepMinutes: 10,
-    ingredients: { 'haricots-blancs': 150, thon: 70, tomate: 100, oignon: 20, 'pain-complet': 40, 'huile-olive': 8, vinaigre: 5 },
-    steps: [
-      'Rincer les haricots, émietter le thon.',
-      "Couper la tomate et l'oignon finement.",
-      'Mélanger, assaisonner et servir avec le pain.',
     ],
   }),
   defineRecipe({
@@ -1104,18 +911,6 @@ export const RECIPES = Object.freeze([
     ],
   }),
   defineRecipe({
-    id: 'boulgour-maquereau',
-    name: 'Boulgour au maquereau, concombre et tomate',
-    category: CATEGORIES.FISH,
-    prepMinutes: 15,
-    ingredients: { boulgour: 60, maquereau: 100, concombre: 0.25, tomate: 100 },
-    steps: [
-      'Cuire le boulgour 10 min, le rafraîchir.',
-      'Couper concombre et tomate en dés.',
-      'Mélanger avec le maquereau et sa sauce.',
-    ],
-  }),
-  defineRecipe({
     id: 'pita-thon-crudites',
     name: 'Pita au thon et crudités',
     category: CATEGORIES.FISH,
@@ -1140,30 +935,6 @@ export const RECIPES = Object.freeze([
     ],
   }),
 
-  defineRecipe({
-    id: 'falafels-boulgour',
-    name: 'Falafels, boulgour et sauce au fromage blanc',
-    category: CATEGORIES.VEGETARIAN,
-    prepMinutes: 15,
-    ingredients: { falafels: 110, boulgour: 60, concombre: 0.3, 'fromage-blanc': 50, tomate: 80 },
-    steps: [
-      'Cuire le boulgour 10 min.',
-      'Réchauffer les falafels 5 min à la poêle.',
-      'Servir avec les crudités et le fromage blanc poivré.',
-    ],
-  }),
-  defineRecipe({
-    id: 'pita-falafels',
-    name: 'Pita falafels et houmous',
-    category: CATEGORIES.VEGETARIAN,
-    prepMinutes: 10,
-    ingredients: { 'pain-pita': 1.5, falafels: 90, salade: 0.2, tomate: 80, houmous: 20 },
-    steps: [
-      'Réchauffer les falafels et les pitas.',
-      'Tartiner les pitas de houmous.',
-      'Garnir de salade, tomate et falafels.',
-    ],
-  }),
   defineRecipe({
     id: 'quinoa-legumes-feta',
     name: 'Quinoa aux légumes du soleil et feta',
@@ -1222,18 +993,6 @@ export const RECIPES = Object.freeze([
       'Chauffer tomates, haricots rincés et paprika 5 min.',
       'Creuser deux puits, y casser les œufs, couvrir 6 min.',
       'Servir avec le pain grillé.',
-    ],
-  }),
-  defineRecipe({
-    id: 'salade-quinoa-pois-chiches',
-    name: 'Salade de quinoa, pois chiches et citron',
-    category: CATEGORIES.VEGETARIAN,
-    prepMinutes: 20,
-    ingredients: { quinoa: 60, 'pois-chiches': 100, concombre: 0.25, tomate: 100, citron: 0.25, 'huile-olive': 5 },
-    steps: [
-      'Cuire le quinoa 12 min, le rafraîchir.',
-      'Couper concombre et tomate.',
-      'Mélanger avec les pois chiches, le jus de citron et l’huile.',
     ],
   }),
   defineRecipe({

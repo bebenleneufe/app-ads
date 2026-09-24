@@ -113,7 +113,7 @@ describe('protéines', () => {
   });
 
   it('compte les protéines d’une portion', () => {
-    assert.ok(getPortionProtein('salade-poulet-avocat', defaultSettings) > getPortionProtein('soupe-legumes-express', defaultSettings));
+    assert.ok(getPortionProtein('poulet-haricots-verts-riz', defaultSettings) > getPortionProtein('soupe-legumes-express', defaultSettings));
   });
 });
 

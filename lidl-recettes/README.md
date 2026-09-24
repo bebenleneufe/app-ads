@@ -6,7 +6,7 @@ Générateur de menus pour la semaine. Il produit aussi la liste de courses et u
 
 ### Menus
 - **Trois repas et une collation par jour** : le même petit-déjeuner et la même collation toute la semaine (affichés une fois en tête des menus), puis par défaut le même plat au déjeuner et au dîner, cuisiné une fois en double (7 plats par semaine au lieu de 14). On peut aussi choisir deux plats différents ou le dîner seul.
-- **Recettes rapides** : 15, 20 (par défaut) ou 30 minutes maximum, ou sans limite. Avec une limite, 6 ingrédients frais maximum (l'huile et les épices ne comptent pas). 108 plats, 7 petits-déjeuners et 6 collations au total, dont plus de 75 plats en 20 minutes ou moins.
+- **Recettes rapides** : 15, 20 (par défaut) ou 30 minutes maximum, ou sans limite. Avec une limite, 6 ingrédients frais maximum (l'huile et les épices ne comptent pas). 88 plats (aucun avec de la tomate crue), 7 petits-déjeuners et 6 collations au total, dont près de 60 plats en 20 minutes ou moins compatibles avec l'objectif par défaut.
 - **« J'aime » / « Pas pour moi »** : un plat aimé revient plus souvent, un plat écarté ne revient plus (réautorisable dans les réglages). Les plats des deux dernières semaines sont évités.
 - **Bouton « Changer »** : remplace un seul repas, ou le petit-déjeuner et la collation de toute la semaine.
 - **Mode cuisine** : les ingrédients puis une étape à la fois, en grand, avec un minuteur quand l'étape annonce une durée. L'écran reste allumé.
@@ -20,7 +20,7 @@ Générateur de menus pour la semaine. Il produit aussi la liste de courses et u
 - **Suivi du poids** : une pesée par jour au plus, courbe, rythme de perte par régression linéaire sur 4 semaines, conseil si la perte est trop rapide (plus d'1 kg par semaine), si elle stagne (moins de 200 g en trois semaines) ou en cas de prise. Chaque pesée met à jour le poids du profil, donc l'objectif calorique.
 
 ### Courses
-- **Petit prix** : le générateur calcule ce que chaque recette ajoute vraiment au ticket, en tenant compte des paquets déjà ouverts. Environ 39 € la semaine pour 1 personne, 3 repas et une collation par jour (médiane mesurée sur 200 semaines). Les priorités « Prix et variété » et « Variété » proposent plus de plats différents.
+- **Petit prix** : le générateur calcule ce que chaque recette ajoute vraiment au ticket, en tenant compte des paquets déjà ouverts. Environ 38 € la semaine pour 1 personne, 3 repas et une collation par jour (médiane mesurée sur 200 semaines). Les priorités « Prix et variété » (≈ 40 €) et « Variété » (≈ 45 €) proposent plus de plats différents.
 - **Liste rangée par rayon** dans l'ordre du parcours habituel d'un magasin Lidl (surgelés en dernier), avec sous-total par rayon, besoin réel, reste de chaque paquet et barre de progression.
 - **Mode magasin** : la liste seule, en grand, avec l'écran qui reste allumé.
 - **Restes reportés** : quand on passe à la semaine suivante, les restes d'épicerie, de conserves et de surgelés **cochés** (donc achetés) sont gardés en stock et déduits des courses suivantes ; le générateur privilégie les plats qui les finissent.

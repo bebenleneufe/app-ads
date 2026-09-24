@@ -270,3 +270,11 @@ describe('photos', () => {
     }
   });
 });
+
+describe('goûts', () => {
+  it('ne sert jamais de tomate crue : la tomate fraîche n’apparaît que dans des plats où elle cuit', () => {
+    const recipesWithCookedTomato = new Set(['ratatouille-oeuf', 'omelette-thon-tomate']);
+    const recipesWithFreshTomato = RECIPES.filter((recipe) => 'tomate' in recipe.ingredients).map((recipe) => recipe.id);
+    assert.deepEqual(recipesWithFreshTomato.filter((recipeId) => !recipesWithCookedTomato.has(recipeId)), []);
+  });
+});

@@ -84,9 +84,9 @@ describe('calories', () => {
 
   it('ajuste les portions vers la cible sans toucher aux produits à la pièce', () => {
     const mealTargetKcal = computeMealTargetKcal(weightLossSettings, MEAL_TYPES.MAIN);
-    assert.ok(getRecipeKcal('salade-poulet-avocat') < mealTargetKcal);
-    assert.ok(getPortionFactor('salade-poulet-avocat', weightLossSettings) > 1);
-    assert.ok(getPortionKcal('salade-poulet-avocat', weightLossSettings) > getRecipeKcal('salade-poulet-avocat'));
-    assert.equal(getPortionFactor('salade-poulet-avocat', { ...weightLossSettings, goal: GOALS.NONE }), 1);
+    assert.ok(getRecipeKcal('soupe-lentilles-corail-coco') < mealTargetKcal);
+    assert.ok(getPortionFactor('soupe-lentilles-corail-coco', weightLossSettings) > 1);
+    assert.ok(getPortionKcal('soupe-lentilles-corail-coco', weightLossSettings) > getRecipeKcal('soupe-lentilles-corail-coco'));
+    assert.equal(getPortionFactor('soupe-lentilles-corail-coco', { ...weightLossSettings, goal: GOALS.NONE }), 1);
   });
 });
