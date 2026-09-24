@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Semainier Lidl</title>
+<meta name="description" content="Menus de la semaine, liste de courses par rayon et ticket estimé, avec uniquement des produits de l'assortiment permanent Lidl.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;600&family=Source+Sans+3:wght@400;600&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="page">
+  <header class="masthead">
+    <div class="masthead-text">
+      <p class="eyebrow">Outil personnel, non affilié à Lidl</p>
+      <h1>Semainier Lidl</h1>
+      <p class="lede">Les menus de la semaine, la liste de courses rangée par rayon et le ticket estimé. Chaque ingrédient vient de l’assortiment permanent Lidl.</p>
+    </div>
+    <dl class="summary" id="summary" aria-live="polite"></dl>
+  </header>
+
+  <div class="layout">
+    <form class="settings" id="settings-form" aria-labelledby="settings-title">
+      <h2 id="settings-title" class="section-title">Ma semaine</h2>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="person-count">Personnes</label>
+          <input id="person-count" name="personCount" type="number" inputmode="numeric" min="1" max="8" step="1" required>
+        </div>
+        <div class="field">
+          <label for="day-count">Jours</label>
+          <input id="day-count" name="dayCount" type="number" inputmode="numeric" min="1" max="7" step="1" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="meals-per-day">Repas par jour</label>
+        <select id="meals-per-day" name="mealsPerDay">
+          <option value="1">Dîner seulement</option>
+          <option value="2">Déjeuner et dîner</option>
+        </select>
+      </div>
+
+      <fieldset class="field diet-field">
+        <legend>Régime</legend>
+        <div class="segmented">
+          <input id="diet-omnivore" type="radio" name="diet" value="omnivore">
+          <label for="diet-omnivore">Tout</label>
+          <input id="diet-pescetarien" type="radio" name="diet" value="pescetarien">
+          <label for="diet-pescetarien">Sans viande</label>
+          <input id="diet-vegetarien" type="radio" name="diet" value="vegetarien">
+          <label for="diet-vegetarien">Végétarien</label>
+        </div>
+      </fieldset>
+
+      <label class="check" for="without-pork">
+        <input id="without-pork" name="withoutPork" type="checkbox">
+        <span>Sans porc</span>
+      </label>
+
+      <div class="field">
+        <label for="weekly-budget">Budget maximum (€)</label>
+        <input id="weekly-budget" name="weeklyBudget" type="number" inputmode="numeric" min="0" max="500" step="5" placeholder="Aucun">
+        <p class="hint">Les recettes les plus chères sont remplacées jusqu’à passer sous le plafond.</p>
+      </div>
+
+      <label class="check" for="pantry-staples-owned">
+        <input id="pantry-staples-owned" name="pantryStaplesOwned" type="checkbox">
+        <span>J’ai déjà l’huile, les épices et les condiments</span>
+      </label>
+    </form>
+
+    <section class="plan" aria-labelledby="plan-title">
+      <div class="section-head">
+        <h2 id="plan-title" class="section-title">Menus</h2>
+        <button id="regenerate-button" class="primary-button" type="button">Nouvelle semaine</button>
+      </div>
+      <ol class="days" id="plan-list"></ol>
+    </section>
+
+    <aside class="receipt-column" aria-labelledby="receipt-title">
+      <h2 id="receipt-title" class="section-title">Courses</h2>
+      <div class="receipt" id="receipt"></div>
+      <div class="receipt-actions">
+        <button id="copy-button" class="primary-button" type="button">Copier la liste</button>
+        <button id="uncheck-button" class="quiet-button" type="button">Tout décocher</button>
+      </div>
+      <p class="copy-status" id="copy-status" role="status"></p>
+      <textarea id="copy-fallback" class="copy-fallback" rows="8" readonly hidden aria-label="Liste de courses à copier"></textarea>
+    </aside>
+  </div>
+
+  <footer class="page-foot">
+    <p>Prix estimés d’après le niveau de prix Lidl France de septembre 2026, hors promotions et hors produits de la semaine. Le montant en caisse peut varier selon le magasin. « Consommé cette semaine » compte seulement ce que les recettes utilisent ; le reste des paquets entamés reste au placard.</p>
+  </footer>
+</div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
