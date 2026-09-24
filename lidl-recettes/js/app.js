@@ -1,5 +1,6 @@
 import { CookMode } from './cook-mode.js';
 import { debounce } from './dom.js';
+import { setUpInstallButton } from './install-prompt.js';
 import { buildShoppingListText } from './list-text.js';
 import { generatePlan, PLAN_KINDS, reconcilePlan, swapMeal } from './planner.js';
 import { createEmptyPlan, getServingsPerBreakfast, getServingsPerMainSlot, getServingsPerSnack } from './meal-structure.js';
@@ -57,6 +58,7 @@ class WeeklyPlannerApp {
   #swapHistoryBySlot = new Map();
   #cookMode;
   #storeWakeLock = createScreenWakeLock();
+  #removeInstallButton = () => {};
   #checkedProductIds = new Set();
   #shoppingList = null;
   #weekStartDate = getUpcomingMonday();
@@ -86,6 +88,7 @@ class WeeklyPlannerApp {
       stockSummary: rootDocument.getElementById('stock-summary'),
       clearStockButton: rootDocument.getElementById('clear-stock-button'),
       storeModeButton: rootDocument.getElementById('store-mode-button'),
+      installButton: rootDocument.getElementById('install-button'),
       body: rootDocument.body,
     };
     this.#cookMode = new CookMode(rootDocument.getElementById('cook-dialog'));
@@ -93,6 +96,7 @@ class WeeklyPlannerApp {
 
   start() {
     this.#restoreSavedState();
+    this.#removeInstallButton = setUpInstallButton(this.#elements.installButton);
     writeSettingsToForm(this.#elements.settingsForm, this.#settings);
     this.#attachListeners();
     this.#renderAll();
@@ -139,6 +143,7 @@ class WeeklyPlannerApp {
     clearTimeout(this.#copyStatusTimeoutId);
     this.#cookMode.destroy();
     this.#storeWakeLock.disable();
+    this.#removeInstallButton();
   }
 
   #attachListeners() {
