@@ -30,18 +30,18 @@ export const PRIORITIES = Object.freeze({
   VARIETY: 'variete',
 });
 
-// Pondérations mesurées sur 200 semaines générées (1 pers., 3 repas, 20 min) :
-// prix ≈ 39 € médian, 16 plats différents vus ; équilibre ≈ 43 €, 23 plats ; variété ≈ 48 €, 25 plats.
+// Pondérations mesurées sur 200 semaines générées (1 pers., 3 repas, 20 min, 108 plats) :
+// prix ≈ 34 € médian, 37 plats différents vus ; équilibre ≈ 35 €, 46 plats ; variété ≈ 41 €, 59 plats.
 // Le surcoût réel au ticket pousse à finir les paquets entamés, l'aléa apporte la variété.
 const SCORING_WEIGHTS_BY_PRIORITY = Object.freeze({
-  [PRIORITIES.PRICE]: { marginalCost: 1.6, randomness: 2.5 },
-  [PRIORITIES.BALANCED]: { marginalCost: 1, randomness: 3.5 },
-  [PRIORITIES.VARIETY]: { marginalCost: 0.5, randomness: 3.5 },
+  [PRIORITIES.PRICE]: { marginalCost: 1.0, randomness: 3.5 },
+  [PRIORITIES.BALANCED]: { marginalCost: 0.6, randomness: 4 },
+  [PRIORITIES.VARIETY]: { marginalCost: 0.3, randomness: 4.5 },
 });
 const REPEATED_RECIPE_PENALTY = 10;
 const CATEGORY_BALANCE_WEIGHT = 2;
 const CHEAPNESS_WEIGHT = 1.5;
-const CALORIE_GAP_WEIGHT = 4;
+const CALORIE_GAP_WEIGHT = 6;
 
 const SERVING_COST_BY_RECIPE_ID = new Map(RECIPES.map((recipe) => [recipe.id, computeServingCost(recipe)]));
 

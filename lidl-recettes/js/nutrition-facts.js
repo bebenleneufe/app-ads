@@ -26,6 +26,7 @@ export const KCAL_BY_PRODUCT_ID = Object.freeze({
   // Poids brut avec os et peau : environ 70 % de partie comestible.
   'cuisse-poulet': 150,
   'boeuf-hache': 125,
+  dinde: 110,
   lardons: 260,
   saucisse: 280,
   jambon: 110,
@@ -34,6 +35,8 @@ export const KCAL_BY_PRODUCT_ID = Object.freeze({
   saumon: 200,
   crevettes: 90,
   thon: 105,
+  sardines: 220,
+  maquereau: 190,
 
   oeuf: 80,
   lait: 46,
@@ -53,6 +56,10 @@ export const KCAL_BY_PRODUCT_ID = Object.freeze({
   gnocchi: 150,
   tortilla: 125,
   'pain-burger': 160,
+  'pain-pita': 160,
+  houmous: 300,
+  falafels: 230,
+  ricotta: 150,
 
   'flocons-avoine': 370,
   amandes: 600,
@@ -65,6 +72,10 @@ export const KCAL_BY_PRODUCT_ID = Object.freeze({
   'lentilles-vertes': 330,
   'pois-chiches': 125,
   'haricots-rouges': 110,
+  'haricots-blancs': 100,
+  'lentilles-boite': 110,
+  boulgour: 350,
+  quinoa: 360,
   mais: 90,
   'tomates-concassees': 25,
   coulis: 35,
@@ -73,6 +84,9 @@ export const KCAL_BY_PRODUCT_ID = Object.freeze({
 
   epinards: 25,
   'haricots-verts': 30,
+  'petits-pois': 80,
+  'brocoli-surgele': 30,
+  'poelee-legumes': 45,
   colin: 75,
 
   'huile-olive': 900,

@@ -77,7 +77,7 @@ export function computeMealTargetKcal(settings, mealType = MEAL_TYPES.MAIN) {
 
 // Bornes d'ajustement des portions : au-delà, le plat ne ressemble plus à la recette
 // (assiette démesurée ou quasi vide) et mieux vaut en choisir un autre.
-const PORTION_FACTOR_BOUNDS = Object.freeze({ min: 0.9, max: 1.4 });
+const PORTION_FACTOR_BOUNDS = Object.freeze({ min: 0.9, max: 1.5 });
 const PORTION_FACTOR_STEP = 0.05;
 
 function isScalableProduct(productId) {
