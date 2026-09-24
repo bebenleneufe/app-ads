@@ -4,6 +4,7 @@ Générateur de menus pour la semaine. Il produit aussi la liste de courses et u
 
 ## Fonctionnalités
 
+- **Perte de poids** : à partir du profil (sexe, âge, poids, taille, activité), le besoin journalier est calculé avec la formule de Mifflin-St Jeor, moins 500 kcal. Seules les recettes sous la cible d'un repas (35 % de la journée) sont proposées, en privilégiant les plus légères. Les calories sont affichées pour chaque repas et chaque jour.
 - **Menus** : de 1 à 7 jours, dîner seul ou déjeuner et dîner, de 1 à 8 personnes.
 - **Régimes** : tout, sans viande (poisson autorisé), végétarien, avec une option sans porc.
 - **Choix des recettes** : le générateur préfère les recettes qui partagent des ingrédients, pour moins gaspiller de paquets entamés. Il équilibre aussi viande, poisson et végétarien.
@@ -39,6 +40,8 @@ npm test           # node --test, Node 20 ou plus récent
 | `js/catalog.js` | Produits Lidl : rayon, conditionnement, prix indicatif |
 | `js/recipes.js` | Recettes, avec les quantités pour une portion |
 | `js/planner.js` | Génération du planning, changement d'un repas, ajustement au budget |
+| `js/nutrition-facts.js` | Valeurs énergétiques moyennes de chaque produit |
+| `js/nutrition.js` | Calories par recette, besoin journalier, cible par repas |
 | `js/shopping-list.js` | Regroupement des besoins, arrondi au paquet, calcul des totaux |
 | `js/render.js` | Affichage (DocumentFragment, aucun `innerHTML`) |
 | `js/app.js` | Contrôleur : état, écouteurs (debounce, nettoyage via `AbortController`) |

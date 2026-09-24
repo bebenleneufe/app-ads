@@ -1,4 +1,5 @@
 import { PRODUCTS_BY_ID } from './catalog.js';
+import { computeMealTargetKcal, fitsMealTarget, getRecipeKcal } from './nutrition.js';
 import { CATEGORIES, RECIPES, RECIPES_BY_ID } from './recipes.js';
 import { buildShoppingList, computeServingCost } from './shopping-list.js';
 
@@ -15,6 +16,7 @@ const RANDOMNESS_WEIGHT = 2.5;
 const REPEATED_RECIPE_PENALTY = 10;
 const CATEGORY_BALANCE_WEIGHT = 2;
 const CHEAPNESS_WEIGHT = 1.5;
+const LIGHTNESS_WEIGHT = 1.5;
 
 const SERVING_COST_BY_RECIPE_ID = new Map(RECIPES.map((recipe) => [recipe.id, computeServingCost(recipe)]));
 
@@ -30,13 +32,13 @@ export function isRecipeAllowed(recipe, settings) {
   if (settings.withoutPork && recipe.containsPork) {
     return false;
   }
-  if (settings.diet === DIETS.VEGETARIAN) {
-    return recipe.category === CATEGORIES.VEGETARIAN;
+  if (settings.diet === DIETS.VEGETARIAN && recipe.category !== CATEGORIES.VEGETARIAN) {
+    return false;
   }
-  if (settings.diet === DIETS.PESCETARIAN) {
-    return recipe.category !== CATEGORIES.MEAT;
+  if (settings.diet === DIETS.PESCETARIAN && recipe.category === CATEGORIES.MEAT) {
+    return false;
   }
-  return true;
+  return fitsMealTarget(recipe.id, settings);
 }
 
 function listAllowedRecipes(settings) {
@@ -47,7 +49,12 @@ function listFreshProductIds(recipe) {
   return Object.keys(recipe.ingredients).filter((productId) => !PRODUCTS_BY_ID.get(productId)?.isPantryStaple);
 }
 
-function scoreCandidate(candidate, chosenRecipes, random, preferCheap) {
+function computeHeavinessPenalty(candidate, settings) {
+  const mealTargetKcal = computeMealTargetKcal(settings);
+  return mealTargetKcal === null ? 0 : (getRecipeKcal(candidate.id) / mealTargetKcal) * LIGHTNESS_WEIGHT;
+}
+
+function scoreCandidate(candidate, chosenRecipes, random, settings, preferCheap) {
   const productsAlreadyBought = new Set(chosenRecipes.flatMap(listFreshProductIds));
   const sharedIngredientCount = listFreshProductIds(candidate).filter((productId) => productsAlreadyBought.has(productId)).length;
   const isRepeated = chosenRecipes.some((recipe) => recipe.id === candidate.id);
@@ -60,16 +67,17 @@ function scoreCandidate(candidate, chosenRecipes, random, preferCheap) {
     + random() * RANDOMNESS_WEIGHT
     - (isRepeated ? REPEATED_RECIPE_PENALTY : 0)
     - sameCategoryShare * CATEGORY_BALANCE_WEIGHT
-    - cheapnessPenalty;
+    - cheapnessPenalty
+    - computeHeavinessPenalty(candidate, settings);
 }
 
-function pickBestRecipe({ allowedRecipes, chosenRecipes, excludedRecipeIds, random, preferCheap }) {
+function pickBestRecipe({ allowedRecipes, chosenRecipes, excludedRecipeIds, random, settings, preferCheap }) {
   const freshCandidates = allowedRecipes.filter((recipe) => !excludedRecipeIds.has(recipe.id));
   const candidates = freshCandidates.length > 0 ? freshCandidates : allowedRecipes;
   let bestRecipe = null;
   let bestScore = Number.NEGATIVE_INFINITY;
   for (const candidate of candidates) {
-    const candidateScore = scoreCandidate(candidate, chosenRecipes, random, preferCheap);
+    const candidateScore = scoreCandidate(candidate, chosenRecipes, random, settings, preferCheap);
     if (candidateScore > bestScore) {
       bestScore = candidateScore;
       bestRecipe = candidate;
@@ -100,6 +108,7 @@ function fillPlan(keptRecipeIds, settings, random) {
       chosenRecipes,
       excludedRecipeIds: new Set(chosenRecipes.map((recipe) => recipe.id)),
       random,
+      settings,
       preferCheap: hasBudget(settings),
     });
     chosenRecipes.push(pickedRecipe);
@@ -157,6 +166,7 @@ export function swapMeal(currentRecipeIds, slotIndex, settings, random = Math.ra
     chosenRecipes: otherRecipes,
     excludedRecipeIds: new Set(currentRecipeIds),
     random,
+    settings,
     preferCheap: false,
   });
   if (!replacement) {

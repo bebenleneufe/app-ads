@@ -1,7 +1,8 @@
 import { debounce } from './dom.js';
 import { buildShoppingListText } from './list-text.js';
 import { generatePlan, reconcilePlan, swapMeal } from './planner.js';
-import { renderPlan, renderReceipt, renderSummary } from './render.js';
+import { hasWeightLossGoal } from './nutrition.js';
+import { renderGoalHint, renderPlan, renderReceipt, renderSummary } from './render.js';
 import { normalizeSettings, readSettingsFromForm, writeSettingsToForm } from './settings.js';
 import { buildShoppingList } from './shopping-list.js';
 import { loadSavedState, saveState } from './storage.js';
@@ -38,6 +39,8 @@ class WeeklyPlannerApp {
       uncheckButton: rootDocument.getElementById('uncheck-button'),
       copyStatus: rootDocument.getElementById('copy-status'),
       copyFallback: rootDocument.getElementById('copy-fallback'),
+      profileFields: rootDocument.getElementById('profile-fields'),
+      goalHint: rootDocument.getElementById('kcal-hint'),
     };
   }
 
@@ -166,6 +169,8 @@ class WeeklyPlannerApp {
 
   #renderAll() {
     this.#shoppingList = buildShoppingList(this.#planRecipeIds, this.#settings);
+    this.#elements.profileFields.hidden = !hasWeightLossGoal(this.#settings);
+    renderGoalHint(this.#elements.goalHint, this.#settings);
     renderSummary(this.#elements.summary, this.#shoppingList, this.#settings);
     renderPlan(this.#elements.planList, this.#planRecipeIds, this.#settings, this.#weekStartDate);
     this.#renderReceipt();

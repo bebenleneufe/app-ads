@@ -25,6 +25,47 @@
     <form class="settings" id="settings-form" aria-labelledby="settings-title">
       <h2 id="settings-title" class="section-title">Ma semaine</h2>
 
+      <div class="field">
+        <label for="goal">Objectif</label>
+        <select id="goal" name="goal">
+          <option value="perte-de-poids">Perdre du poids</option>
+          <option value="aucun">Manger équilibré, sans compter</option>
+        </select>
+      </div>
+
+      <fieldset class="field profile-fields" id="profile-fields">
+        <legend>Mon profil</legend>
+        <div class="segmented segmented-two" role="radiogroup" aria-label="Sexe">
+          <input id="sex-homme" type="radio" name="sex" value="homme">
+          <label for="sex-homme">Homme</label>
+          <input id="sex-femme" type="radio" name="sex" value="femme">
+          <label for="sex-femme">Femme</label>
+        </div>
+        <div class="field-row field-row-three">
+          <div class="field">
+            <label for="age">Âge</label>
+            <input id="age" name="age" type="number" inputmode="numeric" min="18" max="99" step="1" required>
+          </div>
+          <div class="field">
+            <label for="weight-kg">Kg</label>
+            <input id="weight-kg" name="weightKg" type="number" inputmode="numeric" min="40" max="250" step="1" required>
+          </div>
+          <div class="field">
+            <label for="height-cm">Cm</label>
+            <input id="height-cm" name="heightCm" type="number" inputmode="numeric" min="130" max="220" step="1" required>
+          </div>
+        </div>
+        <div class="field">
+          <label for="activity-level">Activité</label>
+          <select id="activity-level" name="activityLevel">
+            <option value="sedentaire">Sédentaire</option>
+            <option value="leger">Sport 1 à 3 fois/sem.</option>
+            <option value="modere">Sport 3 à 5 fois/sem.</option>
+          </select>
+        </div>
+        <p class="hint" id="kcal-hint"></p>
+      </fieldset>
+
       <div class="field-row">
         <div class="field">
           <label for="person-count">Personnes</label>
@@ -95,6 +136,7 @@
 
   <footer class="page-foot">
     <p>Prix estimés d’après le niveau de prix Lidl France de septembre 2026, hors promotions et hors produits de la semaine. Le montant en caisse peut varier selon le magasin. « Consommé cette semaine » compte seulement ce que les recettes utilisent ; le reste des paquets entamés reste au placard.</p>
+    <p>Calories estimées à partir de valeurs moyennes (table Ciqual), pour une portion. Le besoin journalier est calculé avec la formule de Mifflin-St Jeor, moins 500 kcal, pour viser environ 0,5 kg perdu par semaine. C’est un repère, pas un avis médical.</p>
   </footer>
 </div>
 <script type="module" src="js/app.js"></script>

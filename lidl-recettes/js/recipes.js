@@ -404,6 +404,116 @@ export const RECIPES = Object.freeze([
       'Assaisonner avec la vinaigrette moutarde-balsamique.',
     ],
   }),
+
+  // Recettes légères et riches en protéines : elles rassasient sous 500 kcal environ.
+  defineRecipe({
+    id: 'salade-poulet-avocat',
+    name: 'Salade de poulet, avocat et maïs',
+    category: CATEGORIES.MEAT,
+    prepMinutes: 20,
+    ingredients: { 'poulet-filet': 130, salade: 0.3, concombre: 0.25, avocat: 0.25, tomate: 100, mais: 40, 'huile-olive': 5, vinaigre: 5, moutarde: 3 },
+    steps: [
+      'Saisir le poulet 6 min par face, le laisser tiédir puis le trancher.',
+      "Couper concombre, tomate et avocat, laver la salade.",
+      'Assembler avec le maïs et une vinaigrette moutarde-balsamique.',
+    ],
+  }),
+  defineRecipe({
+    id: 'poulet-haricots-verts',
+    name: 'Poulet aux herbes, haricots verts et pommes de terre vapeur',
+    category: CATEGORIES.MEAT,
+    prepMinutes: 25,
+    ingredients: { 'poulet-filet': 150, 'haricots-verts': 200, 'pomme-de-terre': 200, 'huile-olive': 5, herbes: 1 },
+    steps: [
+      'Cuire les pommes de terre en morceaux 15 min à la vapeur ou dans l’eau.',
+      'Cuire les haricots verts 8 min.',
+      'Saisir le poulet avec l’huile et les herbes, 6 min par face.',
+    ],
+  }),
+  defineRecipe({
+    id: 'keftas-courgettes-semoule',
+    name: 'Boulettes de bœuf au cumin, courgettes et semoule',
+    category: CATEGORIES.MEAT,
+    prepMinutes: 30,
+    ingredients: { 'boeuf-hache': 120, courgette: 200, semoule: 50, 'tomates-concassees': 100, oignon: 30, cumin: 1, 'huile-olive': 5 },
+    steps: [
+      'Mélanger le bœuf avec le cumin et la moitié de l’oignon haché, former des boulettes.',
+      'Les dorer, ajouter le reste de l’oignon, les courgettes en dés et les tomates. Mijoter 15 min.',
+      'Servir avec la semoule gonflée à l’eau bouillante.',
+    ],
+  }),
+  defineRecipe({
+    id: 'colin-papillote-poireaux',
+    name: 'Colin en papillote, poireaux, carottes et riz',
+    category: CATEGORIES.FISH,
+    prepMinutes: 30,
+    ingredients: { colin: 150, poireau: 150, carotte: 100, citron: 0.25, riz: 50, 'huile-olive': 5 },
+    steps: [
+      'Préchauffer le four à 200 °C. Émincer finement poireaux et carottes.',
+      'Déposer légumes et colin sur du papier cuisson, arroser de citron et d’huile, fermer.',
+      'Cuire 20 min. Servir avec le riz.',
+    ],
+  }),
+  defineRecipe({
+    id: 'salade-nicoise',
+    name: 'Salade niçoise au thon',
+    category: CATEGORIES.FISH,
+    prepMinutes: 25,
+    ingredients: { thon: 90, 'haricots-verts': 150, oeuf: 1, tomate: 120, 'pomme-de-terre': 100, salade: 0.2, 'huile-olive': 8, vinaigre: 5 },
+    steps: [
+      'Cuire les pommes de terre 15 min, l’œuf 9 min et les haricots verts 8 min.',
+      'Rafraîchir le tout, couper en morceaux.',
+      'Dresser sur la salade avec la tomate et le thon, assaisonner.',
+    ],
+  }),
+  defineRecipe({
+    id: 'crevettes-courgettes-ail',
+    name: 'Crevettes à l’ail, courgettes et riz',
+    category: CATEGORIES.FISH,
+    prepMinutes: 20,
+    ingredients: { crevettes: 120, courgette: 200, riz: 50, ail: 3, citron: 0.25, 'huile-olive': 5 },
+    steps: [
+      'Cuire le riz.',
+      "Faire sauter les courgettes en demi-rondelles 6 min avec l'ail.",
+      'Ajouter les crevettes 2 min et le jus de citron.',
+    ],
+  }),
+  defineRecipe({
+    id: 'omelette-champignons-epinards',
+    name: 'Omelette champignons et épinards, salade verte',
+    category: CATEGORIES.VEGETARIAN,
+    prepMinutes: 15,
+    ingredients: { oeuf: 3, champignon: 100, epinards: 100, emmental: 15, salade: 0.25, 'huile-olive': 5 },
+    steps: [
+      'Faire sauter les champignons émincés puis les épinards jusqu’à évaporation.',
+      'Verser les œufs battus, parsemer d’emmental.',
+      'Cuire à feu doux 4 min, plier et servir avec la salade.',
+    ],
+  }),
+  defineRecipe({
+    id: 'soupe-poireaux-oeufs',
+    name: 'Soupe poireaux-carottes et œufs mollets',
+    category: CATEGORIES.VEGETARIAN,
+    prepMinutes: 35,
+    ingredients: { poireau: 150, carotte: 100, 'pomme-de-terre': 100, bouillon: 0.5, oeuf: 2 },
+    steps: [
+      'Couper les légumes, les couvrir d’eau avec le bouillon, cuire 25 min puis mixer.',
+      'Cuire les œufs 6 min dans l’eau bouillante, les écaler.',
+      'Servir la soupe avec les œufs mollets.',
+    ],
+  }),
+  defineRecipe({
+    id: 'tofu-brocoli-riz',
+    name: 'Tofu sauté au soja, brocoli et riz',
+    category: CATEGORIES.VEGETARIAN,
+    prepMinutes: 25,
+    ingredients: { tofu: 150, brocoli: 0.4, riz: 50, 'sauce-soja': 15, ail: 2, 'huile-olive': 5 },
+    steps: [
+      'Cuire le riz. Cuire le brocoli en fleurettes 5 min à la vapeur.',
+      "Dorer le tofu en cubes avec l'ail.",
+      'Ajouter le brocoli et la sauce soja, mélanger 2 min.',
+    ],
+  }),
 ]);
 
 export const RECIPES_BY_ID = new Map(RECIPES.map((recipe) => [recipe.id, recipe]));

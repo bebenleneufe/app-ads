@@ -7,11 +7,23 @@ import {
   formatProductQuantity,
   formatQuantity,
 } from './format.js';
+import {
+  computeDailyTargetKcal,
+  computeMaintenanceKcal,
+  computeMealTargetKcal,
+  getRecipeKcal,
+  hasWeightLossGoal,
+} from './nutrition.js';
 import { getServingCost } from './planner.js';
 import { CATEGORY_LABELS, RECIPES_BY_ID } from './recipes.js';
 
 const DAY_NAMES = Object.freeze(['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']);
 const MEAL_SLOT_LABELS = Object.freeze({ 1: ['Dîner'], 2: ['Déjeuner', 'Dîner'] });
+const KCAL_FORMATTER = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
+
+function formatKcal(kcal) {
+  return `${KCAL_FORMATTER.format(kcal)} kcal`;
+}
 
 function addDays(date, dayOffset) {
   const shiftedDate = new Date(date);
@@ -42,6 +54,7 @@ function buildMealCard(recipe, slotIndex, slotLabel, personCount) {
   const metaItems = [
     createElement('span', { className: 'chip', text: CATEGORY_LABELS[recipe.category] }),
     createElement('span', { text: `${recipe.prepMinutes} min` }),
+    createElement('span', { className: 'meal-kcal', text: formatKcal(getRecipeKcal(recipe.id)) }),
     createElement('span', { className: 'meal-cost', text: `≈ ${formatEuros(getServingCost(recipe.id))} / pers.` }),
   ];
   return createElement('article', { className: 'meal', attributes: { 'data-category': recipe.category } }, [
@@ -64,19 +77,30 @@ function buildMealCard(recipe, slotIndex, slotLabel, personCount) {
   ]);
 }
 
+function buildDayKcal(dayRecipes, settings) {
+  if (!hasWeightLossGoal(settings)) {
+    return null;
+  }
+  const dayKcal = dayRecipes.filter(Boolean).reduce((kcalSum, recipe) => kcalSum + getRecipeKcal(recipe.id), 0);
+  const mealWord = settings.mealsPerDay === 1 ? 'dîner' : 'déjeuner + dîner';
+  return createElement('span', { className: 'day-kcal', text: `${formatKcal(dayKcal)} (${mealWord})` });
+}
+
 export function renderPlan(planListElement, planRecipeIds, settings, weekStartDate) {
   const slotLabels = MEAL_SLOT_LABELS[settings.mealsPerDay];
   const dayItems = [];
   for (let dayIndex = 0; dayIndex < settings.dayCount; dayIndex += 1) {
+    const dayRecipes = slotLabels
+      .map((_slotLabel, mealIndex) => RECIPES_BY_ID.get(planRecipeIds[dayIndex * settings.mealsPerDay + mealIndex]));
     const mealCards = slotLabels.map((slotLabel, mealIndex) => {
-      const slotIndex = dayIndex * settings.mealsPerDay + mealIndex;
-      const recipe = RECIPES_BY_ID.get(planRecipeIds[slotIndex]);
-      return recipe ? buildMealCard(recipe, slotIndex, slotLabel, settings.personCount) : null;
+      const recipe = dayRecipes[mealIndex];
+      return recipe ? buildMealCard(recipe, dayIndex * settings.mealsPerDay + mealIndex, slotLabel, settings.personCount) : null;
     });
     dayItems.push(createElement('li', { className: 'day' }, [
       createElement('h3', { className: 'day-name' }, [
         createElement('span', { text: DAY_NAMES[dayIndex] }),
         createElement('span', { className: 'day-date', text: formatDayMonth(addDays(weekStartDate, dayIndex)) }),
+        buildDayKcal(dayRecipes, settings),
       ]),
       createElement('div', { className: 'day-meals' }, mealCards),
     ]));
@@ -112,7 +136,10 @@ export function renderSummary(summaryElement, shoppingList, settings) {
     buildSummaryTile('Par portion', formatEuros(shoppingList.costPerPortion)),
     buildSummaryTile(budget.label, budget.value, budget.modifier),
     buildSummaryTile('Au menu', `${describeMealCount(settings)} · ${settings.personCount} pers.`),
-  ]);
+    hasWeightLossGoal(settings)
+      ? buildSummaryTile('Par repas', `≤ ${formatKcal(computeMealTargetKcal(settings))}`)
+      : null,
+  ].filter(Boolean));
 }
 
 function buildReceiptLine(line, isChecked) {
@@ -183,4 +210,16 @@ export function renderReceipt(receiptElement, shoppingList, settings, checkedPro
       text: 'Prix indicatifs de l’assortiment permanent, hors promotions. Ils varient selon le magasin.',
     }),
   ].filter(Boolean));
+}
+
+export function renderGoalHint(hintElement, settings) {
+  if (!hasWeightLossGoal(settings)) {
+    hintElement.textContent = '';
+    return;
+  }
+  const maintenanceKcal = computeMaintenanceKcal(settings);
+  const dailyTargetKcal = computeDailyTargetKcal(settings);
+  const mealTargetKcal = computeMealTargetKcal(settings);
+  hintElement.textContent = `Besoin estimé : ${formatKcal(maintenanceKcal)} par jour. Objectif : ${formatKcal(dailyTargetKcal)} par jour, `
+    + `soit au plus ${formatKcal(mealTargetKcal)} par repas principal. Le reste est pour le petit-déjeuner et une collation.`;
 }

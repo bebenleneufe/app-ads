@@ -23,7 +23,7 @@ function createSeededRandom(seed) {
   };
 }
 
-const baseSettings = normalizeSettings(DEFAULT_SETTINGS);
+const baseSettings = normalizeSettings({ ...DEFAULT_SETTINGS, personCount: 2, mealsPerDay: 1 });
 
 describe('catalogue et recettes', () => {
   it('référence uniquement des produits existants du catalogue', () => {
