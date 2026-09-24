@@ -147,16 +147,6 @@ function buildDayItem(dayIndex, plan, settings, weekStartDate) {
   const mainRecipes = getMainSlotLabels(settings)
     .map((_slotLabel, mealIndex) => RECIPES_BY_ID.get(plan.mainRecipeIds[dayIndex * mainSlotsPerDay + mealIndex]));
 
-  const breakfastCard = breakfastRecipe
-    ? buildMealCard({
-      recipe: breakfastRecipe,
-      kind: PLAN_KINDS.BREAKFAST,
-      slotIndex: dayIndex,
-      slotLabel: BREAKFAST_LABEL,
-      servingCount: settings.personCount,
-      settings,
-    })
-    : null;
   const mainCards = getMainSlotLabels(settings).map((slotLabel, mealIndex) => {
     const recipe = mainRecipes[mealIndex];
     return recipe
@@ -179,12 +169,37 @@ function buildDayItem(dayIndex, plan, settings, weekStartDate) {
       ]),
       buildDayKcal(breakfastRecipe, mainRecipes, settings),
     ]),
-    createElement('div', { className: 'day-meals' }, [breakfastCard, ...mainCards]),
+    createElement('div', { className: 'day-meals' }, mainCards),
+  ]);
+}
+
+function buildWeeklyBreakfastItem(plan, settings) {
+  const breakfastRecipe = RECIPES_BY_ID.get(plan.breakfastRecipeIds[0]);
+  if (!breakfastRecipe) {
+    return null;
+  }
+  return createElement('li', { className: 'day week-breakfast' }, [
+    createElement('div', { className: 'day-head' }, [
+      createElement('h3', { className: 'day-name' }, [
+        createElement('span', { text: BREAKFAST_LABEL }),
+        createElement('span', { className: 'day-date', text: `les ${plan.breakfastRecipeIds.length} matins` }),
+      ]),
+    ]),
+    createElement('div', { className: 'day-meals' }, [
+      buildMealCard({
+        recipe: breakfastRecipe,
+        kind: PLAN_KINDS.BREAKFAST,
+        slotIndex: 0,
+        slotLabel: 'Toute la semaine',
+        servingCount: settings.personCount,
+        settings,
+      }),
+    ]),
   ]);
 }
 
 export function renderPlan(planListElement, plan, settings, weekStartDate) {
-  const dayItems = [];
+  const dayItems = [buildWeeklyBreakfastItem(plan, settings)].filter(Boolean);
   for (let dayIndex = 0; dayIndex < settings.dayCount; dayIndex += 1) {
     dayItems.push(buildDayItem(dayIndex, plan, settings, weekStartDate));
   }

@@ -38,12 +38,7 @@ const SCORING_WEIGHTS_BY_PRIORITY = Object.freeze({
   [PRIORITIES.BALANCED]: { marginalCost: 1, randomness: 3.5 },
   [PRIORITIES.VARIETY]: { marginalCost: 0.5, randomness: 3.5 },
 });
-// Répéter un plat dans la semaine lasse vite ; répéter un petit-déjeuner est normal et évite
-// d'ouvrir des paquets. La pénalité croît à chaque répétition pour alterner deux ou trois recettes.
-const REPEATED_RECIPE_PENALTY_BY_MEAL_TYPE = Object.freeze({
-  [MEAL_TYPES.MAIN]: 10,
-  [MEAL_TYPES.BREAKFAST]: 1.8,
-});
+const REPEATED_RECIPE_PENALTY = 10;
 const CATEGORY_BALANCE_WEIGHT = 2;
 const CHEAPNESS_WEIGHT = 1.5;
 const CALORIE_GAP_WEIGHT = 4;
@@ -103,7 +98,7 @@ function scoreCandidate({ candidate, chosenRecipes, random, settings, preferChea
 
   return random() * weights.randomness
     - marginalCost * weights.marginalCost
-    - repetitionCount * REPEATED_RECIPE_PENALTY_BY_MEAL_TYPE[candidate.mealType]
+    - repetitionCount * REPEATED_RECIPE_PENALTY
     - sameCategoryShare * CATEGORY_BALANCE_WEIGHT
     - cheapnessPenalty
     - computeCalorieGapPenalty(candidate, settings);
@@ -211,6 +206,33 @@ export function fitPlanToBudget(plan, settings) {
   return adjustedPlan;
 }
 
+// Un seul petit-déjeuner pour toute la semaine : pas de décision à prendre le matin,
+// et les mêmes paquets (flocons, lait, fruits) sont finis au lieu d'en ouvrir d'autres.
+function fillWeeklyBreakfast({ keptRecipeId, settings, random, purchaseTracker, excludedRecipeIds = new Set() }) {
+  const slotCount = getSlotCount(PLAN_KINDS.BREAKFAST, settings);
+  if (slotCount === 0) {
+    return [];
+  }
+  const servingCount = getServingCount(PLAN_KINDS.BREAKFAST, settings) * slotCount;
+  const weeklyRecipe = keptRecipeId
+    ? RECIPES_BY_ID.get(keptRecipeId)
+    : pickBestRecipe({
+      allowedRecipes: listAllowedRecipes(PLAN_KINDS.BREAKFAST, settings),
+      chosenRecipes: [],
+      excludedRecipeIds,
+      random,
+      settings,
+      preferCheap: hasBudget(settings),
+      purchaseTracker,
+      servingCount,
+    });
+  if (!weeklyRecipe) {
+    return [];
+  }
+  purchaseTracker.addRecipe(weeklyRecipe.id, servingCount);
+  return Array.from({ length: slotCount }, () => weeklyRecipe.id);
+}
+
 // Les plats sont choisis avant les petits-déjeuners : ces derniers, moins chers et plus
 // souples, peuvent alors finir le pain, les œufs ou le fromage blanc déjà achetés.
 function fillPlan(keptPlan, settings, random) {
@@ -222,9 +244,8 @@ function fillPlan(keptPlan, settings, random) {
     random,
     purchaseTracker,
   });
-  const breakfastRecipeIds = fillSlots({
-    kind: PLAN_KINDS.BREAKFAST,
-    keptRecipeIds: keptPlan.breakfastRecipeIds,
+  const breakfastRecipeIds = fillWeeklyBreakfast({
+    keptRecipeId: keptPlan.breakfastRecipeIds.find(Boolean),
     settings,
     random,
     purchaseTracker,
@@ -265,7 +286,23 @@ function createTrackerWithoutSlot(currentPlan, kind, slotIndex, settings) {
   return purchaseTracker;
 }
 
+function swapWeeklyBreakfast(currentPlan, settings, random) {
+  const purchaseTracker = createPurchaseTracker(settings);
+  currentPlan.mainRecipeIds.forEach((recipeId) => purchaseTracker.addRecipe(recipeId, getServingCount(PLAN_KINDS.MAIN, settings)));
+  const breakfastRecipeIds = fillWeeklyBreakfast({
+    keptRecipeId: null,
+    settings,
+    random,
+    purchaseTracker,
+    excludedRecipeIds: new Set(currentPlan.breakfastRecipeIds),
+  });
+  return breakfastRecipeIds.length > 0 ? { ...currentPlan, breakfastRecipeIds } : currentPlan;
+}
+
 export function swapMeal(currentPlan, kind, slotIndex, settings, random = Math.random) {
+  if (kind === PLAN_KINDS.BREAKFAST) {
+    return swapWeeklyBreakfast(currentPlan, settings, random);
+  }
   const planKey = PLAN_KEY_BY_KIND[kind];
   const currentRecipeIds = currentPlan[planKey];
   if (!planKey || !currentRecipeIds) {

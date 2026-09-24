@@ -509,6 +509,29 @@ select:hover {
   gap: 12px;
 }
 
+/* Une carte seule dans sa journée passe en horizontal pour éviter une photo démesurée. */
+@media (min-width: 560px) {
+  .meal:only-child {
+    grid-template-columns: minmax(180px, 36%) minmax(0, 1fr);
+    column-gap: 16px;
+  }
+
+  .meal:only-child > * {
+    grid-column: 2;
+  }
+
+  .meal:only-child > .meal-photo {
+    grid-column: 1;
+    grid-row: 1 / span 5;
+    inline-size: calc(100% + 14px);
+    block-size: calc(100% + 24px);
+    min-block-size: 150px;
+    aspect-ratio: auto;
+    margin: -12px 0 -12px -14px;
+    border-radius: 10px 0 0 10px;
+  }
+}
+
 .day-head {
   display: flex;
   flex-wrap: wrap;
@@ -520,7 +543,8 @@ select:hover {
 
 .day-name {
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 2px 10px;
   align-items: baseline;
   font-family: var(--font-display);
   font-weight: 600;

@@ -150,25 +150,23 @@ describe('génération du planning', () => {
     assert.deepEqual(withoutSwappedSlot(swappedPlan.mainRecipeIds), withoutSwappedSlot(plan.mainRecipeIds));
   });
 
-  it('alterne les petits-déjeuners sans servir le même toute la semaine', () => {
+  it('sert le même petit-déjeuner toute la semaine', () => {
     const settings = normalizeSettings(DEFAULT_SETTINGS);
-    for (let seed = 0; seed < 20; seed += 1) {
+    for (let seed = 0; seed < 10; seed += 1) {
       const plan = generatePlan(settings, createSeededRandom(seed + 200));
-      const countsByRecipe = plan.breakfastRecipeIds.reduce(
-        (counts, recipeId) => counts.set(recipeId, (counts.get(recipeId) ?? 0) + 1),
-        new Map(),
-      );
-      assert.ok(countsByRecipe.size >= 2, `graine ${seed} : un seul petit-déjeuner`);
-      assert.ok(Math.max(...countsByRecipe.values()) <= 4, `graine ${seed} : même petit-déjeuner plus de 4 fois`);
+      assert.equal(plan.breakfastRecipeIds.length, settings.dayCount);
+      assert.equal(new Set(plan.breakfastRecipeIds).size, 1, `graine ${seed}`);
     }
   });
 
-  it('remplace un petit-déjeuner par un autre petit-déjeuner', () => {
+  it('change le petit-déjeuner de toute la semaine d’un coup', () => {
     const settings = { ...baseSettings, includeBreakfast: true };
     const plan = generatePlan(settings, createSeededRandom(10));
     const swappedPlan = swapMeal(plan, PLAN_KINDS.BREAKFAST, 0, settings, createSeededRandom(11));
     assert.notEqual(swappedPlan.breakfastRecipeIds[0], plan.breakfastRecipeIds[0]);
     assert.equal(RECIPES_BY_ID.get(swappedPlan.breakfastRecipeIds[0]).mealType, MEAL_TYPES.BREAKFAST);
+    assert.equal(new Set(swappedPlan.breakfastRecipeIds).size, 1);
+    assert.equal(swappedPlan.breakfastRecipeIds.length, plan.breakfastRecipeIds.length);
     assert.deepEqual(swappedPlan.mainRecipeIds, plan.mainRecipeIds);
   });
 
