@@ -22,7 +22,13 @@
     <div class="masthead-text">
       <p class="eyebrow">Outil personnel, non affilié à Lidl</p>
       <h1>Semainier <span class="h1-accent">Lidl</span></h1>
-      <button id="install-button" class="primary-button install-button" type="button" hidden>Installer l’appli sur ce téléphone</button>
+      <button id="install-button" class="primary-button install-button" type="button" aria-controls="install-help" aria-expanded="false" hidden>Installer l’appli sur ce téléphone</button>
+      <div class="install-help" id="install-help" hidden>
+        <p><strong>Chrome (Android)</strong> : menu <strong>⋮</strong> en haut à droite → <strong>« Installer l’application »</strong>. Si tu ne vois que « Ajouter à l’écran d’accueil », touche-le puis choisis <strong>« Installer »</strong>, pas « Créer un raccourci ».</p>
+        <p><strong>Samsung Internet</strong> : menu <strong>≡</strong> → <strong>« Ajouter la page à »</strong> → <strong>« Écran d’accueil »</strong>.</p>
+        <p><strong>iPhone (Safari)</strong> : bouton <strong>Partager</strong> → <strong>« Sur l’écran d’accueil »</strong>.</p>
+        <p>Déjà une icône qui ouvre le navigateur ? Supprime-la d’abord (appui long → Supprimer).</p>
+      </div>
       <p class="lede">Des menus rapides pour la semaine, la liste de courses dans l’ordre des rayons et le ticket estimé. Chaque ingrédient vient de l’assortiment permanent Lidl.</p>
     </div>
     <dl class="summary" id="summary" aria-live="polite"></dl>

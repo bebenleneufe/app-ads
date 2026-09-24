@@ -1,27 +1,39 @@
-// Bouton « Installer l'appli » : Chrome (Android, ordinateur) annonce qu'il peut installer la page
-// comme une vraie application ; on garde cette proposition pour la déclencher au clic.
-// Hors de Chrome, ou une fois l'appli installée, le bouton reste caché.
-export function setUpInstallButton(installButton) {
+// Bouton « Installer l'appli » : toujours visible hors de l'appli installée.
+// Si Chrome a annoncé qu'il peut installer la page (beforeinstallprompt), le bouton lance
+// l'installation ; sinon (autre navigateur, annonce pas encore reçue), il affiche la marche à suivre.
+let deferredInstallPrompt = null;
+
+// Écouté dès le chargement du module : Chrome peut faire son annonce très tôt.
+window.addEventListener('beforeinstallprompt', (installEvent) => {
+  installEvent.preventDefault();
+  deferredInstallPrompt = installEvent;
+});
+
+function isRunningAsApp() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+export function setUpInstallButton({ installButton, installHelp }) {
   const listenersController = new AbortController();
   const { signal } = listenersController;
-  let deferredInstallPrompt = null;
 
-  const isRunningAsApp = () => window.matchMedia('(display-mode: standalone)').matches;
-  const hideButton = () => {
+  const hideAll = () => {
     installButton.hidden = true;
-    deferredInstallPrompt = null;
+    installHelp.hidden = true;
   };
 
-  window.addEventListener('beforeinstallprompt', (installEvent) => {
-    installEvent.preventDefault();
-    deferredInstallPrompt = installEvent;
-    installButton.hidden = isRunningAsApp();
-  }, { signal });
+  if (isRunningAsApp()) {
+    hideAll();
+    return () => listenersController.abort();
+  }
+  installButton.hidden = false;
 
-  window.addEventListener('appinstalled', hideButton, { signal });
+  window.addEventListener('appinstalled', hideAll, { signal });
 
   installButton.addEventListener('click', async () => {
     if (!deferredInstallPrompt) {
+      installHelp.hidden = !installHelp.hidden;
+      installButton.setAttribute('aria-expanded', String(!installHelp.hidden));
       return;
     }
     const installPrompt = deferredInstallPrompt;
@@ -30,10 +42,11 @@ export function setUpInstallButton(installButton) {
       await installPrompt.prompt();
       const { outcome } = await installPrompt.userChoice;
       if (outcome === 'accepted') {
-        hideButton();
+        hideAll();
       }
     } catch (installError) {
       console.info('Installation annulée ou indisponible.', installError);
+      installHelp.hidden = false;
     }
   }, { signal });
 
