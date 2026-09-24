@@ -1,6 +1,6 @@
 import { AISLE_ORDER, PRODUCTS_BY_ID } from './catalog.js';
 import { getServingsPerMainRecipe } from './meal-structure.js';
-import { RECIPES_BY_ID } from './recipes.js';
+import { getPortionQuantities } from './nutrition.js';
 
 // Évite qu'une imprécision flottante (ex. 3 × 0.1) fasse acheter un paquet de trop.
 const PACKAGE_ROUNDING_TOLERANCE = 1e-6;
@@ -9,11 +9,19 @@ function roundToCents(amount) {
   return Math.round(amount * 100) / 100;
 }
 
-export function computeServingCost(recipe) {
-  return Object.entries(recipe.ingredients).reduce((total, [productId, quantity]) => {
+function computeQuantitiesCost(quantityEntries) {
+  return quantityEntries.reduce((total, [productId, quantity]) => {
     const product = PRODUCTS_BY_ID.get(productId);
     return product ? total + (quantity * product.price) / product.packageSize : total;
   }, 0);
+}
+
+export function computeServingCost(recipe) {
+  return computeQuantitiesCost(Object.entries(recipe.ingredients));
+}
+
+export function computePortionCost(recipeId, settings) {
+  return computeQuantitiesCost(getPortionQuantities(recipeId, settings));
 }
 
 function listCookedServings(plan, settings) {
@@ -24,14 +32,10 @@ function listCookedServings(plan, settings) {
   ];
 }
 
-function sumNeededQuantities(cookedServings) {
+function sumNeededQuantities(cookedServings, settings) {
   const neededByProductId = new Map();
   for (const { recipeId, servingCount } of cookedServings) {
-    const recipe = RECIPES_BY_ID.get(recipeId);
-    if (!recipe) {
-      continue;
-    }
-    for (const [productId, quantityPerServing] of Object.entries(recipe.ingredients)) {
+    for (const [productId, quantityPerServing] of getPortionQuantities(recipeId, settings)) {
       const previousQuantity = neededByProductId.get(productId) ?? 0;
       neededByProductId.set(productId, previousQuantity + quantityPerServing * servingCount);
     }
@@ -62,7 +66,7 @@ function groupLinesByAisle(lines) {
 
 export function buildShoppingList(plan, settings) {
   const cookedServings = listCookedServings(plan, settings);
-  const neededByProductId = sumNeededQuantities(cookedServings);
+  const neededByProductId = sumNeededQuantities(cookedServings, settings);
   const allLines = [...neededByProductId]
     .map(([productId, neededQuantity]) => ({ product: PRODUCTS_BY_ID.get(productId), neededQuantity }))
     .filter(({ product }) => product !== undefined)

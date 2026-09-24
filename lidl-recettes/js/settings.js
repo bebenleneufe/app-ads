@@ -18,6 +18,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   includeBreakfast: true,
   diet: DIETS.OMNIVORE,
   withoutPork: false,
+  simpleRecipesOnly: true,
   weeklyBudget: 0,
   pantryStaplesOwned: true,
   goal: GOALS.WEIGHT_LOSS,
@@ -48,6 +49,7 @@ export function normalizeSettings(rawSettings = {}) {
     includeBreakfast: rawSettings.includeBreakfast !== false,
     diet: pickKnownValue(rawSettings.diet, Object.values(DIETS), DEFAULT_SETTINGS.diet),
     withoutPork: rawSettings.withoutPork === true,
+    simpleRecipesOnly: rawSettings.simpleRecipesOnly !== false,
     weeklyBudget: clampInteger(rawSettings.weeklyBudget, SETTINGS_LIMITS.weeklyBudget, DEFAULT_SETTINGS.weeklyBudget),
     pantryStaplesOwned: rawSettings.pantryStaplesOwned !== false,
     goal: pickKnownValue(rawSettings.goal, Object.values(GOALS), DEFAULT_SETTINGS.goal),
@@ -68,6 +70,7 @@ export function readSettingsFromForm(formElement) {
     includeBreakfast: formData.has('includeBreakfast'),
     diet: formData.get('diet'),
     withoutPork: formData.has('withoutPork'),
+    simpleRecipesOnly: formData.has('simpleRecipesOnly'),
     weeklyBudget: formData.get('weeklyBudget') || 0,
     pantryStaplesOwned: formData.has('pantryStaplesOwned'),
     goal: formData.get('goal'),
@@ -87,6 +90,7 @@ export function writeSettingsToForm(formElement, settings) {
   elements.includeBreakfast.checked = settings.includeBreakfast;
   elements.diet.value = settings.diet;
   elements.withoutPork.checked = settings.withoutPork;
+  elements.simpleRecipesOnly.checked = settings.simpleRecipesOnly;
   elements.weeklyBudget.value = settings.weeklyBudget > 0 ? String(settings.weeklyBudget) : '';
   elements.pantryStaplesOwned.checked = settings.pantryStaplesOwned;
   elements.goal.value = settings.goal;

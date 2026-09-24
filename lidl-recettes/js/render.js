@@ -18,11 +18,13 @@ import {
   computeDailyTargetKcal,
   computeMaintenanceKcal,
   computeMealTargetKcal,
-  getRecipeKcal,
+  getPortionKcal,
+  getPortionQuantities,
   hasWeightLossGoal,
 } from './nutrition.js';
-import { getServingCost, PLAN_KINDS } from './planner.js';
-import { CATEGORY_LABELS, MEAL_TYPES, RECIPES_BY_ID } from './recipes.js';
+import { PLAN_KINDS } from './planner.js';
+import { computePortionCost } from './shopping-list.js';
+import { CATEGORY_LABELS, countFreshIngredients, MEAL_TYPES, RECIPES_BY_ID } from './recipes.js';
 
 const DAY_NAMES = Object.freeze(['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']);
 const BREAKFAST_LABEL = 'Petit-déjeuner';
@@ -42,8 +44,8 @@ export function describeWeek(settings) {
   return `${settings.dayCount} j · ${getMealsEatenPerDay(settings)} repas/jour · ${settings.personCount} pers.`;
 }
 
-function buildRecipeDetails(recipe, servingCount) {
-  const ingredientItems = Object.entries(recipe.ingredients).map(([productId, quantityPerServing]) => {
+function buildRecipeDetails(recipe, servingCount, settings) {
+  const ingredientItems = getPortionQuantities(recipe.id, settings).map(([productId, quantityPerServing]) => {
     const product = PRODUCTS_BY_ID.get(productId);
     return createElement('li', { text: formatProductQuantity(product, quantityPerServing * servingCount) });
   });
@@ -56,12 +58,12 @@ function buildRecipeDetails(recipe, servingCount) {
   ]);
 }
 
-function buildMealCard({ recipe, kind, slotIndex, slotLabel, servingCount }) {
+function buildMealCard({ recipe, kind, slotIndex, slotLabel, servingCount, settings }) {
   const metaItems = [
     createElement('span', { className: 'chip', text: CATEGORY_LABELS[recipe.category] }),
-    createElement('span', { text: `${recipe.prepMinutes} min` }),
-    createElement('span', { className: 'meal-kcal', text: `${formatKcal(getRecipeKcal(recipe.id))} / portion` }),
-    createElement('span', { className: 'meal-cost', text: `≈ ${formatEuros(getServingCost(recipe.id))} / portion` }),
+    createElement('span', { text: `${recipe.prepMinutes} min · ${countFreshIngredients(recipe)} ingrédients` }),
+    createElement('span', { className: 'meal-kcal', text: `${formatKcal(getPortionKcal(recipe.id, settings))} / portion` }),
+    createElement('span', { className: 'meal-cost', text: `≈ ${formatEuros(computePortionCost(recipe.id, settings))} / portion` }),
   ];
   const isBreakfast = kind === PLAN_KINDS.BREAKFAST;
   return createElement('article', {
@@ -84,15 +86,15 @@ function buildMealCard({ recipe, kind, slotIndex, slotLabel, servingCount }) {
     ]),
     createElement('h4', { className: 'meal-name', text: recipe.name }),
     createElement('p', { className: 'meal-meta' }, metaItems),
-    buildRecipeDetails(recipe, servingCount),
+    buildRecipeDetails(recipe, servingCount, settings),
   ]);
 }
 
 function computeEatenKcal(breakfastRecipe, mainRecipes, settings) {
-  const breakfastKcal = breakfastRecipe ? getRecipeKcal(breakfastRecipe.id) : 0;
+  const breakfastKcal = breakfastRecipe ? getPortionKcal(breakfastRecipe.id, settings) : 0;
   const mainKcal = mainRecipes
     .filter(Boolean)
-    .reduce((kcalSum, recipe) => kcalSum + getRecipeKcal(recipe.id) * getServingsPerMainRecipe(settings), 0);
+    .reduce((kcalSum, recipe) => kcalSum + getPortionKcal(recipe.id, settings) * getServingsPerMainRecipe(settings), 0);
   return breakfastKcal + mainKcal;
 }
 
@@ -122,12 +124,20 @@ function buildDayItem(dayIndex, plan, settings, weekStartDate) {
       slotIndex: dayIndex,
       slotLabel: BREAKFAST_LABEL,
       servingCount: settings.personCount,
+      settings,
     })
     : null;
   const mainCards = getMainSlotLabels(settings).map((slotLabel, mealIndex) => {
     const recipe = mainRecipes[mealIndex];
     return recipe
-      ? buildMealCard({ recipe, kind: PLAN_KINDS.MAIN, slotIndex: dayIndex * mainSlotsPerDay + mealIndex, slotLabel, servingCount })
+      ? buildMealCard({
+        recipe,
+        kind: PLAN_KINDS.MAIN,
+        slotIndex: dayIndex * mainSlotsPerDay + mealIndex,
+        slotLabel,
+        servingCount,
+        settings,
+      })
       : null;
   });
 

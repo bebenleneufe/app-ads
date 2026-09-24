@@ -1,7 +1,7 @@
 import { PRODUCTS_BY_ID } from './catalog.js';
 import { getBreakfastSlotCount, getMainSlotCount } from './meal-structure.js';
 import { computeMealTargetKcal, fitsMealTarget, getRecipeKcal } from './nutrition.js';
-import { CATEGORIES, MEAL_TYPES, RECIPES, RECIPES_BY_ID } from './recipes.js';
+import { CATEGORIES, isSimpleRecipe, MEAL_TYPES, RECIPES, RECIPES_BY_ID } from './recipes.js';
 import { buildShoppingList, computeServingCost } from './shopping-list.js';
 
 export const DIETS = Object.freeze({
@@ -46,6 +46,9 @@ function getSlotCount(kind, settings) {
 
 export function isRecipeAllowed(recipe, settings) {
   if (settings.withoutPork && recipe.containsPork) {
+    return false;
+  }
+  if (settings.simpleRecipesOnly && !isSimpleRecipe(recipe)) {
     return false;
   }
   if (settings.diet === DIETS.VEGETARIAN && recipe.category !== CATEGORIES.VEGETARIAN) {

@@ -85,7 +85,7 @@
       <div class="field">
         <label for="main-meal-mode">Déjeuner et dîner</label>
         <select id="main-meal-mode" name="mainMealMode">
-          <option value="midi-soir-identiques">Même plat, fait en double</option>
+          <option value="midi-soir-identiques">Même plat</option>
           <option value="midi-soir-differents">Deux plats différents</option>
           <option value="diner">Dîner seulement</option>
         </select>
@@ -102,6 +102,11 @@
           <label for="diet-vegetarien">Végétarien</label>
         </div>
       </fieldset>
+
+      <label class="check" for="simple-recipes-only">
+        <input id="simple-recipes-only" name="simpleRecipesOnly" type="checkbox">
+        <span>Recettes simples : 30 min et 6 ingrédients maximum</span>
+      </label>
 
       <label class="check" for="without-pork">
         <input id="without-pork" name="withoutPork" type="checkbox">

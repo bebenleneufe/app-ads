@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import { PRODUCTS, PRODUCTS_BY_ID, UNITS } from '../js/catalog.js';
 import { formatProductQuantity } from '../js/format.js';
 import { getMainSlotCount, MAIN_MEAL_MODES } from '../js/meal-structure.js';
+import { GOALS } from '../js/nutrition.js';
 import {
   DIETS,
   fitPlanToBudget,
@@ -12,7 +13,14 @@ import {
   reconcilePlan,
   swapMeal,
 } from '../js/planner.js';
-import { CATEGORIES, MEAL_TYPES, RECIPES, RECIPES_BY_ID } from '../js/recipes.js';
+import {
+  CATEGORIES,
+  countFreshIngredients,
+  MEAL_TYPES,
+  RECIPES,
+  RECIPES_BY_ID,
+  SIMPLE_RECIPE_LIMITS,
+} from '../js/recipes.js';
 import { DEFAULT_SETTINGS, normalizeSettings } from '../js/settings.js';
 import { buildShoppingList } from '../js/shopping-list.js';
 
@@ -31,6 +39,7 @@ function findLine(shoppingList, productId) {
 const baseSettings = normalizeSettings({
   ...DEFAULT_SETTINGS,
   personCount: 2,
+  goal: GOALS.NONE,
   mainMealMode: MAIN_MEAL_MODES.DINNER_ONLY,
   includeBreakfast: false,
 });
@@ -91,6 +100,17 @@ describe('génération du planning', () => {
     const porkFreePlan = generatePlan(porkFreeSettings, createSeededRandom(4));
     const allPorkFreeIds = [...porkFreePlan.mainRecipeIds, ...porkFreePlan.breakfastRecipeIds];
     assert.ok(allPorkFreeIds.every((recipeId) => !RECIPES_BY_ID.get(recipeId).containsPork));
+  });
+
+  it('ne propose que des recettes rapides et courtes en mode simple', () => {
+    const settings = { ...baseSettings, simpleRecipesOnly: true, includeBreakfast: true };
+    const plan = generatePlan(settings, createSeededRandom(13));
+    assert.equal(new Set(plan.mainRecipeIds).size, plan.mainRecipeIds.length);
+    for (const recipeId of [...plan.mainRecipeIds, ...plan.breakfastRecipeIds]) {
+      const recipe = RECIPES_BY_ID.get(recipeId);
+      assert.ok(recipe.prepMinutes <= SIMPLE_RECIPE_LIMITS.maxPrepMinutes, recipe.id);
+      assert.ok(countFreshIngredients(recipe) <= SIMPLE_RECIPE_LIMITS.maxFreshIngredients, recipe.id);
+    }
   });
 
   it('garde les repas compatibles quand les réglages changent', () => {

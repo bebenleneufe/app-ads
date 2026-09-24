@@ -6,6 +6,8 @@ Générateur de menus pour la semaine. Il produit aussi la liste de courses et u
 
 - **Perte de poids** : à partir du profil (sexe, âge, poids, taille, activité), le besoin journalier est calculé avec la formule de Mifflin-St Jeor, moins 500 kcal. Cible par repas : 25 % au petit-déjeuner, 35 % au déjeuner, 35 % au dîner. Les recettes au-dessus de la cible sont écartées, et le générateur choisit celles qui s'en approchent le plus, pour ne pas manger trop peu. Les calories sont affichées pour chaque repas et chaque jour.
 - **Trois repas par jour** : un petit-déjeuner simple, puis par défaut le même plat au déjeuner et au dîner, cuisiné une fois en double (7 plats par semaine au lieu de 14). On peut aussi choisir deux plats différents ou le dîner seul.
+- **Recettes simples** (option cochée par défaut) : 30 minutes et 6 ingrédients frais maximum, sans compter l'huile et les épices.
+- **Portions ajustées** : en mode perte de poids, les quantités (sauf produits à la pièce) sont ajustées de 0,9 à 1,4 fois pour que chaque repas atteigne sa cible calorique.
 - **Menus** : de 1 à 7 jours, de 1 à 8 personnes.
 - **Régimes** : tout, sans viande (poisson autorisé), végétarien, avec une option sans porc.
 - **Choix des recettes** : le générateur préfère les recettes qui partagent des ingrédients, pour moins gaspiller de paquets entamés. Il équilibre aussi viande, poisson et végétarien.

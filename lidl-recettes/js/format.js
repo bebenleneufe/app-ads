@@ -21,12 +21,23 @@ export function formatFullDate(date) {
   return FULL_DATE_FORMATTER.format(date);
 }
 
+// Au-delà de 50 g, un arrondi à 5 g près suffit en cuisine et se lit mieux (« 80 g » plutôt que « 81 g »).
+const ROUNDING_STEP_THRESHOLD = 50;
+const KITCHEN_ROUNDING_STEP = 5;
+
+function roundForKitchen(quantity) {
+  if (quantity < ROUNDING_STEP_THRESHOLD) {
+    return Math.max(1, Math.round(quantity));
+  }
+  return Math.round(quantity / KITCHEN_ROUNDING_STEP) * KITCHEN_ROUNDING_STEP;
+}
+
 export function formatQuantity(quantity, unit) {
   if (unit === UNITS.GRAM) {
-    return quantity >= 1000 ? `${formatDecimal(quantity / 1000)} kg` : `${Math.max(1, Math.round(quantity))} g`;
+    return quantity >= 1000 ? `${formatDecimal(quantity / 1000)} kg` : `${roundForKitchen(quantity)} g`;
   }
   if (unit === UNITS.MILLILITER) {
-    return quantity >= 1000 ? `${formatDecimal(quantity / 1000)} L` : `${Math.max(1, Math.round(quantity))} ml`;
+    return quantity >= 1000 ? `${formatDecimal(quantity / 1000)} L` : `${roundForKitchen(quantity)} ml`;
   }
   return `${formatDecimal(quantity)} pc`;
 }

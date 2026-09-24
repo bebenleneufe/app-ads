@@ -6,6 +6,8 @@ import {
   computeDailyTargetKcal,
   computeMaintenanceKcal,
   computeMealTargetKcal,
+  getPortionFactor,
+  getPortionKcal,
   getRecipeKcal,
   GOALS,
   MEAL_KCAL_TOLERANCE,
@@ -61,7 +63,8 @@ describe('calories', () => {
     const plan = generatePlan(weightLossSettings);
     const dailyTargetKcal = computeDailyTargetKcal(weightLossSettings);
     plan.mainRecipeIds.forEach((mainRecipeId, dayIndex) => {
-      const dayKcal = getRecipeKcal(plan.breakfastRecipeIds[dayIndex]) + 2 * getRecipeKcal(mainRecipeId);
+      const dayKcal = getPortionKcal(plan.breakfastRecipeIds[dayIndex], weightLossSettings)
+        + 2 * getPortionKcal(mainRecipeId, weightLossSettings);
       assert.ok(dayKcal <= dailyTargetKcal * MEAL_KCAL_TOLERANCE, `jour ${dayIndex + 1} : ${dayKcal} kcal`);
     });
   });
@@ -69,10 +72,20 @@ describe('calories', () => {
   it('vise l’objectif sans manger trop peu sur la semaine', () => {
     const plan = generatePlan(weightLossSettings);
     const weekKcal = plan.mainRecipeIds.reduce(
-      (kcalSum, mainRecipeId, dayIndex) => kcalSum + getRecipeKcal(plan.breakfastRecipeIds[dayIndex]) + 2 * getRecipeKcal(mainRecipeId),
+      (kcalSum, mainRecipeId, dayIndex) => kcalSum
+        + getPortionKcal(plan.breakfastRecipeIds[dayIndex], weightLossSettings)
+        + 2 * getPortionKcal(mainRecipeId, weightLossSettings),
       0,
     );
     const averageDayKcal = weekKcal / plan.mainRecipeIds.length;
     assert.ok(averageDayKcal >= computeDailyTargetKcal(weightLossSettings) * 0.8, `moyenne ${Math.round(averageDayKcal)} kcal`);
+  });
+
+  it('ajuste les portions vers la cible sans toucher aux produits à la pièce', () => {
+    const mealTargetKcal = computeMealTargetKcal(weightLossSettings, MEAL_TYPES.MAIN);
+    assert.ok(getRecipeKcal('salade-poulet-avocat') < mealTargetKcal);
+    assert.ok(getPortionFactor('salade-poulet-avocat', weightLossSettings) > 1);
+    assert.ok(getPortionKcal('salade-poulet-avocat', weightLossSettings) > getRecipeKcal('salade-poulet-avocat'));
+    assert.equal(getPortionFactor('salade-poulet-avocat', { ...weightLossSettings, goal: GOALS.NONE }), 1);
   });
 });

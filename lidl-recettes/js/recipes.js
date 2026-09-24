@@ -1,3 +1,5 @@
+import { PRODUCTS_BY_ID } from './catalog.js';
+
 // Quantités exprimées pour UNE portion, dans l'unité du produit du catalogue (g, ml ou pièce).
 
 export const CATEGORIES = Object.freeze({
@@ -10,6 +12,10 @@ export const MEAL_TYPES = Object.freeze({
   MAIN: 'plat',
   BREAKFAST: 'petit-dejeuner',
 });
+
+// Seuils d'une recette « simple » : réalisable un soir de semaine sans planifier.
+// Les basiques du placard (huile, épices) ne comptent pas comme ingrédients à gérer.
+export const SIMPLE_RECIPE_LIMITS = Object.freeze({ maxPrepMinutes: 30, maxFreshIngredients: 6 });
 
 export const CATEGORY_LABELS = Object.freeze({
   [CATEGORIES.MEAT]: 'Viande',
@@ -522,6 +528,43 @@ export const RECIPES = Object.freeze([
   }),
 
   defineRecipe({
+    id: 'poelee-pois-chiches-oeuf',
+    name: 'Poêlée de pois chiches, épinards et œuf',
+    category: CATEGORIES.VEGETARIAN,
+    prepMinutes: 15,
+    ingredients: { 'pois-chiches': 130, epinards: 150, oeuf: 1, semoule: 40, ail: 2, cumin: 1, 'huile-olive': 5 },
+    steps: [
+      'Gonfler la semoule dans son volume d’eau bouillante.',
+      "Faire revenir l'ail, les pois chiches égouttés et le cumin 3 min, ajouter les épinards jusqu’à ce qu’ils fondent.",
+      'Casser l’œuf au milieu, couvrir 4 min et servir sur la semoule.',
+    ],
+  }),
+  defineRecipe({
+    id: 'riz-saute-oeufs',
+    name: 'Riz sauté aux œufs et légumes',
+    category: CATEGORIES.VEGETARIAN,
+    prepMinutes: 20,
+    ingredients: { riz: 60, oeuf: 2, carotte: 60, poivron: 0.33, 'sauce-soja': 10, 'huile-olive': 5 },
+    steps: [
+      'Cuire le riz (ou utiliser un reste de riz froid).',
+      'Faire sauter la carotte râpée et le poivron en dés 4 min.',
+      'Ajouter le riz, pousser sur le côté, brouiller les œufs puis mélanger avec la sauce soja.',
+    ],
+  }),
+  defineRecipe({
+    id: 'wraps-thon-crudites',
+    name: 'Wraps au thon et crudités',
+    category: CATEGORIES.FISH,
+    prepMinutes: 10,
+    ingredients: { tortilla: 2, thon: 70, salade: 0.15, tomate: 60, 'fromage-blanc': 30 },
+    steps: [
+      'Mélanger le thon émietté avec le fromage blanc et du poivre.',
+      'Garnir les tortillas de salade, de tomate en dés et du mélange au thon.',
+      'Rouler bien serré.',
+    ],
+  }),
+
+  defineRecipe({
     id: 'porridge-banane',
     name: 'Porridge à la banane',
     category: CATEGORIES.VEGETARIAN,
@@ -582,3 +625,12 @@ export const RECIPES = Object.freeze([
 ]);
 
 export const RECIPES_BY_ID = new Map(RECIPES.map((recipe) => [recipe.id, recipe]));
+
+export function countFreshIngredients(recipe) {
+  return Object.keys(recipe.ingredients).filter((productId) => !PRODUCTS_BY_ID.get(productId)?.isPantryStaple).length;
+}
+
+export function isSimpleRecipe(recipe) {
+  return recipe.prepMinutes <= SIMPLE_RECIPE_LIMITS.maxPrepMinutes
+    && countFreshIngredients(recipe) <= SIMPLE_RECIPE_LIMITS.maxFreshIngredients;
+}

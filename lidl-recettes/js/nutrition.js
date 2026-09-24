@@ -75,6 +75,59 @@ export function computeMealTargetKcal(settings, mealType = MEAL_TYPES.MAIN) {
   return dailyTargetKcal === null ? null : Math.round(dailyTargetKcal * SHARE_OF_DAY_BY_MEAL_TYPE[mealType]);
 }
 
+// Bornes d'ajustement des portions : au-delà, le plat ne ressemble plus à la recette
+// (assiette démesurée ou quasi vide) et mieux vaut en choisir un autre.
+const PORTION_FACTOR_BOUNDS = Object.freeze({ min: 0.9, max: 1.4 });
+const PORTION_FACTOR_STEP = 0.05;
+
+function isScalableProduct(productId) {
+  const product = PRODUCTS_BY_ID.get(productId);
+  return product !== undefined && product.unit !== UNITS.PIECE && !product.isPantryStaple;
+}
+
+function splitRecipeKcal(recipe) {
+  return Object.entries(recipe.ingredients).reduce((split, [productId, quantity]) => {
+    const ingredientKcal = computeIngredientKcal(productId, quantity);
+    return isScalableProduct(productId)
+      ? { ...split, scalableKcal: split.scalableKcal + ingredientKcal }
+      : { ...split, fixedKcal: split.fixedKcal + ingredientKcal };
+  }, { scalableKcal: 0, fixedKcal: 0 });
+}
+
+// Les produits à la pièce (œufs, tortillas…) ne sont pas ajustés : « 3,3 œufs » n'a pas de sens en cuisine.
+export function getPortionFactor(recipeId, settings) {
+  const recipe = RECIPES_BY_ID.get(recipeId);
+  const mealTargetKcal = recipe ? computeMealTargetKcal(settings, recipe.mealType) : null;
+  if (mealTargetKcal === null) {
+    return 1;
+  }
+  const { scalableKcal, fixedKcal } = splitRecipeKcal(recipe);
+  if (scalableKcal <= 0) {
+    return 1;
+  }
+  const idealFactor = (mealTargetKcal - fixedKcal) / scalableKcal;
+  const boundedFactor = Math.min(PORTION_FACTOR_BOUNDS.max, Math.max(PORTION_FACTOR_BOUNDS.min, idealFactor));
+  return Math.round(boundedFactor / PORTION_FACTOR_STEP) * PORTION_FACTOR_STEP;
+}
+
+export function getPortionQuantities(recipeId, settings) {
+  const recipe = RECIPES_BY_ID.get(recipeId);
+  if (!recipe) {
+    return [];
+  }
+  const portionFactor = getPortionFactor(recipeId, settings);
+  return Object.entries(recipe.ingredients).map(([productId, quantity]) => [
+    productId,
+    isScalableProduct(productId) ? quantity * portionFactor : quantity,
+  ]);
+}
+
+export function getPortionKcal(recipeId, settings) {
+  const portionKcal = getPortionQuantities(recipeId, settings)
+    .reduce((kcalSum, [productId, quantity]) => kcalSum + computeIngredientKcal(productId, quantity), 0);
+  return Math.round(portionKcal);
+}
+
 export function fitsMealTarget(recipeId, settings) {
   const recipe = RECIPES_BY_ID.get(recipeId);
   const mealTargetKcal = recipe ? computeMealTargetKcal(settings, recipe.mealType) : null;
