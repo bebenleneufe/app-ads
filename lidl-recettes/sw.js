@@ -1,6 +1,6 @@
 // Service worker : l'appli reste utilisable sans réseau (dans le magasin, en cuisine).
 // Changer CACHE_VERSION à chaque mise en ligne pour que les téléphones récupèrent la nouvelle version.
-const CACHE_VERSION = 'semainier-v6';
+const CACHE_VERSION = 'semainier-v7';
 const APP_SHELL = [
   './',
   'index.html',
@@ -110,7 +110,8 @@ self.addEventListener('activate', (activateEvent) => {
 self.addEventListener('fetch', (fetchEvent) => {
   const { request } = fetchEvent;
   const isSameOrigin = new URL(request.url).origin === self.location.origin;
-  if (request.method !== 'GET' || !isSameOrigin) {
+  // L'APK se télécharge une fois : inutile de l'ajouter au cache hors ligne.
+  if (request.method !== 'GET' || !isSameOrigin || new URL(request.url).pathname.endsWith('.apk')) {
     return;
   }
   if (request.mode === 'navigate') {

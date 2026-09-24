@@ -90,6 +90,7 @@ class WeeklyPlannerApp {
       storeModeButton: rootDocument.getElementById('store-mode-button'),
       installButton: rootDocument.getElementById('install-button'),
       installHelp: rootDocument.getElementById('install-help'),
+      apkLink: rootDocument.getElementById('apk-link'),
       body: rootDocument.body,
     };
     this.#cookMode = new CookMode(rootDocument.getElementById('cook-dialog'));
@@ -100,6 +101,7 @@ class WeeklyPlannerApp {
     this.#removeInstallButton = setUpInstallButton({
       installButton: this.#elements.installButton,
       installHelp: this.#elements.installHelp,
+      apkLink: this.#elements.apkLink,
     });
     writeSettingsToForm(this.#elements.settingsForm, this.#settings);
     this.#attachListeners();
@@ -154,6 +156,12 @@ class WeeklyPlannerApp {
     const { signal } = this.#listenersController;
     const { settingsForm, planList, receipt, regenerateButton, copyButton, uncheckButton } = this.#elements;
 
+    // Une appli mise en arrière-plan peut être tuée sans « pagehide » : la saisie en attente est enregistrée dès maintenant.
+    this.#elements.body.ownerDocument.addEventListener('visibilitychange', () => {
+      if (this.#elements.body.ownerDocument.visibilityState === 'hidden') {
+        this.#debouncedSettingsUpdate.flush();
+      }
+    }, { signal });
     settingsForm.addEventListener('submit', (submitEvent) => submitEvent.preventDefault(), { signal });
     settingsForm.addEventListener('input', (inputEvent) => this.#handleSettingsInput(inputEvent), { signal });
     settingsForm.addEventListener('change', (changeEvent) => this.#handleSettingsCommit(changeEvent), { signal });

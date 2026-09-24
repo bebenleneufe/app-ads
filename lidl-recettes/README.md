@@ -47,6 +47,7 @@ Ouvre ensuite <http://localhost:8000>. Aucune dépendance à installer.
 1. Dans les réglages du dépôt GitHub : **Settings → Pages → Build and deployment → Source : GitHub Actions** (à faire une seule fois).
 2. Chaque push sur `main` lance les tests puis publie le site (workflow `.github/workflows/pages.yml`). L'appli est alors en ligne à l'adresse `https://<utilisateur>.github.io/<dépôt>/lidl-recettes/`. `app-ads.txt` reste à la racine du site.
 3. Sur le téléphone, ouvre cette adresse dans Chrome et touche **« Installer l'appli sur ce téléphone »** en haut de la page (ou menu ⋮ → « Installer l'application »). Choisir « Créer un raccourci » donne un simple lien qui s'ouvre dans Chrome, pas une appli. Sur iPhone : Safari, bouton Partager → « Sur l'écran d'accueil ».
+4. Si Chrome affiche « Impossible d'installer cette appli » (fréquent sur Xiaomi), touche **« Télécharger l'appli Android (.apk) »** puis ouvre le fichier téléchargé et autorise l'installation. Cette petite appli (dossier `android/` à la racine du dépôt) affiche le site en plein écran : elle reçoit donc chaque mise à jour du site sans être réinstallée. GitHub la fabrique à chaque publication avec `android/build.sh`. Elle est signée avec la clé `android/semainier.keystore`, versionnée exprès pour qu'une nouvelle version s'installe par-dessus l'ancienne sans perdre les données.
 
 À chaque mise en ligne qui modifie les fichiers, augmente `CACHE_VERSION` dans `sw.js` pour que les téléphones récupèrent la nouvelle version.
 

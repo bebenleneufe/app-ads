@@ -189,6 +189,12 @@ h1 {
   order: 1;
 }
 
+.apk-link {
+  justify-self: start;
+  order: 1;
+  text-decoration: none;
+}
+
 .install-help {
   order: 2;
   display: grid;
