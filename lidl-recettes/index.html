@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Semainier Lidl</title>
+<meta name="description" content="Menus de la semaine, liste de courses par rayon et ticket estimé, avec uniquement des produits de l'assortiment permanent Lidl.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;600&family=Source+Sans+3:wght@400;600&display=swap">
+<link rel="stylesheet" href="styles.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#2c6a4c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Semainier">
+</head>
+<body>
+<div class="page">
+  <header class="masthead">
+    <div class="masthead-text">
+      <p class="eyebrow">Outil personnel, non affilié à Lidl</p>
+      <h1>Semainier <span class="h1-accent">Lidl</span></h1>
+      <p class="lede">Des menus rapides pour la semaine, la liste de courses dans l’ordre des rayons et le ticket estimé. Chaque ingrédient vient de l’assortiment permanent Lidl.</p>
+    </div>
+    <dl class="summary" id="summary" aria-live="polite"></dl>
+  </header>
+
+  <div class="layout">
+    <form class="settings" id="settings-form" aria-labelledby="settings-title">
+      <h2 id="settings-title" class="section-title">Réglages</h2>
+
+      <section class="settings-group" aria-labelledby="group-goal-title">
+        <h3 id="group-goal-title" class="group-title">Objectif</h3>
+        <div class="field">
+          <label for="goal" class="visually-hidden">Objectif</label>
+          <select id="goal" name="goal">
+            <option value="perte-de-poids">Perdre du poids</option>
+            <option value="aucun">Manger équilibré, sans compter</option>
+          </select>
+        </div>
+
+        <fieldset class="field profile-fields" id="profile-fields">
+          <legend class="visually-hidden">Mon profil</legend>
+          <div class="segmented segmented-two" role="radiogroup" aria-label="Sexe">
+            <input id="sex-homme" type="radio" name="sex" value="homme">
+            <label for="sex-homme">Homme</label>
+            <input id="sex-femme" type="radio" name="sex" value="femme">
+            <label for="sex-femme">Femme</label>
+          </div>
+          <div class="field-row field-row-three">
+            <div class="field">
+              <label for="age">Âge</label>
+              <input id="age" name="age" type="number" inputmode="numeric" min="18" max="99" step="1" required>
+            </div>
+            <div class="field">
+              <label for="weight-kg">Poids</label>
+              <input id="weight-kg" name="weightKg" type="number" inputmode="decimal" min="40" max="250" step="0.1" required>
+            </div>
+            <div class="field">
+              <label for="height-cm">Taille</label>
+              <input id="height-cm" name="heightCm" type="number" inputmode="numeric" min="130" max="220" step="1" required>
+            </div>
+          </div>
+          <div class="field">
+            <label for="activity-level">Activité</label>
+            <select id="activity-level" name="activityLevel">
+              <option value="sedentaire">Sédentaire</option>
+              <option value="leger">Sport 1 à 3 fois/sem.</option>
+              <option value="modere">Sport 3 à 5 fois/sem.</option>
+            </select>
+          </div>
+          <p class="hint" id="kcal-hint"></p>
+
+          <div class="weight-tracker">
+            <p class="subgroup-title">Suivi du poids</p>
+            <div class="weight-entry-row">
+              <input id="weight-entry" type="number" inputmode="decimal" min="40" max="250" step="0.1" placeholder="ex. 84,6" aria-label="Poids du jour en kilos">
+              <button id="add-weight-button" class="quiet-button" type="button">Noter</button>
+            </div>
+            <div id="weight-chart-container"></div>
+            <p class="hint" id="weight-advice" aria-live="polite"></p>
+          </div>
+        </fieldset>
+      </section>
+
+      <section class="settings-group" aria-labelledby="group-meals-title">
+        <h3 id="group-meals-title" class="group-title">Repas</h3>
+        <div class="field-row">
+          <div class="field">
+            <label for="person-count">Personnes</label>
+            <input id="person-count" name="personCount" type="number" inputmode="numeric" min="1" max="8" step="1" required>
+          </div>
+          <div class="field">
+            <label for="day-count">Jours</label>
+            <input id="day-count" name="dayCount" type="number" inputmode="numeric" min="1" max="7" step="1" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="main-meal-mode">Déjeuner et dîner</label>
+          <select id="main-meal-mode" name="mainMealMode">
+            <option value="midi-soir-identiques">Même plat</option>
+            <option value="midi-soir-differents">Deux plats différents</option>
+            <option value="diner">Dîner seulement</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="max-prep-minutes">Temps de préparation</label>
+          <select id="max-prep-minutes" name="maxPrepMinutes">
+            <option value="15">15 min maximum</option>
+            <option value="20">20 min maximum</option>
+            <option value="30">30 min maximum</option>
+            <option value="0">Sans limite</option>
+          </select>
+          <p class="hint">Avec une limite, 6 ingrédients frais maximum par recette.</p>
+        </div>
+
+        <fieldset class="field">
+          <legend>Régime</legend>
+          <div class="segmented">
+            <input id="diet-omnivore" type="radio" name="diet" value="omnivore">
+            <label for="diet-omnivore">Tout</label>
+            <input id="diet-pescetarien" type="radio" name="diet" value="pescetarien">
+            <label for="diet-pescetarien">Sans viande</label>
+            <input id="diet-vegetarien" type="radio" name="diet" value="vegetarien">
+            <label for="diet-vegetarien">Végétarien</label>
+          </div>
+        </fieldset>
+
+        <div class="preferences-row">
+          <p class="hint" id="preferences-summary"></p>
+          <button id="reset-dislikes-button" class="text-button" type="button" hidden>Réautoriser les plats écartés</button>
+        </div>
+
+        <div class="check-list">
+          <label class="check" for="include-breakfast">
+            <input id="include-breakfast" name="includeBreakfast" type="checkbox">
+            <span>Petit-déjeuner</span>
+          </label>
+          <label class="check" for="include-snack">
+            <input id="include-snack" name="includeSnack" type="checkbox">
+            <span>Collation</span>
+          </label>
+          <label class="check" for="without-pork">
+            <input id="without-pork" name="withoutPork" type="checkbox">
+            <span>Sans porc</span>
+          </label>
+        </div>
+      </section>
+
+      <section class="settings-group" aria-labelledby="group-shopping-title">
+        <h3 id="group-shopping-title" class="group-title">Courses</h3>
+        <div class="field">
+          <label for="priority">Priorité</label>
+          <select id="priority" name="priority">
+            <option value="prix">Petit prix</option>
+            <option value="equilibre">Prix et variété</option>
+            <option value="variete">Variété</option>
+          </select>
+          <p class="hint">Petit prix : le générateur finit les paquets entamés, quitte à reprendre les mêmes ingrédients. Changer la priorité refait la semaine.</p>
+        </div>
+
+        <div class="field">
+          <label for="weekly-budget">Budget maximum (€)</label>
+          <input id="weekly-budget" name="weeklyBudget" type="number" inputmode="numeric" min="0" max="500" step="5" placeholder="Aucun">
+        </div>
+
+        <label class="check" for="pantry-staples-owned">
+          <input id="pantry-staples-owned" name="pantryStaplesOwned" type="checkbox">
+          <span>J’ai déjà l’huile, les épices et les condiments</span>
+        </label>
+
+        <div class="preferences-row">
+          <p class="hint" id="stock-summary"></p>
+          <button id="clear-stock-button" class="text-button" type="button" hidden>Vider le stock de restes</button>
+        </div>
+      </section>
+    </form>
+
+    <section class="plan" aria-labelledby="plan-title">
+      <div class="section-head">
+        <h2 id="plan-title" class="section-title">Menus</h2>
+        <button id="regenerate-button" class="primary-button" type="button">Nouvelle semaine</button>
+      </div>
+      <ol class="days" id="plan-list"></ol>
+    </section>
+
+    <aside class="receipt-column" aria-labelledby="receipt-title">
+      <h2 id="receipt-title" class="section-title">Courses</h2>
+      <div class="receipt" id="receipt"></div>
+      <div class="receipt-actions">
+        <button id="store-mode-button" class="primary-button" type="button" aria-pressed="false">Mode magasin</button>
+        <button id="copy-button" class="quiet-button" type="button">Copier la liste</button>
+        <button id="uncheck-button" class="quiet-button" type="button">Tout décocher</button>
+      </div>
+      <p class="copy-status" id="copy-status" role="status"></p>
+      <textarea id="copy-fallback" class="copy-fallback" rows="8" readonly hidden aria-label="Liste de courses à copier"></textarea>
+    </aside>
+  </div>
+
+  <footer class="page-foot">
+    <p>Prix estimés d’après le niveau de prix Lidl France de septembre 2026, hors promotions et hors produits de la semaine. Le montant en caisse peut varier selon le magasin. L’ordre des rayons suit le parcours habituel d’un magasin Lidl, surgelés en dernier ; la disposition exacte varie d’un magasin à l’autre.</p>
+    <p>« Consommé cette semaine » compte seulement ce que les recettes utilisent. « Restes qui se gardent » compte l’épicerie, les surgelés et les condiments non utilisés : ils allègent les courses de la semaine suivante.</p>
+    <p>Calories estimées à partir de valeurs moyennes (table Ciqual), pour une portion. Le besoin journalier est calculé avec la formule de Mifflin-St Jeor, moins 500 kcal, pour viser environ 0,5 kg perdu par semaine. Protéines : 1,6 g par kilo, calculées au-delà d’un IMC de 25 sur le poids correspondant à cet IMC. C’est un repère, pas un avis médical.</p>
+    <p>Photos indicatives : elles montrent un plat proche, pas forcément la recette exacte.</p>
+  </footer>
+
+  <dialog class="cook-dialog" id="cook-dialog" aria-labelledby="cook-title">
+    <div class="cook-head">
+      <div>
+        <p class="cook-counter" data-cook="counter"></p>
+        <h2 class="cook-title" id="cook-title" data-cook="title"></h2>
+      </div>
+      <button class="quiet-button" type="button" data-cook="close">Fermer</button>
+    </div>
+    <div class="cook-content" data-cook="content" aria-live="polite"></div>
+    <div class="cook-timer" data-cook="timer" hidden>
+      <p class="cook-clock" data-cook="clock" aria-live="polite"></p>
+      <button class="quiet-button" type="button" data-cook="timer-button">Lancer le minuteur</button>
+    </div>
+    <div class="cook-nav">
+      <button class="quiet-button" type="button" data-cook="previous">Précédent</button>
+      <button class="primary-button" type="button" data-cook="next">Suivant</button>
+    </div>
+  </dialog>
+
+  <nav class="quick-nav" aria-label="Accès rapide">
+    <a href="#settings-title">Réglages</a>
+    <a href="#plan-title">Menus</a>
+    <a href="#receipt-title">Courses</a>
+  </nav>
+</div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
