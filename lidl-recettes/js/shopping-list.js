@@ -90,12 +90,16 @@ function buildLine(product, neededQuantity) {
 }
 
 function groupLinesByAisle(lines) {
-  return AISLE_ORDER.map((aisle) => ({
-    aisle,
-    lines: lines
+  return AISLE_ORDER.map((aisle) => {
+    const aisleLines = lines
       .filter((line) => line.product.aisle === aisle)
-      .sort((firstLine, secondLine) => firstLine.product.name.localeCompare(secondLine.product.name, 'fr')),
-  })).filter((group) => group.lines.length > 0);
+      .sort((firstLine, secondLine) => firstLine.product.name.localeCompare(secondLine.product.name, 'fr'));
+    return {
+      aisle,
+      lines: aisleLines,
+      subtotal: roundToCents(aisleLines.reduce((total, line) => total + line.cost, 0)),
+    };
+  }).filter((group) => group.lines.length > 0);
 }
 
 export function buildShoppingList(plan, settings) {

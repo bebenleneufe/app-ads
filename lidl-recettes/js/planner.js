@@ -42,7 +42,7 @@ const SCORING_WEIGHTS_BY_PRIORITY = Object.freeze({
 // d'ouvrir des paquets. La pénalité croît à chaque répétition pour alterner deux ou trois recettes.
 const REPEATED_RECIPE_PENALTY_BY_MEAL_TYPE = Object.freeze({
   [MEAL_TYPES.MAIN]: 10,
-  [MEAL_TYPES.BREAKFAST]: 1.2,
+  [MEAL_TYPES.BREAKFAST]: 1.8,
 });
 const CATEGORY_BALANCE_WEIGHT = 2;
 const CHEAPNESS_WEIGHT = 1.5;

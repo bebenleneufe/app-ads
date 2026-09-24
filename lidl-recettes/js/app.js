@@ -3,7 +3,7 @@ import { buildShoppingListText } from './list-text.js';
 import { generatePlan, reconcilePlan, swapMeal } from './planner.js';
 import { createEmptyPlan } from './meal-structure.js';
 import { hasWeightLossGoal } from './nutrition.js';
-import { renderGoalHint, renderPlan, renderReceipt, renderSummary } from './render.js';
+import { renderGoalHint, renderPlan, renderReceipt, renderSummary, updateReceiptProgress } from './render.js';
 import { normalizeSettings, readSettingsFromForm, writeSettingsToForm } from './settings.js';
 import { buildShoppingList } from './shopping-list.js';
 import { loadSavedState, saveState } from './storage.js';
@@ -134,6 +134,7 @@ class WeeklyPlannerApp {
       this.#checkedProductIds.delete(productId);
     }
     changeEvent.target.closest('.receipt-line')?.classList.toggle('is-checked', changeEvent.target.checked);
+    this.#updateProgress();
     this.#persist();
   }
 
@@ -180,6 +181,13 @@ class WeeklyPlannerApp {
 
   #renderReceipt() {
     renderReceipt(this.#elements.receipt, this.#shoppingList, this.#settings, this.#checkedProductIds, this.#weekStartDate);
+    this.#updateProgress();
+  }
+
+  #updateProgress() {
+    const listedProductIds = this.#shoppingList.aisleGroups.flatMap((group) => group.lines.map((line) => line.product.id));
+    const checkedCount = listedProductIds.filter((productId) => this.#checkedProductIds.has(productId)).length;
+    updateReceiptProgress(this.#elements.receipt, checkedCount, listedProductIds.length);
   }
 
   #persist() {

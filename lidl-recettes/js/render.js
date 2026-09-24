@@ -58,13 +58,18 @@ function buildRecipeDetails(recipe, servingCount, settings) {
   ]);
 }
 
-function buildMealCard({ recipe, kind, slotIndex, slotLabel, servingCount, settings }) {
-  const metaItems = [
-    createElement('span', { className: 'chip', text: CATEGORY_LABELS[recipe.category] }),
-    createElement('span', { text: `${recipe.prepMinutes} min · ${countFreshIngredients(recipe)} ingrédients` }),
-    createElement('span', { className: 'meal-kcal', text: `${formatKcal(getPortionKcal(recipe.id, settings))} / portion` }),
-    createElement('span', { className: 'meal-cost', text: `≈ ${formatEuros(computePortionCost(recipe.id, settings))} / portion` }),
+function buildMealFacts(recipe, settings) {
+  const facts = [
+    `${recipe.prepMinutes} min`,
+    `${countFreshIngredients(recipe)} ingr.`,
+    formatKcal(getPortionKcal(recipe.id, settings)),
+    formatEuros(computePortionCost(recipe.id, settings)),
   ];
+  return createElement('ul', { className: 'meal-facts', attributes: { 'aria-label': 'Par portion' } },
+    facts.map((fact) => createElement('li', { text: fact })));
+}
+
+function buildMealCard({ recipe, kind, slotIndex, slotLabel, servingCount, settings }) {
   const isBreakfast = kind === PLAN_KINDS.BREAKFAST;
   return createElement('article', {
     className: isBreakfast ? 'meal is-breakfast' : 'meal',
@@ -85,7 +90,8 @@ function buildMealCard({ recipe, kind, slotIndex, slotLabel, servingCount, setti
       }),
     ]),
     createElement('h4', { className: 'meal-name', text: recipe.name }),
-    createElement('p', { className: 'meal-meta' }, metaItems),
+    createElement('p', { className: 'meal-tag', text: CATEGORY_LABELS[recipe.category] }),
+    buildMealFacts(recipe, settings),
     buildRecipeDetails(recipe, servingCount, settings),
   ]);
 }
@@ -104,10 +110,17 @@ function buildDayKcal(breakfastRecipe, mainRecipes, settings) {
   }
   const eatenKcal = computeEatenKcal(breakfastRecipe, mainRecipes, settings);
   const dailyTargetKcal = computeDailyTargetKcal(settings);
-  return createElement('span', {
+  const fillElement = createElement('span', { className: 'kcal-fill' });
+  fillElement.style.inlineSize = `${Math.min(100, Math.round((eatenKcal / dailyTargetKcal) * 100))}%`;
+  return createElement('div', {
     className: eatenKcal > dailyTargetKcal ? 'day-kcal is-over' : 'day-kcal',
-    text: `${KCAL_FORMATTER.format(eatenKcal)} / ${formatKcal(dailyTargetKcal)}`,
-  });
+  }, [
+    createElement('span', {
+      className: 'kcal-bar',
+      attributes: { role: 'img', 'aria-label': `${formatKcal(eatenKcal)} sur un objectif de ${formatKcal(dailyTargetKcal)}` },
+    }, [fillElement]),
+    createElement('span', { className: 'kcal-text', text: `${KCAL_FORMATTER.format(eatenKcal)} / ${formatKcal(dailyTargetKcal)}` }),
+  ]);
 }
 
 function buildDayItem(dayIndex, plan, settings, weekStartDate) {
@@ -142,9 +155,11 @@ function buildDayItem(dayIndex, plan, settings, weekStartDate) {
   });
 
   return createElement('li', { className: 'day' }, [
-    createElement('h3', { className: 'day-name' }, [
-      createElement('span', { text: DAY_NAMES[dayIndex] }),
-      createElement('span', { className: 'day-date', text: formatDayMonth(addDays(weekStartDate, dayIndex)) }),
+    createElement('div', { className: 'day-head' }, [
+      createElement('h3', { className: 'day-name' }, [
+        createElement('span', { text: DAY_NAMES[dayIndex] }),
+        createElement('span', { className: 'day-date', text: formatDayMonth(addDays(weekStartDate, dayIndex)) }),
+      ]),
       buildDayKcal(breakfastRecipe, mainRecipes, settings),
     ]),
     createElement('div', { className: 'day-meals' }, [breakfastCard, ...mainCards]),
@@ -237,9 +252,32 @@ function buildPantrySection(pantryLines) {
   ]);
 }
 
+function buildReceiptProgress() {
+  return createElement('div', { className: 'receipt-progress' }, [
+    createElement('span', { className: 'progress-text', attributes: { 'aria-live': 'polite' } }),
+    createElement('span', { className: 'progress-bar' }, [createElement('span', { className: 'progress-fill' })]),
+  ]);
+}
+
+export function updateReceiptProgress(receiptElement, checkedCount, lineCount) {
+  const progressText = receiptElement.querySelector('.progress-text');
+  const progressFill = receiptElement.querySelector('.progress-fill');
+  if (!progressText || !progressFill) {
+    return;
+  }
+  progressText.textContent = checkedCount === lineCount && lineCount > 0
+    ? 'Panier complet'
+    : `${checkedCount} / ${lineCount} produits dans le panier`;
+  progressFill.style.inlineSize = lineCount > 0 ? `${Math.round((checkedCount / lineCount) * 100)}%` : '0%';
+}
+
 export function renderReceipt(receiptElement, shoppingList, settings, checkedProductIds, weekStartDate) {
-  const aisleSections = shoppingList.aisleGroups.map((group) => createElement('section', { className: 'receipt-group' }, [
-    createElement('h3', { text: group.aisle }),
+  const aisleSections = shoppingList.aisleGroups.map((group, groupIndex) => createElement('section', { className: 'receipt-group' }, [
+    createElement('h3', { className: 'aisle-head' }, [
+      createElement('span', { className: 'aisle-step', text: String(groupIndex + 1).padStart(2, '0') }),
+      createElement('span', { className: 'aisle-name', text: group.aisle }),
+      createElement('span', { className: 'aisle-subtotal', text: formatEuros(group.subtotal) }),
+    ]),
     createElement('ul', {}, group.lines.map((line) => buildReceiptLine(line, checkedProductIds.has(line.product.id)))),
   ]));
 
@@ -249,6 +287,7 @@ export function renderReceipt(receiptElement, shoppingList, settings, checkedPro
       createElement('p', { text: `Semaine du ${formatFullDate(weekStartDate)}` }),
       createElement('p', { text: describeWeek(settings) }),
     ]),
+    buildReceiptProgress(),
     ...aisleSections,
     createElement('div', { className: 'receipt-totals' }, [
       buildTotalRow('Articles', String(shoppingList.articleCount), 'total-row'),

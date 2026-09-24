@@ -15,130 +15,139 @@
   <header class="masthead">
     <div class="masthead-text">
       <p class="eyebrow">Outil personnel, non affilié à Lidl</p>
-      <h1>Semainier Lidl</h1>
-      <p class="lede">Les menus de la semaine, la liste de courses rangée par rayon et le ticket estimé. Chaque ingrédient vient de l’assortiment permanent Lidl.</p>
+      <h1>Semainier <span class="h1-accent">Lidl</span></h1>
+      <p class="lede">Des menus rapides pour la semaine, la liste de courses dans l’ordre des rayons et le ticket estimé. Chaque ingrédient vient de l’assortiment permanent Lidl.</p>
     </div>
     <dl class="summary" id="summary" aria-live="polite"></dl>
   </header>
 
   <div class="layout">
     <form class="settings" id="settings-form" aria-labelledby="settings-title">
-      <h2 id="settings-title" class="section-title">Ma semaine</h2>
+      <h2 id="settings-title" class="section-title">Réglages</h2>
 
-      <div class="field">
-        <label for="goal">Objectif</label>
-        <select id="goal" name="goal">
-          <option value="perte-de-poids">Perdre du poids</option>
-          <option value="aucun">Manger équilibré, sans compter</option>
-        </select>
-      </div>
-
-      <fieldset class="field profile-fields" id="profile-fields">
-        <legend>Mon profil</legend>
-        <div class="segmented segmented-two" role="radiogroup" aria-label="Sexe">
-          <input id="sex-homme" type="radio" name="sex" value="homme">
-          <label for="sex-homme">Homme</label>
-          <input id="sex-femme" type="radio" name="sex" value="femme">
-          <label for="sex-femme">Femme</label>
-        </div>
-        <div class="field-row field-row-three">
-          <div class="field">
-            <label for="age">Âge</label>
-            <input id="age" name="age" type="number" inputmode="numeric" min="18" max="99" step="1" required>
-          </div>
-          <div class="field">
-            <label for="weight-kg">Kg</label>
-            <input id="weight-kg" name="weightKg" type="number" inputmode="numeric" min="40" max="250" step="1" required>
-          </div>
-          <div class="field">
-            <label for="height-cm">Cm</label>
-            <input id="height-cm" name="heightCm" type="number" inputmode="numeric" min="130" max="220" step="1" required>
-          </div>
-        </div>
+      <section class="settings-group" aria-labelledby="group-goal-title">
+        <h3 id="group-goal-title" class="group-title">Objectif</h3>
         <div class="field">
-          <label for="activity-level">Activité</label>
-          <select id="activity-level" name="activityLevel">
-            <option value="sedentaire">Sédentaire</option>
-            <option value="leger">Sport 1 à 3 fois/sem.</option>
-            <option value="modere">Sport 3 à 5 fois/sem.</option>
+          <label for="goal" class="visually-hidden">Objectif</label>
+          <select id="goal" name="goal">
+            <option value="perte-de-poids">Perdre du poids</option>
+            <option value="aucun">Manger équilibré, sans compter</option>
           </select>
         </div>
-        <p class="hint" id="kcal-hint"></p>
-      </fieldset>
 
-      <div class="field-row">
+        <fieldset class="field profile-fields" id="profile-fields">
+          <legend class="visually-hidden">Mon profil</legend>
+          <div class="segmented segmented-two" role="radiogroup" aria-label="Sexe">
+            <input id="sex-homme" type="radio" name="sex" value="homme">
+            <label for="sex-homme">Homme</label>
+            <input id="sex-femme" type="radio" name="sex" value="femme">
+            <label for="sex-femme">Femme</label>
+          </div>
+          <div class="field-row field-row-three">
+            <div class="field">
+              <label for="age">Âge</label>
+              <input id="age" name="age" type="number" inputmode="numeric" min="18" max="99" step="1" required>
+            </div>
+            <div class="field">
+              <label for="weight-kg">Poids</label>
+              <input id="weight-kg" name="weightKg" type="number" inputmode="numeric" min="40" max="250" step="1" required>
+            </div>
+            <div class="field">
+              <label for="height-cm">Taille</label>
+              <input id="height-cm" name="heightCm" type="number" inputmode="numeric" min="130" max="220" step="1" required>
+            </div>
+          </div>
+          <div class="field">
+            <label for="activity-level">Activité</label>
+            <select id="activity-level" name="activityLevel">
+              <option value="sedentaire">Sédentaire</option>
+              <option value="leger">Sport 1 à 3 fois/sem.</option>
+              <option value="modere">Sport 3 à 5 fois/sem.</option>
+            </select>
+          </div>
+          <p class="hint" id="kcal-hint"></p>
+        </fieldset>
+      </section>
+
+      <section class="settings-group" aria-labelledby="group-meals-title">
+        <h3 id="group-meals-title" class="group-title">Repas</h3>
+        <div class="field-row">
+          <div class="field">
+            <label for="person-count">Personnes</label>
+            <input id="person-count" name="personCount" type="number" inputmode="numeric" min="1" max="8" step="1" required>
+          </div>
+          <div class="field">
+            <label for="day-count">Jours</label>
+            <input id="day-count" name="dayCount" type="number" inputmode="numeric" min="1" max="7" step="1" required>
+          </div>
+        </div>
+
         <div class="field">
-          <label for="person-count">Personnes</label>
-          <input id="person-count" name="personCount" type="number" inputmode="numeric" min="1" max="8" step="1" required>
+          <label for="main-meal-mode">Déjeuner et dîner</label>
+          <select id="main-meal-mode" name="mainMealMode">
+            <option value="midi-soir-identiques">Même plat</option>
+            <option value="midi-soir-differents">Deux plats différents</option>
+            <option value="diner">Dîner seulement</option>
+          </select>
         </div>
+
         <div class="field">
-          <label for="day-count">Jours</label>
-          <input id="day-count" name="dayCount" type="number" inputmode="numeric" min="1" max="7" step="1" required>
+          <label for="max-prep-minutes">Temps de préparation</label>
+          <select id="max-prep-minutes" name="maxPrepMinutes">
+            <option value="15">15 min maximum</option>
+            <option value="20">20 min maximum</option>
+            <option value="30">30 min maximum</option>
+            <option value="0">Sans limite</option>
+          </select>
+          <p class="hint">Avec une limite, 6 ingrédients frais maximum par recette.</p>
         </div>
-      </div>
 
-      <label class="check" for="include-breakfast">
-        <input id="include-breakfast" name="includeBreakfast" type="checkbox">
-        <span>Petit-déjeuner</span>
-      </label>
+        <fieldset class="field">
+          <legend>Régime</legend>
+          <div class="segmented">
+            <input id="diet-omnivore" type="radio" name="diet" value="omnivore">
+            <label for="diet-omnivore">Tout</label>
+            <input id="diet-pescetarien" type="radio" name="diet" value="pescetarien">
+            <label for="diet-pescetarien">Sans viande</label>
+            <input id="diet-vegetarien" type="radio" name="diet" value="vegetarien">
+            <label for="diet-vegetarien">Végétarien</label>
+          </div>
+        </fieldset>
 
-      <div class="field">
-        <label for="main-meal-mode">Déjeuner et dîner</label>
-        <select id="main-meal-mode" name="mainMealMode">
-          <option value="midi-soir-identiques">Même plat</option>
-          <option value="midi-soir-differents">Deux plats différents</option>
-          <option value="diner">Dîner seulement</option>
-        </select>
-      </div>
-
-      <fieldset class="field diet-field">
-        <legend>Régime</legend>
-        <div class="segmented">
-          <input id="diet-omnivore" type="radio" name="diet" value="omnivore">
-          <label for="diet-omnivore">Tout</label>
-          <input id="diet-pescetarien" type="radio" name="diet" value="pescetarien">
-          <label for="diet-pescetarien">Sans viande</label>
-          <input id="diet-vegetarien" type="radio" name="diet" value="vegetarien">
-          <label for="diet-vegetarien">Végétarien</label>
+        <div class="check-list">
+          <label class="check" for="include-breakfast">
+            <input id="include-breakfast" name="includeBreakfast" type="checkbox">
+            <span>Petit-déjeuner</span>
+          </label>
+          <label class="check" for="without-pork">
+            <input id="without-pork" name="withoutPork" type="checkbox">
+            <span>Sans porc</span>
+          </label>
         </div>
-      </fieldset>
+      </section>
 
-      <div class="field">
-        <label for="max-prep-minutes">Temps de préparation</label>
-        <select id="max-prep-minutes" name="maxPrepMinutes">
-          <option value="15">15 min maximum</option>
-          <option value="20">20 min maximum</option>
-          <option value="30">30 min maximum</option>
-          <option value="0">Sans limite</option>
-        </select>
-        <p class="hint">Avec une limite, 6 ingrédients frais maximum par recette.</p>
-      </div>
+      <section class="settings-group" aria-labelledby="group-shopping-title">
+        <h3 id="group-shopping-title" class="group-title">Courses</h3>
+        <div class="field">
+          <label for="priority">Priorité</label>
+          <select id="priority" name="priority">
+            <option value="prix">Petit prix</option>
+            <option value="equilibre">Prix et variété</option>
+            <option value="variete">Variété</option>
+          </select>
+          <p class="hint">Petit prix : le générateur finit les paquets entamés, quitte à reprendre les mêmes ingrédients.</p>
+        </div>
 
-      <div class="field">
-        <label for="priority">Priorité</label>
-        <select id="priority" name="priority">
-          <option value="prix">Petit prix</option>
-          <option value="equilibre">Prix et variété</option>
-          <option value="variete">Variété</option>
-        </select>
-        <p class="hint">Petit prix : le générateur finit les paquets entamés, quitte à reprendre les mêmes ingrédients.</p>
-      </div>
+        <div class="field">
+          <label for="weekly-budget">Budget maximum (€)</label>
+          <input id="weekly-budget" name="weeklyBudget" type="number" inputmode="numeric" min="0" max="500" step="5" placeholder="Aucun">
+        </div>
 
-      <label class="check" for="without-pork">
-        <input id="without-pork" name="withoutPork" type="checkbox">
-        <span>Sans porc</span>
-      </label>
-
-      <div class="field">
-        <label for="weekly-budget">Budget maximum (€)</label>
-        <input id="weekly-budget" name="weeklyBudget" type="number" inputmode="numeric" min="0" max="500" step="5" placeholder="Aucun">
-        <p class="hint">Les recettes les plus chères sont remplacées jusqu’à passer sous le plafond.</p>
-      </div>
-
-      <label class="check" for="pantry-staples-owned">
-        <input id="pantry-staples-owned" name="pantryStaplesOwned" type="checkbox">
-        <span>J’ai déjà l’huile, les épices et les condiments</span>
-      </label>
+        <label class="check" for="pantry-staples-owned">
+          <input id="pantry-staples-owned" name="pantryStaplesOwned" type="checkbox">
+          <span>J’ai déjà l’huile, les épices et les condiments</span>
+        </label>
+      </section>
     </form>
 
     <section class="plan" aria-labelledby="plan-title">
@@ -162,9 +171,16 @@
   </div>
 
   <footer class="page-foot">
-    <p>Prix estimés d’après le niveau de prix Lidl France de septembre 2026, hors promotions et hors produits de la semaine. Le montant en caisse peut varier selon le magasin. « Consommé cette semaine » compte seulement ce que les recettes utilisent ; le reste des paquets entamés reste au placard. « Restes qui se gardent » compte l’épicerie, les surgelés et les condiments non utilisés : ils allègent les courses de la semaine suivante.</p>
+    <p>Prix estimés d’après le niveau de prix Lidl France de septembre 2026, hors promotions et hors produits de la semaine. Le montant en caisse peut varier selon le magasin. L’ordre des rayons suit le parcours habituel d’un magasin Lidl, surgelés en dernier ; la disposition exacte varie d’un magasin à l’autre.</p>
+    <p>« Consommé cette semaine » compte seulement ce que les recettes utilisent. « Restes qui se gardent » compte l’épicerie, les surgelés et les condiments non utilisés : ils allègent les courses de la semaine suivante.</p>
     <p>Calories estimées à partir de valeurs moyennes (table Ciqual), pour une portion. Le besoin journalier est calculé avec la formule de Mifflin-St Jeor, moins 500 kcal, pour viser environ 0,5 kg perdu par semaine. C’est un repère, pas un avis médical.</p>
   </footer>
+
+  <nav class="quick-nav" aria-label="Accès rapide">
+    <a href="#settings-title">Réglages</a>
+    <a href="#plan-title">Menus</a>
+    <a href="#receipt-title">Courses</a>
+  </nav>
 </div>
 <script type="module" src="js/app.js"></script>
 </body>

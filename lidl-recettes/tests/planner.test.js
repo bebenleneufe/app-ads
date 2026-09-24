@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { PRODUCTS, PRODUCTS_BY_ID, UNITS } from '../js/catalog.js';
+import { AISLE_ORDER, AISLES, PRODUCTS, PRODUCTS_BY_ID, UNITS } from '../js/catalog.js';
 import { formatProductQuantity } from '../js/format.js';
 import { getMainSlotCount, MAIN_MEAL_MODES } from '../js/meal-structure.js';
 import { GOALS } from '../js/nutrition.js';
@@ -148,6 +148,19 @@ describe('génération du planning', () => {
     assert.deepEqual(withoutSwappedSlot(swappedPlan.mainRecipeIds), withoutSwappedSlot(plan.mainRecipeIds));
   });
 
+  it('alterne les petits-déjeuners sans servir le même toute la semaine', () => {
+    const settings = normalizeSettings(DEFAULT_SETTINGS);
+    for (let seed = 0; seed < 20; seed += 1) {
+      const plan = generatePlan(settings, createSeededRandom(seed + 200));
+      const countsByRecipe = plan.breakfastRecipeIds.reduce(
+        (counts, recipeId) => counts.set(recipeId, (counts.get(recipeId) ?? 0) + 1),
+        new Map(),
+      );
+      assert.ok(countsByRecipe.size >= 2, `graine ${seed} : un seul petit-déjeuner`);
+      assert.ok(Math.max(...countsByRecipe.values()) <= 4, `graine ${seed} : même petit-déjeuner plus de 4 fois`);
+    }
+  });
+
   it('remplace un petit-déjeuner par un autre petit-déjeuner', () => {
     const settings = { ...baseSettings, includeBreakfast: true };
     const plan = generatePlan(settings, createSeededRandom(10));
@@ -179,6 +192,29 @@ describe('génération du planning', () => {
 });
 
 describe('liste de courses', () => {
+  it('range chaque produit dans un rayon connu, surgelés en dernier', () => {
+    for (const product of PRODUCTS) {
+      assert.ok(AISLE_ORDER.includes(product.aisle), `${product.id} : rayon inconnu ${product.aisle}`);
+    }
+    assert.equal(AISLE_ORDER.at(-1), AISLES.FROZEN);
+    assert.equal(AISLE_ORDER[0], AISLES.PRODUCE);
+    assert.equal(PRODUCTS_BY_ID.get('thon').aisle, AISLES.CANS);
+  });
+
+  it('présente les rayons dans l’ordre du magasin, articles triés et sous-totaux justes', () => {
+    const settings = normalizeSettings(DEFAULT_SETTINGS);
+    const shoppingList = buildShoppingList(generatePlan(settings, createSeededRandom(21)), settings);
+    const aisleIndexes = shoppingList.aisleGroups.map((group) => AISLE_ORDER.indexOf(group.aisle));
+    assert.deepEqual(aisleIndexes, [...aisleIndexes].sort((first, second) => first - second));
+    for (const group of shoppingList.aisleGroups) {
+      assert.ok(group.lines.every((line) => line.product.aisle === group.aisle));
+      const names = group.lines.map((line) => line.product.name);
+      assert.deepEqual(names, [...names].sort((first, second) => first.localeCompare(second, 'fr')));
+      const expectedSubtotal = Math.round(group.lines.reduce((total, line) => total + line.cost, 0) * 100) / 100;
+      assert.equal(group.subtotal, expectedSubtotal);
+    }
+  });
+
   it('arrondit au paquet entier et calcule le reste', () => {
     const settings = { ...baseSettings, personCount: 4 };
     const plan = { mainRecipeIds: ['spaghetti-bolognaise', 'spaghetti-thon-tomate'], breakfastRecipeIds: [] };
