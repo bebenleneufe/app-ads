@@ -9,17 +9,27 @@ window.addEventListener('beforeinstallprompt', (installEvent) => {
   deferredInstallPrompt = installEvent;
 });
 
+// L'appli Android (dossier android/) ajoute cette marque à l'agent utilisateur de sa WebView.
+const ANDROID_APP_USER_AGENT_MARK = 'SemainierAndroid';
+
 function isRunningAsApp() {
-  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  return window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true
+    || window.navigator.userAgent.includes(ANDROID_APP_USER_AGENT_MARK);
 }
 
-export function setUpInstallButton({ installButton, installHelp }) {
+function isAndroidBrowser() {
+  return /Android/i.test(window.navigator.userAgent);
+}
+
+export function setUpInstallButton({ installButton, installHelp, apkLink }) {
   const listenersController = new AbortController();
   const { signal } = listenersController;
 
   const hideAll = () => {
     installButton.hidden = true;
     installHelp.hidden = true;
+    apkLink.hidden = true;
   };
 
   if (isRunningAsApp()) {
@@ -27,6 +37,8 @@ export function setUpInstallButton({ installButton, installHelp }) {
     return () => listenersController.abort();
   }
   installButton.hidden = false;
+  // Sur certains Android, l'installation par Chrome échoue : l'appli Android reste possible.
+  apkLink.hidden = !isAndroidBrowser();
 
   window.addEventListener('appinstalled', hideAll, { signal });
 

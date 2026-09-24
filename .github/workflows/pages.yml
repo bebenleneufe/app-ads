@@ -1,7 +1,7 @@
 name: Publier sur GitHub Pages
 
-# Publie tout le dépôt : app-ads.txt reste à la racine du site et l'appli
-# est servie sous /lidl-recettes/.
+# Publie le dépôt (sans le projet Android) : app-ads.txt reste à la racine du site,
+# l'appli est servie sous /lidl-recettes/ avec son APK Android.
 on:
   push:
     branches: [main]
@@ -37,9 +37,24 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}lidl-recettes/
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Installer les outils Android
+        # « yes » s'arrête en erreur quand sdkmanager ferme le tube : on l'ignore pour pipefail.
+        run: |
+          { yes || true; } | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;34.0.0" "platforms;android-34" > /dev/null
+      # Le numéro d'exécution sert de numéro de version : chaque APK publié peut remplacer le précédent.
+      - name: Fabriquer l'APK
+        run: android/build.sh lidl-recettes/semainier-lidl.apk "$GITHUB_RUN_NUMBER"
+      - name: Préparer le site
+        run: |
+          mkdir "$RUNNER_TEMP/site"
+          rsync -a --exclude .git --exclude .github --exclude android ./ "$RUNNER_TEMP/site/"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: ${{ runner.temp }}/site
       - id: deployment
         uses: actions/deploy-pages@v4

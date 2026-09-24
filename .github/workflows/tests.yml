@@ -4,10 +4,12 @@ on:
   push:
     paths:
       - 'lidl-recettes/**'
+      - 'android/**'
       - '.github/workflows/tests.yml'
   pull_request:
     paths:
       - 'lidl-recettes/**'
+      - 'android/**'
       - '.github/workflows/tests.yml'
 
 permissions:
@@ -28,3 +30,18 @@ jobs:
         run: node --check sw.js
       - name: Lancer les tests
         run: npm test
+
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Installer les outils Android
+        # « yes » s'arrête en erreur quand sdkmanager ferme le tube : on l'ignore pour pipefail.
+        run: |
+          { yes || true; } | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;34.0.0" "platforms;android-34" > /dev/null
+      - name: Fabriquer l'APK
+        run: android/build.sh "$RUNNER_TEMP/semainier-lidl.apk" "$GITHUB_RUN_NUMBER"
