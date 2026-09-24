@@ -51,13 +51,15 @@ export const PRIORITIES = Object.freeze({
   VARIETY: 'variete',
 });
 
-// Pondérations mesurées sur 200 semaines générées (1 pers., 3 repas, 20 min, 108 plats) :
-// prix ≈ 34 € médian, 37 plats différents vus ; équilibre ≈ 35 €, 46 plats ; variété ≈ 41 €, 59 plats.
+// Pondérations mesurées sur 200 semaines générées (1 pers., 3 repas + collation, 20 min, 88 plats) :
+// prix ≈ 38 € médian, 38 plats différents vus ; équilibre ≈ 40 €, 46 plats ; variété ≈ 45 €, 52 plats.
 // Le surcoût réel au ticket pousse à finir les paquets entamés, l'aléa apporte la variété.
+// Le bonus protéines suit la priorité : quand le prix compte peu, un bonus fort pousserait
+// toujours vers les mêmes viandes et poissons chers, au détriment du prix et de la variété.
 const SCORING_WEIGHTS_BY_PRIORITY = Object.freeze({
-  [PRIORITIES.PRICE]: { marginalCost: 1.0, randomness: 3.5 },
-  [PRIORITIES.BALANCED]: { marginalCost: 0.6, randomness: 4 },
-  [PRIORITIES.VARIETY]: { marginalCost: 0.3, randomness: 4.5 },
+  [PRIORITIES.PRICE]: { marginalCost: 1.0, randomness: 3.5, protein: 6 },
+  [PRIORITIES.BALANCED]: { marginalCost: 0.6, randomness: 4, protein: 3 },
+  [PRIORITIES.VARIETY]: { marginalCost: 0.3, randomness: 4.5, protein: 1.5 },
 });
 const REPEATED_RECIPE_PENALTY = 10;
 const CATEGORY_BALANCE_WEIGHT = 2;
@@ -66,7 +68,6 @@ const CALORIE_GAP_WEIGHT = 6;
 // Un plat aimé doit revenir plus souvent sans écraser le prix ni les calories ;
 // un plat des deux dernières semaines est évité mais reste possible si le choix manque.
 const LIKED_RECIPE_BONUS = 2.5;
-const PROTEIN_WEIGHT = 6;
 // Au-delà de 1,5 fois la cible d'un repas, plus de protéines n'apporte rien de plus.
 const PROTEIN_SCORE_CAP = 1.5;
 const RECENT_RECIPE_PENALTY = 3;
@@ -137,12 +138,12 @@ function computeCalorieGapPenalty(candidate, settings) {
   return (Math.abs(getPortionKcal(candidate.id, settings) - mealTargetKcal) / mealTargetKcal) * CALORIE_GAP_WEIGHT;
 }
 
-function computeProteinBonus(candidate, settings) {
+function computeProteinBonus(candidate, settings, proteinWeight) {
   const mealProteinTarget = computeMealProteinTarget(settings, candidate.mealType);
   if (!mealProteinTarget) {
     return 0;
   }
-  return Math.min(PROTEIN_SCORE_CAP, getPortionProtein(candidate.id, settings) / mealProteinTarget) * PROTEIN_WEIGHT;
+  return Math.min(PROTEIN_SCORE_CAP, getPortionProtein(candidate.id, settings) / mealProteinTarget) * proteinWeight;
 }
 
 function scoreCandidate({ candidate, chosenRecipes, random, settings, preferCheap, purchaseTracker, servingCount }) {
@@ -159,7 +160,7 @@ function scoreCandidate({ candidate, chosenRecipes, random, settings, preferChea
 
   return random() * weights.randomness
     + preferenceScore
-    + computeProteinBonus(candidate, settings)
+    + computeProteinBonus(candidate, settings, weights.protein)
     - marginalCost * weights.marginalCost
     - repetitionCount * REPEATED_RECIPE_PENALTY
     - sameCategoryShare * CATEGORY_BALANCE_WEIGHT
@@ -389,8 +390,10 @@ function swapWeeklyRecipe(currentPlan, kind, settings, random) {
   return weeklyRecipeIds.length > 0 ? { ...currentPlan, [planKey]: weeklyRecipeIds } : currentPlan;
 }
 
-// Avec un budget, on ne propose que des remplaçants qui tiennent dans le plafond quand il y en a :
-// « Changer » ne doit pas faire exploser le ticket.
+// Avec un budget, on ne propose que des remplaçants qui tiennent dans le plafond ; s'il n'y en a
+// aucun, on se limite aux moins chers pour que « Changer » ne fasse pas exploser le ticket.
+const CHEAPEST_FALLBACK_COUNT = 3;
+
 function listAffordableReplacements(candidates, currentPlan, slotIndex, settings, purchaseTracker) {
   if (!hasBudget(settings)) {
     return candidates;
@@ -401,10 +404,18 @@ function listAffordableReplacements(candidates, currentPlan, slotIndex, settings
   };
   const totalWithoutSlot = buildShoppingList(planWithoutSlot, settings).totalToPay;
   const servingCount = getServingCount(PLAN_KINDS.MAIN, settings);
-  const affordableCandidates = candidates.filter(
-    (candidate) => totalWithoutSlot + purchaseTracker.computeMarginalCost(candidate.id, servingCount) <= settings.weeklyBudget,
-  );
-  return affordableCandidates.length > 0 ? affordableCandidates : candidates;
+  const candidatesWithTotal = candidates.map((candidate) => ({
+    candidate,
+    total: totalWithoutSlot + purchaseTracker.computeMarginalCost(candidate.id, servingCount),
+  }));
+  const affordableCandidates = candidatesWithTotal.filter(({ total }) => total <= settings.weeklyBudget);
+  if (affordableCandidates.length > 0) {
+    return affordableCandidates.map(({ candidate }) => candidate);
+  }
+  return candidatesWithTotal
+    .sort((first, second) => first.total - second.total)
+    .slice(0, CHEAPEST_FALLBACK_COUNT)
+    .map(({ candidate }) => candidate);
 }
 
 export function swapMeal(currentPlan, kind, slotIndex, settings, random = Math.random) {

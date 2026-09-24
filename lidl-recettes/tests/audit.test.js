@@ -4,7 +4,8 @@ import { describe, it } from 'node:test';
 import { debounce } from '../js/dom.js';
 import { MAIN_MEAL_MODES } from '../js/meal-structure.js';
 import { GOALS } from '../js/nutrition.js';
-import { generatePlan, PLAN_KINDS, reconcilePlan, swapMeal } from '../js/planner.js';
+import { generatePlan, isRecipeAllowed, PLAN_KINDS, reconcilePlan, swapMeal } from '../js/planner.js';
+import { MEAL_TYPES, RECIPES } from '../js/recipes.js';
 import { DEFAULT_SETTINGS, normalizeSettings } from '../js/settings.js';
 import { buildShoppingList, computePortionCost } from '../js/shopping-list.js';
 import { resolveWeekStart, toIsoDate } from '../js/week.js';
@@ -29,15 +30,22 @@ describe('budget appliqué partout', () => {
     assert.ok(withBudget.totalToPay < withoutBudget.totalToPay, `${withBudget.totalToPay} >= ${withoutBudget.totalToPay}`);
   });
 
-  it('ne fait pas dépasser le budget avec « Changer » quand un remplaçant abordable existe', () => {
+  it('ne fait pas dépasser le budget avec « Changer », ou choisit parmi les moins chers', () => {
     const settings = { ...defaultSettings, weeklyBudget: 40 };
+    const slotIndex = 3;
     for (let seed = 0; seed < 10; seed += 1) {
       const plan = generatePlan(settings, createSeededRandom(seed + 10));
-      if (buildShoppingList(plan, settings).totalToPay > settings.weeklyBudget) {
-        continue;
-      }
-      const swappedPlan = swapMeal(plan, PLAN_KINDS.MAIN, 3, settings, createSeededRandom(seed + 50));
-      assert.ok(buildShoppingList(swappedPlan, settings).totalToPay <= settings.weeklyBudget, `graine ${seed}`);
+      const replacementTotals = RECIPES
+        .filter((recipe) => recipe.mealType === MEAL_TYPES.MAIN && isRecipeAllowed(recipe, settings) && !plan.mainRecipeIds.includes(recipe.id))
+        .map((recipe) => buildShoppingList({
+          ...plan,
+          mainRecipeIds: plan.mainRecipeIds.map((recipeId, index) => (index === slotIndex ? recipe.id : recipeId)),
+        }, settings).totalToPay)
+        .sort((first, second) => first - second);
+      const swappedTotal = buildShoppingList(swapMeal(plan, PLAN_KINDS.MAIN, slotIndex, settings, createSeededRandom(seed + 50)), settings).totalToPay;
+      const hasAffordableReplacement = replacementTotals[0] <= settings.weeklyBudget;
+      const allowedMaximum = hasAffordableReplacement ? settings.weeklyBudget : replacementTotals[2];
+      assert.ok(swappedTotal <= allowedMaximum + 0.01, `graine ${seed} : ${swappedTotal} > ${allowedMaximum}`);
     }
   });
 
