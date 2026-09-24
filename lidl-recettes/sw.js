@@ -1,6 +1,6 @@
 // Service worker : l'appli reste utilisable sans réseau (dans le magasin, en cuisine).
 // Changer CACHE_VERSION à chaque mise en ligne pour que les téléphones récupèrent la nouvelle version.
-const CACHE_VERSION = 'semainier-v5';
+const CACHE_VERSION = 'semainier-v6';
 const APP_SHELL = [
   './',
   'index.html',
@@ -45,12 +45,23 @@ async function deleteOldCaches() {
 
 const MEDIA_PATH_PATTERN = /\/(images|icons)\//;
 
+// GitHub Pages demande aux navigateurs de garder les fichiers 10 minutes : sans revalidation,
+// une mise à jour publiée n'arriverait qu'après ce délai. « no-cache » redemande au serveur
+// si le fichier a changé (réponse légère s'il est identique).
+function fetchFresh(request) {
+  // Une requête de navigation ne peut pas être recopiée avec des options : on repart de son adresse.
+  if (request.mode === 'navigate') {
+    return fetch(request.url, { cache: 'no-cache', credentials: 'same-origin' });
+  }
+  return fetch(request, { cache: 'no-cache' });
+}
+
 // Page, scripts et styles : réseau d'abord, pour que la page et son code restent toujours
 // de la même version ; la copie en cache ne sert que hors ligne.
 async function respondNetworkFirst(request, cacheKey = request) {
   const cache = await caches.open(CACHE_VERSION);
   try {
-    const networkResponse = await fetch(request);
+    const networkResponse = await fetchFresh(request);
     if (networkResponse.ok) {
       await cache.put(cacheKey, networkResponse.clone());
     }
