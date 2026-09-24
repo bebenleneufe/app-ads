@@ -37,6 +37,9 @@ const COPY_STATUS_DURATION_MILLISECONDS = 4000;
 // tapées (« 4 » avant « 45 ») remplaceraient des plats pour rien.
 const FIELDS_APPLIED_ON_COMMIT_ONLY = new Set(['weeklyBudget']);
 
+// Assez long pour faire le tour des plats compatibles avant de revoir une recette déjà proposée.
+const SWAP_HISTORY_LENGTH = 40;
+
 const SERVINGS_BY_PLAN_KIND = Object.freeze({
   [PLAN_KINDS.MAIN]: getServingsPerMainSlot,
   [PLAN_KINDS.BREAKFAST]: getServingsPerBreakfast,
@@ -50,6 +53,8 @@ class WeeklyPlannerApp {
   #preferences = EMPTY_PREFERENCES;
   #weightLog = [];
   #pantryStock = {};
+  // Recettes déjà proposées par « Changer », pour chaque repas de la semaine en cours.
+  #swapHistoryBySlot = new Map();
   #cookMode;
   #storeWakeLock = createScreenWakeLock();
   #checkedProductIds = new Set();
@@ -211,6 +216,7 @@ class WeeklyPlannerApp {
       this.#pantryStock = computeNextStock({ stock: this.#pantryStock, shoppingList, checkedProductIds: this.#checkedProductIds });
     }
     this.#preferences = rememberWeek(this.#preferences, this.#plan.mainRecipeIds);
+    this.#swapHistoryBySlot.clear();
     this.#checkedProductIds.clear();
     this.#weekStartDate = resolveWeekStart(toIsoDate(this.#weekStartDate));
     this.#plan = generatePlan(this.#planningSettings());
@@ -254,9 +260,9 @@ class WeeklyPlannerApp {
       this.#preferences = toggleLiked(this.#preferences, recipeId);
     } else if (action === 'dislike') {
       this.#preferences = markDisliked(this.#preferences, recipeId);
-      this.#plan = swapMeal(this.#plan, planKind, slotNumber, this.#planningSettings());
+      this.#swapSlot(planKind, slotNumber, recipeId);
     } else if (action === 'swap') {
-      this.#plan = swapMeal(this.#plan, planKind, slotNumber, this.#planningSettings());
+      this.#swapSlot(planKind, slotNumber, recipeId);
     } else {
       return;
     }
@@ -279,6 +285,13 @@ class WeeklyPlannerApp {
     weightEntryInput.value = '';
     this.#plan = reconcilePlan(this.#plan, this.#planningSettings());
     this.#renderAll();
+  }
+
+  #swapSlot(planKind, slotNumber, currentRecipeId) {
+    const slotKey = `${planKind}:${slotNumber}`;
+    const avoidedRecipeIds = [currentRecipeId, ...(this.#swapHistoryBySlot.get(slotKey) ?? [])].slice(0, SWAP_HISTORY_LENGTH);
+    this.#swapHistoryBySlot.set(slotKey, avoidedRecipeIds);
+    this.#plan = swapMeal(this.#plan, planKind, slotNumber, this.#planningSettings(), Math.random, { avoidedRecipeIds });
   }
 
   #resetDislikes() {

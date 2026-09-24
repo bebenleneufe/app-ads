@@ -144,6 +144,7 @@ function buildMealCard({ recipe, kind, slotIndex, slotLabel, servingCount, setti
           'data-action': 'swap',
           'data-plan-kind': kind,
           'data-slot-index': String(slotIndex),
+          'data-recipe-id': recipe.id,
           'aria-label': `Changer : ${recipe.name}`,
         },
       }),
