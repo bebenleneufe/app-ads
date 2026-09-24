@@ -110,16 +110,27 @@ export function getPortionFactor(recipeId, settings) {
   return Math.round(boundedFactor / PORTION_FACTOR_STEP) * PORTION_FACTOR_STEP;
 }
 
+// Les quantités ne dépendent que de la recette et de la cible calorique : le générateur les
+// redemande des milliers de fois par semaine générée, d'où ce cache (au plus recettes × cibles).
+const PORTION_QUANTITIES_CACHE = new Map();
+
 export function getPortionQuantities(recipeId, settings) {
   const recipe = RECIPES_BY_ID.get(recipeId);
   if (!recipe) {
     return [];
   }
+  const cacheKey = `${recipeId}|${computeMealTargetKcal(settings, recipe.mealType)}`;
+  const cachedQuantities = PORTION_QUANTITIES_CACHE.get(cacheKey);
+  if (cachedQuantities) {
+    return cachedQuantities;
+  }
   const portionFactor = getPortionFactor(recipeId, settings);
-  return Object.entries(recipe.ingredients).map(([productId, quantity]) => [
+  const portionQuantities = Object.freeze(Object.entries(recipe.ingredients).map(([productId, quantity]) => Object.freeze([
     productId,
     isScalableProduct(productId) ? quantity * portionFactor : quantity,
-  ]);
+  ])));
+  PORTION_QUANTITIES_CACHE.set(cacheKey, portionQuantities);
+  return portionQuantities;
 }
 
 export function getPortionKcal(recipeId, settings) {

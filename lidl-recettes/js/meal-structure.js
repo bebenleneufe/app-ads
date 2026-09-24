@@ -13,6 +13,16 @@ export function getServingsPerMainRecipe(settings) {
   return settings.mainMealMode === MAIN_MEAL_MODES.SAME_LUNCH_AND_DINNER ? 2 : 1;
 }
 
+// Source unique du nombre de portions cuisinées : l'affichage, le générateur et la liste
+// de courses doivent toujours compter la même chose.
+export function getServingsPerMainSlot(settings) {
+  return settings.personCount * getServingsPerMainRecipe(settings);
+}
+
+export function getServingsPerBreakfast(settings) {
+  return settings.personCount;
+}
+
 export function getMainSlotLabels(settings) {
   if (settings.mainMealMode === MAIN_MEAL_MODES.DIFFERENT_LUNCH_AND_DINNER) {
     return ['Déjeuner', 'Dîner'];

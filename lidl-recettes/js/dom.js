@@ -25,16 +25,24 @@ export function replaceChildrenWithFragment(containerElement, childElements) {
 
 export function debounce(callback, delayMilliseconds) {
   let timeoutId = null;
+  let pendingArguments = null;
   const cancel = () => {
     clearTimeout(timeoutId);
     timeoutId = null;
+    pendingArguments = null;
+  };
+  const flush = () => {
+    if (timeoutId === null) {
+      return;
+    }
+    const callbackArguments = pendingArguments;
+    cancel();
+    callback(...callbackArguments);
   };
   const run = (...callbackArguments) => {
     cancel();
-    timeoutId = setTimeout(() => {
-      timeoutId = null;
-      callback(...callbackArguments);
-    }, delayMilliseconds);
+    pendingArguments = callbackArguments;
+    timeoutId = setTimeout(flush, delayMilliseconds);
   };
-  return { run, cancel };
+  return { run, cancel, flush };
 }

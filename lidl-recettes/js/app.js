@@ -7,16 +7,13 @@ import { renderGoalHint, renderPlan, renderReceipt, renderSummary, updateReceipt
 import { normalizeSettings, readSettingsFromForm, writeSettingsToForm } from './settings.js';
 import { buildShoppingList } from './shopping-list.js';
 import { loadSavedState, saveState } from './storage.js';
+import { getUpcomingMonday, resolveWeekStart, toIsoDate } from './week.js';
 
 const SETTINGS_DEBOUNCE_MILLISECONDS = 300;
 const COPY_STATUS_DURATION_MILLISECONDS = 4000;
-
-function getUpcomingMonday(today = new Date()) {
-  const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const daysUntilMonday = (8 - monday.getDay()) % 7;
-  monday.setDate(monday.getDate() + daysUntilMonday);
-  return monday;
-}
+// Le budget n'est appliqué qu'à la validation du champ : les valeurs intermédiaires
+// tapées (« 4 » avant « 45 ») remplaceraient des plats pour rien.
+const FIELDS_APPLIED_ON_COMMIT_ONLY = new Set(['weeklyBudget']);
 
 class WeeklyPlannerApp {
   #elements;
@@ -46,21 +43,35 @@ class WeeklyPlannerApp {
   }
 
   start() {
-    const savedState = loadSavedState();
-    this.#settings = normalizeSettings(savedState?.settings);
-    this.#checkedProductIds = new Set(Array.isArray(savedState?.checkedProductIds) ? savedState.checkedProductIds : []);
-    this.#plan = savedState?.plan
-      ? reconcilePlan(savedState.plan, this.#settings)
-      : generatePlan(this.#settings);
-
+    this.#restoreSavedState();
     writeSettingsToForm(this.#elements.settingsForm, this.#settings);
     this.#attachListeners();
     this.#renderAll();
   }
 
+  // Des données enregistrées abîmées ne doivent jamais bloquer l'appli : on repart d'une semaine neuve.
+  #restoreSavedState() {
+    const savedState = loadSavedState();
+    try {
+      this.#settings = normalizeSettings(savedState?.settings);
+      this.#checkedProductIds = new Set(Array.isArray(savedState?.checkedProductIds) ? savedState.checkedProductIds : []);
+      this.#weekStartDate = resolveWeekStart(savedState?.weekStart);
+      this.#plan = savedState?.plan && typeof savedState.plan === 'object'
+        ? reconcilePlan(savedState.plan, this.#settings)
+        : generatePlan(this.#settings);
+    } catch (restoreError) {
+      console.warn('Semaine enregistrée illisible, nouvelle semaine générée.', restoreError);
+      this.#settings = normalizeSettings(null);
+      this.#checkedProductIds = new Set();
+      this.#weekStartDate = getUpcomingMonday();
+      this.#plan = generatePlan(this.#settings);
+    }
+  }
+
+  // Une saisie encore en attente est appliquée (et donc enregistrée) avant de quitter la page.
   destroy() {
+    this.#debouncedSettingsUpdate.flush();
     this.#listenersController.abort();
-    this.#debouncedSettingsUpdate.cancel();
     clearTimeout(this.#copyStatusTimeoutId);
   }
 
@@ -81,6 +92,9 @@ class WeeklyPlannerApp {
   }
 
   #handleSettingsInput(inputEvent) {
+    if (FIELDS_APPLIED_ON_COMMIT_ONLY.has(inputEvent.target.name)) {
+      return;
+    }
     if (inputEvent.target.type === 'number') {
       this.#debouncedSettingsUpdate.run();
       return;
@@ -99,17 +113,22 @@ class WeeklyPlannerApp {
     writeSettingsToForm(this.#elements.settingsForm, this.#settings);
   }
 
+  // Changer la priorité change la façon de choisir les plats : elle ne peut s'appliquer
+  // qu'en refaisant la semaine. Les autres réglages gardent les plats encore compatibles.
   #applySettingsFromForm() {
-    const previousBudget = this.#settings.weeklyBudget;
+    const previousPriority = this.#settings.priority;
     this.#settings = readSettingsFromForm(this.#elements.settingsForm);
-    this.#plan = this.#settings.weeklyBudget !== previousBudget
-      ? generatePlan(this.#settings)
-      : reconcilePlan(this.#plan, this.#settings);
+    if (this.#settings.priority !== previousPriority) {
+      this.#regenerateWeek();
+      return;
+    }
+    this.#plan = reconcilePlan(this.#plan, this.#settings);
     this.#renderAll();
   }
 
   #regenerateWeek() {
     this.#plan = generatePlan(this.#settings);
+    this.#weekStartDate = resolveWeekStart(toIsoDate(this.#weekStartDate));
     this.#checkedProductIds.clear();
     this.#renderAll();
   }
@@ -202,6 +221,7 @@ class WeeklyPlannerApp {
     saveState({
       settings: this.#settings,
       plan: this.#plan,
+      weekStart: toIsoDate(this.#weekStartDate),
       checkedProductIds: [...this.#checkedProductIds],
     });
   }

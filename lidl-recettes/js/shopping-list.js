@@ -1,5 +1,5 @@
 import { AISLE_ORDER, LONG_LASTING_AISLES, PRODUCTS_BY_ID } from './catalog.js';
-import { getServingsPerMainRecipe } from './meal-structure.js';
+import { getServingsPerBreakfast, getServingsPerMainSlot } from './meal-structure.js';
 import { getPortionQuantities } from './nutrition.js';
 
 // Évite qu'une imprécision flottante (ex. 3 × 0.1) fasse acheter un paquet de trop.
@@ -16,12 +16,17 @@ function computeQuantitiesCost(quantityEntries) {
   }, 0);
 }
 
-export function computeServingCost(recipe) {
-  return computeQuantitiesCost(Object.entries(recipe.ingredients));
+function isAlreadyOwned(product, settings) {
+  return settings.pantryStaplesOwned && product.isPantryStaple;
 }
 
+// Même règle que le ticket : les basiques du placard déjà possédés ne sont pas comptés.
 export function computePortionCost(recipeId, settings) {
-  return computeQuantitiesCost(getPortionQuantities(recipeId, settings));
+  const countedQuantities = getPortionQuantities(recipeId, settings).filter(([productId]) => {
+    const product = PRODUCTS_BY_ID.get(productId);
+    return product !== undefined && !isAlreadyOwned(product, settings);
+  });
+  return computeQuantitiesCost(countedQuantities);
 }
 
 function computePackagesCost(product, neededQuantity) {
@@ -35,7 +40,7 @@ function computePackagesCost(product, neededQuantity) {
 // un plat qui finit un paquet déjà ouvert coûte presque rien, un plat qui en ouvre trois coûte cher.
 export function createPurchaseTracker(settings) {
   const neededByProductId = new Map();
-  const isCounted = (product) => product !== undefined && !(settings.pantryStaplesOwned && product.isPantryStaple);
+  const isCounted = (product) => product !== undefined && !isAlreadyOwned(product, settings);
 
   return {
     addRecipe(recipeId, servingCount) {
@@ -59,10 +64,9 @@ export function createPurchaseTracker(settings) {
 }
 
 function listCookedServings(plan, settings) {
-  const mainServingCount = settings.personCount * getServingsPerMainRecipe(settings);
   return [
-    ...plan.mainRecipeIds.map((recipeId) => ({ recipeId, servingCount: mainServingCount })),
-    ...plan.breakfastRecipeIds.map((recipeId) => ({ recipeId, servingCount: settings.personCount })),
+    ...plan.mainRecipeIds.map((recipeId) => ({ recipeId, servingCount: getServingsPerMainSlot(settings) })),
+    ...plan.breakfastRecipeIds.map((recipeId) => ({ recipeId, servingCount: getServingsPerBreakfast(settings) })),
   ];
 }
 
@@ -110,9 +114,8 @@ export function buildShoppingList(plan, settings) {
     .filter(({ product }) => product !== undefined)
     .map(({ product, neededQuantity }) => buildLine(product, neededQuantity));
 
-  const isAlreadyOwned = (line) => settings.pantryStaplesOwned && line.product.isPantryStaple;
-  const purchasedLines = allLines.filter((line) => !isAlreadyOwned(line));
-  const pantryLines = allLines.filter(isAlreadyOwned);
+  const purchasedLines = allLines.filter((line) => !isAlreadyOwned(line.product, settings));
+  const pantryLines = allLines.filter((line) => isAlreadyOwned(line.product, settings));
 
   const totalToPay = roundToCents(purchasedLines.reduce((total, line) => total + line.cost, 0));
   const consumedValue = roundToCents(purchasedLines.reduce((total, line) => total + line.consumedValue, 0));

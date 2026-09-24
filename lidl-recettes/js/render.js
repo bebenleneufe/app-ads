@@ -12,7 +12,9 @@ import {
   getMainSlotLabels,
   getMainSlotsPerDay,
   getMealsEatenPerDay,
+  getServingsPerBreakfast,
   getServingsPerMainRecipe,
+  getServingsPerMainSlot,
 } from './meal-structure.js';
 import {
   computeDailyTargetKcal,
@@ -142,7 +144,7 @@ function buildDayKcal(breakfastRecipe, mainRecipes, settings) {
 
 function buildDayItem(dayIndex, plan, settings, weekStartDate) {
   const mainSlotsPerDay = getMainSlotsPerDay(settings);
-  const servingCount = settings.personCount * getServingsPerMainRecipe(settings);
+  const servingCount = getServingsPerMainSlot(settings);
   const breakfastRecipe = RECIPES_BY_ID.get(plan.breakfastRecipeIds[dayIndex]);
   const mainRecipes = getMainSlotLabels(settings)
     .map((_slotLabel, mealIndex) => RECIPES_BY_ID.get(plan.mainRecipeIds[dayIndex * mainSlotsPerDay + mealIndex]));
@@ -191,7 +193,7 @@ function buildWeeklyBreakfastItem(plan, settings) {
         kind: PLAN_KINDS.BREAKFAST,
         slotIndex: 0,
         slotLabel: 'Toute la semaine',
-        servingCount: settings.personCount,
+        servingCount: getServingsPerBreakfast(settings),
         settings,
       }),
     ]),

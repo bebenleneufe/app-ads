@@ -44,7 +44,10 @@ function pickKnownValue(rawValue, knownValues, fallback) {
   return knownValues.includes(rawValue) ? rawValue : fallback;
 }
 
-export function normalizeSettings(rawSettings = {}) {
+// Les réglages enregistrés peuvent être absents, nuls ou d'un ancien format : on repart
+// alors des valeurs par défaut au lieu de planter au démarrage.
+export function normalizeSettings(savedSettings) {
+  const rawSettings = savedSettings !== null && typeof savedSettings === 'object' ? savedSettings : {};
   return {
     personCount: clampInteger(rawSettings.personCount, SETTINGS_LIMITS.personCount, DEFAULT_SETTINGS.personCount),
     dayCount: clampInteger(rawSettings.dayCount, SETTINGS_LIMITS.dayCount, DEFAULT_SETTINGS.dayCount),
