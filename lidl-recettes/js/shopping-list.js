@@ -1,4 +1,5 @@
 import { AISLE_ORDER, PRODUCTS_BY_ID } from './catalog.js';
+import { getServingsPerMainRecipe } from './meal-structure.js';
 import { RECIPES_BY_ID } from './recipes.js';
 
 // Évite qu'une imprécision flottante (ex. 3 × 0.1) fasse acheter un paquet de trop.
@@ -15,16 +16,24 @@ export function computeServingCost(recipe) {
   }, 0);
 }
 
-function sumNeededQuantities(planRecipeIds, personCount) {
+function listCookedServings(plan, settings) {
+  const mainServingCount = settings.personCount * getServingsPerMainRecipe(settings);
+  return [
+    ...plan.mainRecipeIds.map((recipeId) => ({ recipeId, servingCount: mainServingCount })),
+    ...plan.breakfastRecipeIds.map((recipeId) => ({ recipeId, servingCount: settings.personCount })),
+  ];
+}
+
+function sumNeededQuantities(cookedServings) {
   const neededByProductId = new Map();
-  for (const recipeId of planRecipeIds) {
+  for (const { recipeId, servingCount } of cookedServings) {
     const recipe = RECIPES_BY_ID.get(recipeId);
     if (!recipe) {
       continue;
     }
     for (const [productId, quantityPerServing] of Object.entries(recipe.ingredients)) {
       const previousQuantity = neededByProductId.get(productId) ?? 0;
-      neededByProductId.set(productId, previousQuantity + quantityPerServing * personCount);
+      neededByProductId.set(productId, previousQuantity + quantityPerServing * servingCount);
     }
   }
   return neededByProductId;
@@ -51,8 +60,9 @@ function groupLinesByAisle(lines) {
   })).filter((group) => group.lines.length > 0);
 }
 
-export function buildShoppingList(planRecipeIds, settings) {
-  const neededByProductId = sumNeededQuantities(planRecipeIds, settings.personCount);
+export function buildShoppingList(plan, settings) {
+  const cookedServings = listCookedServings(plan, settings);
+  const neededByProductId = sumNeededQuantities(cookedServings);
   const allLines = [...neededByProductId]
     .map(([productId, neededQuantity]) => ({ product: PRODUCTS_BY_ID.get(productId), neededQuantity }))
     .filter(({ product }) => product !== undefined)
@@ -64,7 +74,7 @@ export function buildShoppingList(planRecipeIds, settings) {
 
   const totalToPay = roundToCents(purchasedLines.reduce((total, line) => total + line.cost, 0));
   const consumedValue = roundToCents(purchasedLines.reduce((total, line) => total + line.consumedValue, 0));
-  const portionCount = planRecipeIds.length * settings.personCount;
+  const portionCount = cookedServings.reduce((total, { servingCount }) => total + servingCount, 0);
 
   return {
     aisleGroups: groupLinesByAisle(purchasedLines),

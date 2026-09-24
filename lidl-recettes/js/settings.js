@@ -1,10 +1,10 @@
+import { MAIN_MEAL_MODES } from './meal-structure.js';
 import { ACTIVITY_FACTORS, GOALS, SEXES } from './nutrition.js';
 import { DIETS } from './planner.js';
 
 export const SETTINGS_LIMITS = Object.freeze({
   personCount: { min: 1, max: 8 },
   dayCount: { min: 1, max: 7 },
-  mealsPerDay: { min: 1, max: 2 },
   weeklyBudget: { min: 0, max: 500 },
   age: { min: 18, max: 99 },
   weightKg: { min: 40, max: 250 },
@@ -14,7 +14,8 @@ export const SETTINGS_LIMITS = Object.freeze({
 export const DEFAULT_SETTINGS = Object.freeze({
   personCount: 1,
   dayCount: 7,
-  mealsPerDay: 2,
+  mainMealMode: MAIN_MEAL_MODES.SAME_LUNCH_AND_DINNER,
+  includeBreakfast: true,
   diet: DIETS.OMNIVORE,
   withoutPork: false,
   weeklyBudget: 0,
@@ -43,7 +44,8 @@ export function normalizeSettings(rawSettings = {}) {
   return {
     personCount: clampInteger(rawSettings.personCount, SETTINGS_LIMITS.personCount, DEFAULT_SETTINGS.personCount),
     dayCount: clampInteger(rawSettings.dayCount, SETTINGS_LIMITS.dayCount, DEFAULT_SETTINGS.dayCount),
-    mealsPerDay: clampInteger(rawSettings.mealsPerDay, SETTINGS_LIMITS.mealsPerDay, DEFAULT_SETTINGS.mealsPerDay),
+    mainMealMode: pickKnownValue(rawSettings.mainMealMode, Object.values(MAIN_MEAL_MODES), DEFAULT_SETTINGS.mainMealMode),
+    includeBreakfast: rawSettings.includeBreakfast !== false,
     diet: pickKnownValue(rawSettings.diet, Object.values(DIETS), DEFAULT_SETTINGS.diet),
     withoutPork: rawSettings.withoutPork === true,
     weeklyBudget: clampInteger(rawSettings.weeklyBudget, SETTINGS_LIMITS.weeklyBudget, DEFAULT_SETTINGS.weeklyBudget),
@@ -62,7 +64,8 @@ export function readSettingsFromForm(formElement) {
   return normalizeSettings({
     personCount: formData.get('personCount'),
     dayCount: formData.get('dayCount'),
-    mealsPerDay: formData.get('mealsPerDay'),
+    mainMealMode: formData.get('mainMealMode'),
+    includeBreakfast: formData.has('includeBreakfast'),
     diet: formData.get('diet'),
     withoutPork: formData.has('withoutPork'),
     weeklyBudget: formData.get('weeklyBudget') || 0,
@@ -80,7 +83,8 @@ export function writeSettingsToForm(formElement, settings) {
   const { elements } = formElement;
   elements.personCount.value = String(settings.personCount);
   elements.dayCount.value = String(settings.dayCount);
-  elements.mealsPerDay.value = String(settings.mealsPerDay);
+  elements.mainMealMode.value = settings.mainMealMode;
+  elements.includeBreakfast.checked = settings.includeBreakfast;
   elements.diet.value = settings.diet;
   elements.withoutPork.checked = settings.withoutPork;
   elements.weeklyBudget.value = settings.weeklyBudget > 0 ? String(settings.weeklyBudget) : '';

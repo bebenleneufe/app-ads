@@ -19,6 +19,8 @@ export const KCAL_BY_PRODUCT_ID = Object.freeze({
   avocat: 240,
   citron: 20,
   persil: 11,
+  banane: 90,
+  pomme: 52,
 
   'poulet-filet': 115,
   // Poids brut avec os et peau : environ 70 % de partie comestible.
@@ -41,15 +43,19 @@ export const KCAL_BY_PRODUCT_ID = Object.freeze({
   mozzarella: 250,
   parmesan: 390,
   feta: 270,
+  'fromage-blanc': 45,
   chevre: 300,
   tofu: 130,
 
+  'pain-complet': 250,
   'pate-brisee': 920,
   'pate-feuilletee': 970,
   gnocchi: 150,
   tortilla: 125,
   'pain-burger': 160,
 
+  'flocons-avoine': 370,
+  amandes: 600,
   spaghetti: 355,
   penne: 355,
   riz: 350,

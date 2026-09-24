@@ -70,6 +70,8 @@ export const PRODUCTS = Object.freeze([
   defineProduct({ id: 'concombre', name: 'Concombre', aisle: AISLES.PRODUCE, packageLabel: 'à la pièce', packageSize: 1, unit: UNITS.PIECE, price: 0.79, shortName: 'concombre', pieceNames: ['concombre', 'concombres'] }),
   defineProduct({ id: 'avocat', name: 'Avocats', aisle: AISLES.PRODUCE, packageLabel: 'filet de 2', packageSize: 2, unit: UNITS.PIECE, price: 1.99, shortName: 'avocat', pieceNames: ['avocat', 'avocats'] }),
   defineProduct({ id: 'citron', name: 'Citrons jaunes', aisle: AISLES.PRODUCE, packageLabel: 'filet de 4', packageSize: 4, unit: UNITS.PIECE, price: 1.49, shortName: 'citron', pieceNames: ['citron', 'citrons'] }),
+  defineProduct({ id: 'banane', name: 'Bananes', aisle: AISLES.PRODUCE, packageLabel: 'régime ≈ 1 kg', packageSize: 1000, unit: UNITS.GRAM, price: 1.69, shortName: 'banane' }),
+  defineProduct({ id: 'pomme', name: 'Pommes Golden', aisle: AISLES.PRODUCE, packageLabel: 'sachet 1,5 kg', packageSize: 1500, unit: UNITS.GRAM, price: 2.49, shortName: 'pomme' }),
   defineProduct({ id: 'persil', name: 'Persil plat', aisle: AISLES.PRODUCE, packageLabel: 'bouquet', packageSize: 1, unit: UNITS.PIECE, price: 0.79, shortName: 'persil', pieceNames: ['bouquet de persil', 'bouquets de persil'] }),
 
   defineProduct({ id: 'poulet-filet', name: 'Filets de poulet', aisle: AISLES.MEAT, packageLabel: 'barquette 500 g', packageSize: 500, unit: UNITS.GRAM, price: 5.49, shortName: 'filet de poulet' }),
@@ -92,15 +94,19 @@ export const PRODUCTS = Object.freeze([
   defineProduct({ id: 'mozzarella', name: 'Mozzarella', brand: 'Milbona', aisle: AISLES.DAIRY, packageLabel: 'boule 125 g', packageSize: 125, unit: UNITS.GRAM, price: 0.79, shortName: 'mozzarella' }),
   defineProduct({ id: 'parmesan', name: 'Grana Padano AOP', brand: 'Italiamo', aisle: AISLES.DAIRY, packageLabel: 'portion 200 g', packageSize: 200, unit: UNITS.GRAM, price: 2.99, shortName: 'grana padano' }),
   defineProduct({ id: 'feta', name: 'Feta AOP', brand: 'Eridanous', aisle: AISLES.DAIRY, packageLabel: 'bloc 200 g', packageSize: 200, unit: UNITS.GRAM, price: 1.99, shortName: 'feta' }),
+  defineProduct({ id: 'fromage-blanc', name: 'Fromage blanc 0 %', brand: 'Milbona', aisle: AISLES.DAIRY, packageLabel: 'pot 1 kg', packageSize: 1000, unit: UNITS.GRAM, price: 1.89, shortName: 'fromage blanc 0 %' }),
   defineProduct({ id: 'chevre', name: 'Bûche de chèvre', aisle: AISLES.DAIRY, packageLabel: 'bûche 180 g', packageSize: 180, unit: UNITS.GRAM, price: 1.79, shortName: 'chèvre' }),
   defineProduct({ id: 'tofu', name: 'Tofu nature', brand: 'Vemondo', aisle: AISLES.DAIRY, packageLabel: 'bloc 200 g', packageSize: 200, unit: UNITS.GRAM, price: 1.69, shortName: 'tofu' }),
 
+  defineProduct({ id: 'pain-complet', name: 'Pain de mie complet', aisle: AISLES.FRESH_DOUGH, packageLabel: 'sachet 500 g', packageSize: 500, unit: UNITS.GRAM, price: 1.29, shortName: 'pain complet' }),
   defineProduct({ id: 'pate-brisee', name: 'Pâte brisée', aisle: AISLES.FRESH_DOUGH, packageLabel: 'rouleau 230 g', packageSize: 1, unit: UNITS.PIECE, price: 0.95, shortName: 'pâte brisée', pieceNames: ['rouleau de pâte brisée', 'rouleaux de pâte brisée'] }),
   defineProduct({ id: 'pate-feuilletee', name: 'Pâte feuilletée', aisle: AISLES.FRESH_DOUGH, packageLabel: 'rouleau 230 g', packageSize: 1, unit: UNITS.PIECE, price: 0.99, shortName: 'pâte feuilletée', pieceNames: ['rouleau de pâte feuilletée', 'rouleaux de pâte feuilletée'] }),
   defineProduct({ id: 'gnocchi', name: 'Gnocchi de pommes de terre', brand: 'Italiamo', aisle: AISLES.FRESH_DOUGH, packageLabel: 'sachet 500 g', packageSize: 500, unit: UNITS.GRAM, price: 1.29, shortName: 'gnocchi' }),
   defineProduct({ id: 'tortilla', name: 'Tortillas de blé', aisle: AISLES.FRESH_DOUGH, packageLabel: 'sachet de 8', packageSize: 8, unit: UNITS.PIECE, price: 1.49, shortName: 'tortilla', pieceNames: ['tortilla', 'tortillas'] }),
   defineProduct({ id: 'pain-burger', name: 'Pains burger', aisle: AISLES.FRESH_DOUGH, packageLabel: 'sachet de 4', packageSize: 4, unit: UNITS.PIECE, price: 1.29, shortName: 'pain burger', pieceNames: ['pain burger', 'pains burger'] }),
 
+  defineProduct({ id: 'flocons-avoine', name: "Flocons d'avoine", brand: 'Crownfield', aisle: AISLES.GROCERY, packageLabel: 'sachet 500 g', packageSize: 500, unit: UNITS.GRAM, price: 0.99, shortName: "flocons d'avoine" }),
+  defineProduct({ id: 'amandes', name: 'Amandes décortiquées', brand: 'Alesto', aisle: AISLES.GROCERY, packageLabel: 'sachet 200 g', packageSize: 200, unit: UNITS.GRAM, price: 2.49, shortName: 'amandes' }),
   defineProduct({ id: 'spaghetti', name: 'Spaghetti', brand: 'Combino', aisle: AISLES.GROCERY, packageLabel: 'paquet 500 g', packageSize: 500, unit: UNITS.GRAM, price: 0.85, shortName: 'spaghetti' }),
   defineProduct({ id: 'penne', name: 'Penne rigate', brand: 'Combino', aisle: AISLES.GROCERY, packageLabel: 'paquet 500 g', packageSize: 500, unit: UNITS.GRAM, price: 0.85, shortName: 'penne' }),
   defineProduct({ id: 'riz', name: 'Riz basmati', brand: 'Golden Sun', aisle: AISLES.GROCERY, packageLabel: 'paquet 1 kg', packageSize: 1000, unit: UNITS.GRAM, price: 2.29, shortName: 'riz basmati' }),

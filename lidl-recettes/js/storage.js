@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'semainier-lidl:v1';
+const STORAGE_KEY = 'semainier-lidl:v2';
 
 // Le stockage peut être bloqué (navigation privée, cookies refusés) : l'application
 // doit rester utilisable, elle perd seulement la mémorisation entre deux visites.

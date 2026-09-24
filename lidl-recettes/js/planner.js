@@ -1,12 +1,28 @@
 import { PRODUCTS_BY_ID } from './catalog.js';
+import { getBreakfastSlotCount, getMainSlotCount } from './meal-structure.js';
 import { computeMealTargetKcal, fitsMealTarget, getRecipeKcal } from './nutrition.js';
-import { CATEGORIES, RECIPES, RECIPES_BY_ID } from './recipes.js';
+import { CATEGORIES, MEAL_TYPES, RECIPES, RECIPES_BY_ID } from './recipes.js';
 import { buildShoppingList, computeServingCost } from './shopping-list.js';
 
 export const DIETS = Object.freeze({
   OMNIVORE: 'omnivore',
   PESCETARIAN: 'pescetarien',
   VEGETARIAN: 'vegetarien',
+});
+
+export const PLAN_KINDS = Object.freeze({
+  MAIN: 'main',
+  BREAKFAST: 'breakfast',
+});
+
+const PLAN_KEY_BY_KIND = Object.freeze({
+  [PLAN_KINDS.MAIN]: 'mainRecipeIds',
+  [PLAN_KINDS.BREAKFAST]: 'breakfastRecipeIds',
+});
+
+const MEAL_TYPE_BY_KIND = Object.freeze({
+  [PLAN_KINDS.MAIN]: MEAL_TYPES.MAIN,
+  [PLAN_KINDS.BREAKFAST]: MEAL_TYPES.BREAKFAST,
 });
 
 // Pondérations choisies empiriquement : le partage d'ingrédients réduit le gaspillage
@@ -16,7 +32,7 @@ const RANDOMNESS_WEIGHT = 2.5;
 const REPEATED_RECIPE_PENALTY = 10;
 const CATEGORY_BALANCE_WEIGHT = 2;
 const CHEAPNESS_WEIGHT = 1.5;
-const LIGHTNESS_WEIGHT = 1.5;
+const CALORIE_GAP_WEIGHT = 4;
 
 const SERVING_COST_BY_RECIPE_ID = new Map(RECIPES.map((recipe) => [recipe.id, computeServingCost(recipe)]));
 
@@ -24,8 +40,8 @@ export function getServingCost(recipeId) {
   return SERVING_COST_BY_RECIPE_ID.get(recipeId) ?? 0;
 }
 
-export function getMealCount(settings) {
-  return settings.dayCount * settings.mealsPerDay;
+function getSlotCount(kind, settings) {
+  return kind === PLAN_KINDS.BREAKFAST ? getBreakfastSlotCount(settings) : getMainSlotCount(settings);
 }
 
 export function isRecipeAllowed(recipe, settings) {
@@ -41,17 +57,22 @@ export function isRecipeAllowed(recipe, settings) {
   return fitsMealTarget(recipe.id, settings);
 }
 
-function listAllowedRecipes(settings) {
-  return RECIPES.filter((recipe) => isRecipeAllowed(recipe, settings));
+function listAllowedRecipes(kind, settings) {
+  return RECIPES.filter((recipe) => recipe.mealType === MEAL_TYPE_BY_KIND[kind] && isRecipeAllowed(recipe, settings));
 }
 
 function listFreshProductIds(recipe) {
   return Object.keys(recipe.ingredients).filter((productId) => !PRODUCTS_BY_ID.get(productId)?.isPantryStaple);
 }
 
-function computeHeavinessPenalty(candidate, settings) {
-  const mealTargetKcal = computeMealTargetKcal(settings);
-  return mealTargetKcal === null ? 0 : (getRecipeKcal(candidate.id) / mealTargetKcal) * LIGHTNESS_WEIGHT;
+// On vise la cible du repas plutôt que le plat le plus léger : manger trop peu
+// fait fondre le muscle et rend le régime difficile à tenir.
+function computeCalorieGapPenalty(candidate, settings) {
+  const mealTargetKcal = computeMealTargetKcal(settings, candidate.mealType);
+  if (mealTargetKcal === null) {
+    return 0;
+  }
+  return (Math.abs(getRecipeKcal(candidate.id) - mealTargetKcal) / mealTargetKcal) * CALORIE_GAP_WEIGHT;
 }
 
 function scoreCandidate(candidate, chosenRecipes, random, settings, preferCheap) {
@@ -68,7 +89,7 @@ function scoreCandidate(candidate, chosenRecipes, random, settings, preferCheap)
     - (isRepeated ? REPEATED_RECIPE_PENALTY : 0)
     - sameCategoryShare * CATEGORY_BALANCE_WEIGHT
     - cheapnessPenalty
-    - computeHeavinessPenalty(candidate, settings);
+    - computeCalorieGapPenalty(candidate, settings);
 }
 
 function pickBestRecipe({ allowedRecipes, chosenRecipes, excludedRecipeIds, random, settings, preferCheap }) {
@@ -90,14 +111,14 @@ function hasBudget(settings) {
   return settings.weeklyBudget > 0;
 }
 
-function fillPlan(keptRecipeIds, settings, random) {
-  const allowedRecipes = listAllowedRecipes(settings);
+function fillSlots(kind, keptRecipeIds, settings, random) {
+  const allowedRecipes = listAllowedRecipes(kind, settings);
   if (allowedRecipes.length === 0) {
     return [];
   }
   const chosenRecipes = keptRecipeIds.filter(Boolean).map((recipeId) => RECIPES_BY_ID.get(recipeId));
   const filledRecipeIds = [];
-  for (let slotIndex = 0; slotIndex < getMealCount(settings); slotIndex += 1) {
+  for (let slotIndex = 0; slotIndex < getSlotCount(kind, settings); slotIndex += 1) {
     const keptRecipeId = keptRecipeIds[slotIndex];
     if (keptRecipeId) {
       filledRecipeIds.push(keptRecipeId);
@@ -117,52 +138,73 @@ function fillPlan(keptRecipeIds, settings, random) {
   return filledRecipeIds;
 }
 
-export function fitPlanToBudget(planRecipeIds, settings) {
+// Seuls les plats sont remplacés : ce sont eux qui pèsent sur le ticket, les petits-déjeuners coûtent peu.
+export function fitPlanToBudget(plan, settings) {
   if (!hasBudget(settings)) {
-    return planRecipeIds;
+    return plan;
   }
-  const allowedRecipes = listAllowedRecipes(settings);
-  const adjustedRecipeIds = [...planRecipeIds];
-  const slotsByCostDescending = adjustedRecipeIds
+  const allowedRecipes = listAllowedRecipes(PLAN_KINDS.MAIN, settings);
+  const adjustedMainRecipeIds = [...plan.mainRecipeIds];
+  const slotsByCostDescending = adjustedMainRecipeIds
     .map((recipeId, slotIndex) => ({ slotIndex, servingCost: getServingCost(recipeId) }))
     .sort((firstSlot, secondSlot) => secondSlot.servingCost - firstSlot.servingCost);
 
   for (const { slotIndex, servingCost } of slotsByCostDescending) {
-    if (buildShoppingList(adjustedRecipeIds, settings).totalToPay <= settings.weeklyBudget) {
+    const candidatePlan = { ...plan, mainRecipeIds: adjustedMainRecipeIds };
+    if (buildShoppingList(candidatePlan, settings).totalToPay <= settings.weeklyBudget) {
       break;
     }
     const cheaperRecipe = allowedRecipes
-      .filter((recipe) => !adjustedRecipeIds.includes(recipe.id) && getServingCost(recipe.id) < servingCost)
+      .filter((recipe) => !adjustedMainRecipeIds.includes(recipe.id) && getServingCost(recipe.id) < servingCost)
       .sort((firstRecipe, secondRecipe) => getServingCost(firstRecipe.id) - getServingCost(secondRecipe.id))[0];
     if (cheaperRecipe) {
-      adjustedRecipeIds[slotIndex] = cheaperRecipe.id;
+      adjustedMainRecipeIds[slotIndex] = cheaperRecipe.id;
     }
   }
-  return adjustedRecipeIds;
+  return { ...plan, mainRecipeIds: adjustedMainRecipeIds };
 }
 
 export function generatePlan(settings, random = Math.random) {
-  return fitPlanToBudget(fillPlan([], settings, random), settings);
+  const plan = {
+    mainRecipeIds: fillSlots(PLAN_KINDS.MAIN, [], settings, random),
+    breakfastRecipeIds: fillSlots(PLAN_KINDS.BREAKFAST, [], settings, random),
+  };
+  return fitPlanToBudget(plan, settings);
 }
 
-export function reconcilePlan(currentRecipeIds, settings, random = Math.random) {
-  const keptRecipeIds = currentRecipeIds
-    .slice(0, getMealCount(settings))
+function keepAllowedRecipeIds(kind, recipeIds, settings) {
+  return (Array.isArray(recipeIds) ? recipeIds : [])
+    .slice(0, getSlotCount(kind, settings))
     .map((recipeId) => {
       const recipe = RECIPES_BY_ID.get(recipeId);
-      return recipe && isRecipeAllowed(recipe, settings) ? recipeId : null;
+      return recipe && recipe.mealType === MEAL_TYPE_BY_KIND[kind] && isRecipeAllowed(recipe, settings) ? recipeId : null;
     });
-  return fillPlan(keptRecipeIds, settings, random);
 }
 
-export function swapMeal(currentRecipeIds, slotIndex, settings, random = Math.random) {
-  const allowedRecipes = listAllowedRecipes(settings);
+export function reconcilePlan(currentPlan, settings, random = Math.random) {
+  return {
+    mainRecipeIds: fillSlots(PLAN_KINDS.MAIN, keepAllowedRecipeIds(PLAN_KINDS.MAIN, currentPlan?.mainRecipeIds, settings), settings, random),
+    breakfastRecipeIds: fillSlots(
+      PLAN_KINDS.BREAKFAST,
+      keepAllowedRecipeIds(PLAN_KINDS.BREAKFAST, currentPlan?.breakfastRecipeIds, settings),
+      settings,
+      random,
+    ),
+  };
+}
+
+export function swapMeal(currentPlan, kind, slotIndex, settings, random = Math.random) {
+  const planKey = PLAN_KEY_BY_KIND[kind];
+  const currentRecipeIds = currentPlan[planKey];
+  if (!planKey || !currentRecipeIds) {
+    return currentPlan;
+  }
   const otherRecipes = currentRecipeIds
     .filter((_recipeId, index) => index !== slotIndex)
     .map((recipeId) => RECIPES_BY_ID.get(recipeId))
     .filter(Boolean);
   const replacement = pickBestRecipe({
-    allowedRecipes: allowedRecipes.filter((recipe) => recipe.id !== currentRecipeIds[slotIndex]),
+    allowedRecipes: listAllowedRecipes(kind, settings).filter((recipe) => recipe.id !== currentRecipeIds[slotIndex]),
     chosenRecipes: otherRecipes,
     excludedRecipeIds: new Set(currentRecipeIds),
     random,
@@ -170,7 +212,10 @@ export function swapMeal(currentRecipeIds, slotIndex, settings, random = Math.ra
     preferCheap: false,
   });
   if (!replacement) {
-    return currentRecipeIds;
+    return currentPlan;
   }
-  return currentRecipeIds.map((recipeId, index) => (index === slotIndex ? replacement.id : recipeId));
+  return {
+    ...currentPlan,
+    [planKey]: currentRecipeIds.map((recipeId, index) => (index === slotIndex ? replacement.id : recipeId)),
+  };
 }

@@ -447,6 +447,11 @@ select {
   font-variant-numeric: tabular-nums;
 }
 
+.day-kcal.is-over {
+  color: var(--tomato);
+  font-weight: 600;
+}
+
 .day-meals {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -474,6 +479,11 @@ select {
 
 .meal[data-category="vegetarien"] {
   --category-color: var(--category-vegetarien);
+}
+
+.meal.is-breakfast {
+  border-left-color: var(--line);
+  background: transparent;
 }
 
 .meal-head {

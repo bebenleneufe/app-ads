@@ -1,6 +1,6 @@
 import { PRODUCTS_BY_ID, UNITS } from './catalog.js';
 import { KCAL_BY_PRODUCT_ID } from './nutrition-facts.js';
-import { RECIPES } from './recipes.js';
+import { MEAL_TYPES, RECIPES, RECIPES_BY_ID } from './recipes.js';
 
 export const GOALS = Object.freeze({
   NONE: 'aucun',
@@ -20,8 +20,12 @@ export const ACTIVITY_FACTORS = Object.freeze({
 const DAILY_DEFICIT_KCAL = 500;
 const MINIMUM_DAILY_KCAL = Object.freeze({ [SEXES.MALE]: 1500, [SEXES.FEMALE]: 1200 });
 
-// Déjeuner et dîner couvrent environ 70 % de la journée ; le petit-déjeuner et une collation couvrent le reste.
-const MAIN_MEAL_SHARE_OF_DAY = 0.35;
+// Répartition usuelle : 25 % au petit-déjeuner, 35 % au déjeuner et 35 % au dîner.
+// Les 5 % restants laissent de la place pour un café au lait ou un fruit.
+const SHARE_OF_DAY_BY_MEAL_TYPE = Object.freeze({
+  [MEAL_TYPES.BREAKFAST]: 0.25,
+  [MEAL_TYPES.MAIN]: 0.35,
+});
 
 // Marge acceptée au-dessus de la cible d'un repas : sous-estimer ou surestimer de 10 % reste dans la précision des tables.
 export const MEAL_KCAL_TOLERANCE = 1.1;
@@ -66,12 +70,13 @@ export function computeDailyTargetKcal(settings) {
   return Math.max(minimumKcal, computeMaintenanceKcal(settings) - DAILY_DEFICIT_KCAL);
 }
 
-export function computeMealTargetKcal(settings) {
+export function computeMealTargetKcal(settings, mealType = MEAL_TYPES.MAIN) {
   const dailyTargetKcal = computeDailyTargetKcal(settings);
-  return dailyTargetKcal === null ? null : Math.round(dailyTargetKcal * MAIN_MEAL_SHARE_OF_DAY);
+  return dailyTargetKcal === null ? null : Math.round(dailyTargetKcal * SHARE_OF_DAY_BY_MEAL_TYPE[mealType]);
 }
 
 export function fitsMealTarget(recipeId, settings) {
-  const mealTargetKcal = computeMealTargetKcal(settings);
+  const recipe = RECIPES_BY_ID.get(recipeId);
+  const mealTargetKcal = recipe ? computeMealTargetKcal(settings, recipe.mealType) : null;
   return mealTargetKcal === null || getRecipeKcal(recipeId) <= mealTargetKcal * MEAL_KCAL_TOLERANCE;
 }

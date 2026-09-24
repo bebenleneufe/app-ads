@@ -6,17 +6,23 @@ export const CATEGORIES = Object.freeze({
   VEGETARIAN: 'vegetarien',
 });
 
+export const MEAL_TYPES = Object.freeze({
+  MAIN: 'plat',
+  BREAKFAST: 'petit-dejeuner',
+});
+
 export const CATEGORY_LABELS = Object.freeze({
   [CATEGORIES.MEAT]: 'Viande',
   [CATEGORIES.FISH]: 'Poisson',
   [CATEGORIES.VEGETARIAN]: 'Végétarien',
 });
 
-function defineRecipe({ id, name, category, containsPork = false, prepMinutes, ingredients, steps }) {
+function defineRecipe({ id, name, category, mealType = MEAL_TYPES.MAIN, containsPork = false, prepMinutes, ingredients, steps }) {
   return Object.freeze({
     id,
     name,
     category,
+    mealType,
     containsPork,
     prepMinutes,
     ingredients: Object.freeze({ ...ingredients }),
@@ -513,6 +519,65 @@ export const RECIPES = Object.freeze([
       "Dorer le tofu en cubes avec l'ail.",
       'Ajouter le brocoli et la sauce soja, mélanger 2 min.',
     ],
+  }),
+
+  defineRecipe({
+    id: 'porridge-banane',
+    name: 'Porridge à la banane',
+    category: CATEGORIES.VEGETARIAN,
+    mealType: MEAL_TYPES.BREAKFAST,
+    prepMinutes: 5,
+    ingredients: { 'flocons-avoine': 50, lait: 200, banane: 100 },
+    steps: [
+      'Chauffer les flocons dans le lait 3 min en remuant (ou 2 min au micro-ondes).',
+      'Ajouter la banane en rondelles.',
+    ],
+  }),
+  defineRecipe({
+    id: 'fromage-blanc-avoine-pomme',
+    name: "Fromage blanc, flocons d'avoine, pomme et amandes",
+    category: CATEGORIES.VEGETARIAN,
+    mealType: MEAL_TYPES.BREAKFAST,
+    prepMinutes: 5,
+    ingredients: { 'fromage-blanc': 200, 'flocons-avoine': 40, pomme: 150, amandes: 10 },
+    steps: [
+      'Couper la pomme en dés.',
+      'Mélanger avec le fromage blanc, les flocons et les amandes concassées.',
+    ],
+  }),
+  defineRecipe({
+    id: 'oeufs-brouilles-pain',
+    name: 'Œufs brouillés et pain complet',
+    category: CATEGORIES.VEGETARIAN,
+    mealType: MEAL_TYPES.BREAKFAST,
+    prepMinutes: 8,
+    ingredients: { oeuf: 2, 'pain-complet': 60, beurre: 5 },
+    steps: [
+      'Battre les œufs et les cuire à feu doux avec le beurre en remuant sans cesse.',
+      'Servir avec le pain grillé.',
+    ],
+  }),
+  defineRecipe({
+    id: 'tartines-jambon-pomme',
+    name: 'Tartines jambon et une pomme',
+    category: CATEGORIES.MEAT,
+    mealType: MEAL_TYPES.BREAKFAST,
+    containsPork: true,
+    prepMinutes: 5,
+    ingredients: { 'pain-complet': 70, jambon: 40, beurre: 5, pomme: 150 },
+    steps: [
+      'Faire griller le pain et le beurrer légèrement.',
+      'Garnir de jambon. Croquer la pomme à côté.',
+    ],
+  }),
+  defineRecipe({
+    id: 'bol-fromage-blanc-banane',
+    name: 'Bol fromage blanc, banane et amandes',
+    category: CATEGORIES.VEGETARIAN,
+    mealType: MEAL_TYPES.BREAKFAST,
+    prepMinutes: 3,
+    ingredients: { 'fromage-blanc': 250, banane: 120, amandes: 15 },
+    steps: ['Verser le fromage blanc, ajouter la banane en rondelles et les amandes.'],
   }),
 ]);
 

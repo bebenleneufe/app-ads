@@ -13,7 +13,8 @@ import {
 } from '../js/nutrition.js';
 import { KCAL_BY_PRODUCT_ID } from '../js/nutrition-facts.js';
 import { DIETS, generatePlan } from '../js/planner.js';
-import { RECIPES } from '../js/recipes.js';
+import { MAIN_MEAL_MODES } from '../js/meal-structure.js';
+import { MEAL_TYPES, RECIPES } from '../js/recipes.js';
 import { DEFAULT_SETTINGS, normalizeSettings } from '../js/settings.js';
 
 const weightLossSettings = normalizeSettings({ ...DEFAULT_SETTINGS, goal: GOALS.WEIGHT_LOSS });
@@ -43,13 +44,35 @@ describe('calories', () => {
     assert.equal(computeMealTargetKcal({ ...weightLossSettings, goal: GOALS.NONE }), null);
   });
 
-  it('ne propose que des repas sous la cible, y compris en végétarien midi et soir', () => {
+  it('ne propose que des repas sous la cible, y compris en végétarien avec deux plats par jour', () => {
     for (const diet of Object.values(DIETS)) {
-      const settings = { ...weightLossSettings, diet, mealsPerDay: 2 };
-      const mealLimitKcal = computeMealTargetKcal(settings) * MEAL_KCAL_TOLERANCE;
+      const settings = { ...weightLossSettings, diet, mainMealMode: MAIN_MEAL_MODES.DIFFERENT_LUNCH_AND_DINNER, includeBreakfast: true };
+      const mainLimitKcal = computeMealTargetKcal(settings, MEAL_TYPES.MAIN) * MEAL_KCAL_TOLERANCE;
+      const breakfastLimitKcal = computeMealTargetKcal(settings, MEAL_TYPES.BREAKFAST) * MEAL_KCAL_TOLERANCE;
       const plan = generatePlan(settings);
-      assert.equal(plan.length, 14);
-      assert.ok(plan.every((recipeId) => getRecipeKcal(recipeId) <= mealLimitKcal), diet);
+      assert.equal(plan.mainRecipeIds.length, 14);
+      assert.equal(plan.breakfastRecipeIds.length, 7);
+      assert.ok(plan.mainRecipeIds.every((recipeId) => getRecipeKcal(recipeId) <= mainLimitKcal), diet);
+      assert.ok(plan.breakfastRecipeIds.every((recipeId) => getRecipeKcal(recipeId) <= breakfastLimitKcal), diet);
     }
+  });
+
+  it('garde une journée type sous l’objectif avec le même plat midi et soir', () => {
+    const plan = generatePlan(weightLossSettings);
+    const dailyTargetKcal = computeDailyTargetKcal(weightLossSettings);
+    plan.mainRecipeIds.forEach((mainRecipeId, dayIndex) => {
+      const dayKcal = getRecipeKcal(plan.breakfastRecipeIds[dayIndex]) + 2 * getRecipeKcal(mainRecipeId);
+      assert.ok(dayKcal <= dailyTargetKcal * MEAL_KCAL_TOLERANCE, `jour ${dayIndex + 1} : ${dayKcal} kcal`);
+    });
+  });
+
+  it('vise l’objectif sans manger trop peu sur la semaine', () => {
+    const plan = generatePlan(weightLossSettings);
+    const weekKcal = plan.mainRecipeIds.reduce(
+      (kcalSum, mainRecipeId, dayIndex) => kcalSum + getRecipeKcal(plan.breakfastRecipeIds[dayIndex]) + 2 * getRecipeKcal(mainRecipeId),
+      0,
+    );
+    const averageDayKcal = weekKcal / plan.mainRecipeIds.length;
+    assert.ok(averageDayKcal >= computeDailyTargetKcal(weightLossSettings) * 0.8, `moyenne ${Math.round(averageDayKcal)} kcal`);
   });
 });

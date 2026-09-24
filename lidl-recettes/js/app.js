@@ -1,6 +1,7 @@
 import { debounce } from './dom.js';
 import { buildShoppingListText } from './list-text.js';
 import { generatePlan, reconcilePlan, swapMeal } from './planner.js';
+import { createEmptyPlan } from './meal-structure.js';
 import { hasWeightLossGoal } from './nutrition.js';
 import { renderGoalHint, renderPlan, renderReceipt, renderSummary } from './render.js';
 import { normalizeSettings, readSettingsFromForm, writeSettingsToForm } from './settings.js';
@@ -20,7 +21,7 @@ function getUpcomingMonday(today = new Date()) {
 class WeeklyPlannerApp {
   #elements;
   #settings;
-  #planRecipeIds = [];
+  #plan = createEmptyPlan();
   #checkedProductIds = new Set();
   #shoppingList = null;
   #weekStartDate = getUpcomingMonday();
@@ -48,8 +49,8 @@ class WeeklyPlannerApp {
     const savedState = loadSavedState();
     this.#settings = normalizeSettings(savedState?.settings);
     this.#checkedProductIds = new Set(Array.isArray(savedState?.checkedProductIds) ? savedState.checkedProductIds : []);
-    this.#planRecipeIds = Array.isArray(savedState?.planRecipeIds)
-      ? reconcilePlan(savedState.planRecipeIds, this.#settings)
+    this.#plan = savedState?.plan
+      ? reconcilePlan(savedState.plan, this.#settings)
       : generatePlan(this.#settings);
 
     writeSettingsToForm(this.#elements.settingsForm, this.#settings);
@@ -99,14 +100,14 @@ class WeeklyPlannerApp {
   #applySettingsFromForm() {
     const previousBudget = this.#settings.weeklyBudget;
     this.#settings = readSettingsFromForm(this.#elements.settingsForm);
-    this.#planRecipeIds = this.#settings.weeklyBudget !== previousBudget
+    this.#plan = this.#settings.weeklyBudget !== previousBudget
       ? generatePlan(this.#settings)
-      : reconcilePlan(this.#planRecipeIds, this.#settings);
+      : reconcilePlan(this.#plan, this.#settings);
     this.#renderAll();
   }
 
   #regenerateWeek() {
-    this.#planRecipeIds = generatePlan(this.#settings);
+    this.#plan = generatePlan(this.#settings);
     this.#checkedProductIds.clear();
     this.#renderAll();
   }
@@ -116,10 +117,10 @@ class WeeklyPlannerApp {
     if (!swapButton) {
       return;
     }
-    const slotIndex = Number.parseInt(swapButton.dataset.slotIndex, 10);
-    this.#planRecipeIds = swapMeal(this.#planRecipeIds, slotIndex, this.#settings);
+    const { planKind, slotIndex } = swapButton.dataset;
+    this.#plan = swapMeal(this.#plan, planKind, Number.parseInt(slotIndex, 10), this.#settings);
     this.#renderAll();
-    this.#elements.planList.querySelector(`[data-slot-index="${slotIndex}"]`)?.focus();
+    this.#elements.planList.querySelector(`[data-plan-kind="${planKind}"][data-slot-index="${slotIndex}"]`)?.focus();
   }
 
   #handleReceiptCheck(changeEvent) {
@@ -168,11 +169,11 @@ class WeeklyPlannerApp {
   }
 
   #renderAll() {
-    this.#shoppingList = buildShoppingList(this.#planRecipeIds, this.#settings);
+    this.#shoppingList = buildShoppingList(this.#plan, this.#settings);
     this.#elements.profileFields.hidden = !hasWeightLossGoal(this.#settings);
     renderGoalHint(this.#elements.goalHint, this.#settings);
     renderSummary(this.#elements.summary, this.#shoppingList, this.#settings);
-    renderPlan(this.#elements.planList, this.#planRecipeIds, this.#settings, this.#weekStartDate);
+    renderPlan(this.#elements.planList, this.#plan, this.#settings, this.#weekStartDate);
     this.#renderReceipt();
     this.#persist();
   }
@@ -184,7 +185,7 @@ class WeeklyPlannerApp {
   #persist() {
     saveState({
       settings: this.#settings,
-      planRecipeIds: this.#planRecipeIds,
+      plan: this.#plan,
       checkedProductIds: [...this.#checkedProductIds],
     });
   }

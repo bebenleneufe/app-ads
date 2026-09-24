@@ -77,11 +77,17 @@
         </div>
       </div>
 
+      <label class="check" for="include-breakfast">
+        <input id="include-breakfast" name="includeBreakfast" type="checkbox">
+        <span>Petit-déjeuner</span>
+      </label>
+
       <div class="field">
-        <label for="meals-per-day">Repas par jour</label>
-        <select id="meals-per-day" name="mealsPerDay">
-          <option value="1">Dîner seulement</option>
-          <option value="2">Déjeuner et dîner</option>
+        <label for="main-meal-mode">Déjeuner et dîner</label>
+        <select id="main-meal-mode" name="mainMealMode">
+          <option value="midi-soir-identiques">Même plat, fait en double</option>
+          <option value="midi-soir-differents">Deux plats différents</option>
+          <option value="diner">Dîner seulement</option>
         </select>
       </div>
 
