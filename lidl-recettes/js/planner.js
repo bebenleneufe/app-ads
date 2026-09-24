@@ -4,9 +4,18 @@ import {
   getMainSlotsPerDay,
   getServingsPerBreakfast,
   getServingsPerMainSlot,
+  getServingsPerSnack,
+  getSnackSlotCount,
 } from './meal-structure.js';
-import { computeMealTargetKcal, fitsMealTarget, getPortionKcal } from './nutrition.js';
+import {
+  computeMealProteinTarget,
+  computeMealTargetKcal,
+  fitsMealTarget,
+  getPortionKcal,
+  getPortionProtein,
+} from './nutrition.js';
 import { CATEGORIES, fitsTimeLimit, MEAL_TYPES, RECIPES, RECIPES_BY_ID } from './recipes.js';
+import { EMPTY_PREFERENCES } from './preferences.js';
 import { buildShoppingList, computePortionCost, createPurchaseTracker } from './shopping-list.js';
 
 export const DIETS = Object.freeze({
@@ -18,12 +27,23 @@ export const DIETS = Object.freeze({
 export const PLAN_KINDS = Object.freeze({
   MAIN: 'main',
   BREAKFAST: 'breakfast',
+  SNACK: 'snack',
 });
 
 const MEAL_TYPE_BY_KIND = Object.freeze({
   [PLAN_KINDS.MAIN]: MEAL_TYPES.MAIN,
   [PLAN_KINDS.BREAKFAST]: MEAL_TYPES.BREAKFAST,
+  [PLAN_KINDS.SNACK]: MEAL_TYPES.SNACK,
 });
+
+const PLAN_KEY_BY_KIND = Object.freeze({
+  [PLAN_KINDS.MAIN]: 'mainRecipeIds',
+  [PLAN_KINDS.BREAKFAST]: 'breakfastRecipeIds',
+  [PLAN_KINDS.SNACK]: 'snackRecipeIds',
+});
+
+// Le petit-déjeuner et la collation sont les mêmes toute la semaine.
+const WEEKLY_KINDS = Object.freeze([PLAN_KINDS.BREAKFAST, PLAN_KINDS.SNACK]);
 
 export const PRIORITIES = Object.freeze({
   PRICE: 'prix',
@@ -43,13 +63,41 @@ const REPEATED_RECIPE_PENALTY = 10;
 const CATEGORY_BALANCE_WEIGHT = 2;
 const CHEAPNESS_WEIGHT = 1.5;
 const CALORIE_GAP_WEIGHT = 6;
+// Un plat aimé doit revenir plus souvent sans écraser le prix ni les calories ;
+// un plat des deux dernières semaines est évité mais reste possible si le choix manque.
+const LIKED_RECIPE_BONUS = 2.5;
+const PROTEIN_WEIGHT = 6;
+// Au-delà de 1,5 fois la cible d'un repas, plus de protéines n'apporte rien de plus.
+const PROTEIN_SCORE_CAP = 1.5;
+const RECENT_RECIPE_PENALTY = 3;
+
+function getPreferences(settings) {
+  return settings.preferences ?? EMPTY_PREFERENCES;
+}
+
+const SLOT_COUNT_BY_KIND = Object.freeze({
+  [PLAN_KINDS.MAIN]: getMainSlotCount,
+  [PLAN_KINDS.BREAKFAST]: getBreakfastSlotCount,
+  [PLAN_KINDS.SNACK]: getSnackSlotCount,
+});
+
+const SERVING_COUNT_BY_KIND = Object.freeze({
+  [PLAN_KINDS.MAIN]: getServingsPerMainSlot,
+  [PLAN_KINDS.BREAKFAST]: getServingsPerBreakfast,
+  [PLAN_KINDS.SNACK]: getServingsPerSnack,
+});
 
 function getSlotCount(kind, settings) {
-  return kind === PLAN_KINDS.BREAKFAST ? getBreakfastSlotCount(settings) : getMainSlotCount(settings);
+  return SLOT_COUNT_BY_KIND[kind](settings);
 }
 
 function getServingCount(kind, settings) {
-  return kind === PLAN_KINDS.MAIN ? getServingsPerMainSlot(settings) : getServingsPerBreakfast(settings);
+  return SERVING_COUNT_BY_KIND[kind](settings);
+}
+
+function listRecipeIds(plan, kind) {
+  const recipeIds = plan?.[PLAN_KEY_BY_KIND[kind]];
+  return Array.isArray(recipeIds) ? recipeIds : [];
 }
 
 function hasBudget(settings) {
@@ -57,6 +105,9 @@ function hasBudget(settings) {
 }
 
 export function isRecipeAllowed(recipe, settings) {
+  if (getPreferences(settings).disliked.includes(recipe.id)) {
+    return false;
+  }
   if (settings.withoutPork && recipe.containsPork) {
     return false;
   }
@@ -86,6 +137,14 @@ function computeCalorieGapPenalty(candidate, settings) {
   return (Math.abs(getPortionKcal(candidate.id, settings) - mealTargetKcal) / mealTargetKcal) * CALORIE_GAP_WEIGHT;
 }
 
+function computeProteinBonus(candidate, settings) {
+  const mealProteinTarget = computeMealProteinTarget(settings, candidate.mealType);
+  if (!mealProteinTarget) {
+    return 0;
+  }
+  return Math.min(PROTEIN_SCORE_CAP, getPortionProtein(candidate.id, settings) / mealProteinTarget) * PROTEIN_WEIGHT;
+}
+
 function scoreCandidate({ candidate, chosenRecipes, random, settings, preferCheap, purchaseTracker, servingCount }) {
   const marginalCost = purchaseTracker.computeMarginalCost(candidate.id, servingCount);
   const weights = SCORING_WEIGHTS_BY_PRIORITY[settings.priority] ?? SCORING_WEIGHTS_BY_PRIORITY[PRIORITIES.PRICE];
@@ -94,8 +153,13 @@ function scoreCandidate({ candidate, chosenRecipes, random, settings, preferChea
     ? 0
     : chosenRecipes.filter((recipe) => recipe.category === candidate.category).length / chosenRecipes.length;
   const cheapnessPenalty = preferCheap ? computePortionCost(candidate.id, settings) * CHEAPNESS_WEIGHT : 0;
+  const preferences = getPreferences(settings);
+  const preferenceScore = (preferences.liked.includes(candidate.id) ? LIKED_RECIPE_BONUS : 0)
+    - (preferences.recent.includes(candidate.id) ? RECENT_RECIPE_PENALTY : 0);
 
   return random() * weights.randomness
+    + preferenceScore
+    + computeProteinBonus(candidate, settings)
     - marginalCost * weights.marginalCost
     - repetitionCount * REPEATED_RECIPE_PENALTY
     - sameCategoryShare * CATEGORY_BALANCE_WEIGHT
@@ -127,18 +191,19 @@ function pickBestRecipe({
   return bestRecipe;
 }
 
-function createPlan(mainRecipeIds, breakfastRecipeIds, settings) {
-  return { mainRecipeIds, breakfastRecipeIds, mainSlotsPerDay: getMainSlotsPerDay(settings) };
-}
-
-function createTrackerForPlan(plan, settings, skippedMainSlotIndex = -1) {
+function createTrackerForPlan(plan, settings, { skippedKind = null, skippedMainSlotIndex = -1 } = {}) {
   const purchaseTracker = createPurchaseTracker(settings);
-  plan.mainRecipeIds.forEach((recipeId, index) => {
-    if (recipeId && index !== skippedMainSlotIndex) {
-      purchaseTracker.addRecipe(recipeId, getServingsPerMainSlot(settings));
+  for (const kind of Object.values(PLAN_KINDS)) {
+    if (kind === skippedKind && kind !== PLAN_KINDS.MAIN) {
+      continue;
     }
-  });
-  plan.breakfastRecipeIds.forEach((recipeId) => purchaseTracker.addRecipe(recipeId, getServingsPerBreakfast(settings)));
+    listRecipeIds(plan, kind).forEach((recipeId, index) => {
+      const isSkippedSlot = kind === PLAN_KINDS.MAIN && index === skippedMainSlotIndex;
+      if (recipeId && !isSkippedSlot) {
+        purchaseTracker.addRecipe(recipeId, getServingCount(kind, settings));
+      }
+    });
+  }
   return purchaseTracker;
 }
 
@@ -174,18 +239,18 @@ function fillMainSlots({ keptRecipeIds, settings, random, purchaseTracker }) {
   return filledRecipeIds;
 }
 
-// Un seul petit-déjeuner pour toute la semaine : pas de décision à prendre le matin,
+// Un seul petit-déjeuner et une seule collation pour la semaine : pas de décision à prendre,
 // et les mêmes paquets (flocons, lait, fruits) sont finis au lieu d'en ouvrir d'autres.
-function fillWeeklyBreakfast({ keptRecipeId, settings, random, purchaseTracker, excludedRecipeIds = new Set() }) {
-  const slotCount = getSlotCount(PLAN_KINDS.BREAKFAST, settings);
+function fillWeeklyRecipe({ kind, keptRecipeId, settings, random, purchaseTracker, excludedRecipeIds = new Set() }) {
+  const slotCount = getSlotCount(kind, settings);
   if (slotCount === 0) {
     return [];
   }
-  const servingCount = getServingCount(PLAN_KINDS.BREAKFAST, settings) * slotCount;
+  const servingCount = getServingCount(kind, settings) * slotCount;
   const weeklyRecipe = keptRecipeId
     ? RECIPES_BY_ID.get(keptRecipeId)
     : pickBestRecipe({
-      allowedRecipes: listAllowedRecipes(PLAN_KINDS.BREAKFAST, settings),
+      allowedRecipes: listAllowedRecipes(kind, settings),
       chosenRecipes: [],
       excludedRecipeIds,
       random,
@@ -225,7 +290,7 @@ export function fitPlanToBudget(plan, settings) {
       mainRecipeIds: adjustedPlan.mainRecipeIds.map((recipeId, index) => (index === slotIndex ? null : recipeId)),
     };
     const totalWithoutSlot = buildShoppingList(planWithoutSlot, settings).totalToPay;
-    const purchaseTracker = createTrackerForPlan(adjustedPlan, settings, slotIndex);
+    const purchaseTracker = createTrackerForPlan(adjustedPlan, settings, { skippedMainSlotIndex: slotIndex });
     let bestRecipeId = null;
     let bestTotal = currentTotal;
     for (const candidate of allowedRecipes) {
@@ -249,22 +314,28 @@ export function fitPlanToBudget(plan, settings) {
   return adjustedPlan;
 }
 
-// Les plats sont choisis avant le petit-déjeuner : il peut alors finir le pain,
-// les œufs ou le fromage blanc déjà achetés pour les plats.
+// Les plats sont choisis avant le petit-déjeuner et la collation : ceux-ci peuvent alors
+// finir le pain, les œufs ou le fromage blanc déjà achetés pour les plats.
 function fillPlan(keptPlan, settings, random) {
   const purchaseTracker = createPurchaseTracker(settings);
-  const mainRecipeIds = fillMainSlots({ keptRecipeIds: keptPlan.mainRecipeIds, settings, random, purchaseTracker });
-  const breakfastRecipeIds = fillWeeklyBreakfast({
-    keptRecipeId: keptPlan.breakfastRecipeIds.find(Boolean),
-    settings,
-    random,
-    purchaseTracker,
-  });
-  return fitPlanToBudget(createPlan(mainRecipeIds, breakfastRecipeIds, settings), settings);
+  const filledPlan = {
+    mainRecipeIds: fillMainSlots({ keptRecipeIds: keptPlan.mainRecipeIds, settings, random, purchaseTracker }),
+    mainSlotsPerDay: getMainSlotsPerDay(settings),
+  };
+  for (const kind of WEEKLY_KINDS) {
+    filledPlan[PLAN_KEY_BY_KIND[kind]] = fillWeeklyRecipe({
+      kind,
+      keptRecipeId: keptPlan[PLAN_KEY_BY_KIND[kind]]?.find(Boolean) ?? null,
+      settings,
+      random,
+      purchaseTracker,
+    });
+  }
+  return fitPlanToBudget(filledPlan, settings);
 }
 
 export function generatePlan(settings, random = Math.random) {
-  return fillPlan({ mainRecipeIds: [], breakfastRecipeIds: [] }, settings, random);
+  return fillPlan({ mainRecipeIds: [] }, settings, random);
 }
 
 // Les créneaux sont rangés jour par jour : quand le nombre de plats par jour change,
@@ -292,30 +363,30 @@ function keepAllowedMainRecipeIds(currentPlan, settings) {
   });
 }
 
-function keepAllowedBreakfastId(currentPlan, settings) {
-  const breakfastIds = Array.isArray(currentPlan?.breakfastRecipeIds) ? currentPlan.breakfastRecipeIds : [];
-  const recipe = RECIPES_BY_ID.get(breakfastIds.find(Boolean));
-  return recipe && recipe.mealType === MEAL_TYPES.BREAKFAST && isRecipeAllowed(recipe, settings) ? recipe.id : null;
+function keepAllowedWeeklyId(currentPlan, kind, settings) {
+  const recipe = RECIPES_BY_ID.get(listRecipeIds(currentPlan, kind).find(Boolean));
+  return recipe && recipe.mealType === MEAL_TYPE_BY_KIND[kind] && isRecipeAllowed(recipe, settings) ? recipe.id : null;
 }
 
 export function reconcilePlan(currentPlan, settings, random = Math.random) {
-  const keptPlan = {
-    mainRecipeIds: keepAllowedMainRecipeIds(currentPlan, settings),
-    breakfastRecipeIds: [keepAllowedBreakfastId(currentPlan, settings)],
-  };
+  const keptPlan = { mainRecipeIds: keepAllowedMainRecipeIds(currentPlan, settings) };
+  for (const kind of WEEKLY_KINDS) {
+    keptPlan[PLAN_KEY_BY_KIND[kind]] = [keepAllowedWeeklyId(currentPlan, kind, settings)];
+  }
   return fillPlan(keptPlan, settings, random);
 }
 
-function swapWeeklyBreakfast(currentPlan, settings, random) {
-  const purchaseTracker = createTrackerForPlan({ ...currentPlan, breakfastRecipeIds: [] }, settings);
-  const breakfastRecipeIds = fillWeeklyBreakfast({
+function swapWeeklyRecipe(currentPlan, kind, settings, random) {
+  const planKey = PLAN_KEY_BY_KIND[kind];
+  const weeklyRecipeIds = fillWeeklyRecipe({
+    kind,
     keptRecipeId: null,
     settings,
     random,
-    purchaseTracker,
-    excludedRecipeIds: new Set(currentPlan.breakfastRecipeIds),
+    purchaseTracker: createTrackerForPlan(currentPlan, settings, { skippedKind: kind }),
+    excludedRecipeIds: new Set(listRecipeIds(currentPlan, kind)),
   });
-  return breakfastRecipeIds.length > 0 ? { ...currentPlan, breakfastRecipeIds } : currentPlan;
+  return weeklyRecipeIds.length > 0 ? { ...currentPlan, [planKey]: weeklyRecipeIds } : currentPlan;
 }
 
 // Avec un budget, on ne propose que des remplaçants qui tiennent dans le plafond quand il y en a :
@@ -337,14 +408,14 @@ function listAffordableReplacements(candidates, currentPlan, slotIndex, settings
 }
 
 export function swapMeal(currentPlan, kind, slotIndex, settings, random = Math.random) {
-  if (kind === PLAN_KINDS.BREAKFAST) {
-    return swapWeeklyBreakfast(currentPlan, settings, random);
+  if (WEEKLY_KINDS.includes(kind)) {
+    return swapWeeklyRecipe(currentPlan, kind, settings, random);
   }
   const currentRecipeIds = currentPlan.mainRecipeIds;
   if (!Array.isArray(currentRecipeIds) || slotIndex < 0 || slotIndex >= currentRecipeIds.length) {
     return currentPlan;
   }
-  const purchaseTracker = createTrackerForPlan(currentPlan, settings, slotIndex);
+  const purchaseTracker = createTrackerForPlan(currentPlan, settings, { skippedMainSlotIndex: slotIndex });
   const candidates = listAllowedRecipes(PLAN_KINDS.MAIN, settings).filter((recipe) => recipe.id !== currentRecipeIds[slotIndex]);
   const replacement = pickBestRecipe({
     allowedRecipes: listAffordableReplacements(candidates, currentPlan, slotIndex, settings, purchaseTracker),

@@ -1,5 +1,5 @@
 import { AISLE_ORDER, LONG_LASTING_AISLES, PRODUCTS_BY_ID } from './catalog.js';
-import { getServingsPerBreakfast, getServingsPerMainSlot } from './meal-structure.js';
+import { getServingsPerBreakfast, getServingsPerMainSlot, getServingsPerSnack } from './meal-structure.js';
 import { getPortionQuantities } from './nutrition.js';
 
 // Évite qu'une imprécision flottante (ex. 3 × 0.1) fasse acheter un paquet de trop.
@@ -18,6 +18,10 @@ function computeQuantitiesCost(quantityEntries) {
 
 function isAlreadyOwned(product, settings) {
   return settings.pantryStaplesOwned && product.isPantryStaple;
+}
+
+function getStockQuantity(settings, productId) {
+  return settings.pantryStock?.[productId] ?? 0;
 }
 
 // Même règle que le ticket : les basiques du placard déjà possédés ne sont pas comptés.
@@ -39,7 +43,8 @@ function computePackagesCost(product, neededQuantity) {
 // Suit les quantités déjà prévues pour estimer ce qu'une recette ajoute vraiment au ticket :
 // un plat qui finit un paquet déjà ouvert coûte presque rien, un plat qui en ouvre trois coûte cher.
 export function createPurchaseTracker(settings) {
-  const neededByProductId = new Map();
+  // Le stock de restes part en négatif : tant qu'il couvre le besoin, aucun paquet n'est à acheter.
+  const neededByProductId = new Map(Object.entries(settings.pantryStock ?? {}).map(([productId, quantity]) => [productId, -quantity]));
   const isCounted = (product) => product !== undefined && !isAlreadyOwned(product, settings);
 
   return {
@@ -66,7 +71,8 @@ export function createPurchaseTracker(settings) {
 function listCookedServings(plan, settings) {
   return [
     ...plan.mainRecipeIds.map((recipeId) => ({ recipeId, servingCount: getServingsPerMainSlot(settings) })),
-    ...plan.breakfastRecipeIds.map((recipeId) => ({ recipeId, servingCount: getServingsPerBreakfast(settings) })),
+    ...(plan.breakfastRecipeIds ?? []).map((recipeId) => ({ recipeId, servingCount: getServingsPerBreakfast(settings) })),
+    ...(plan.snackRecipeIds ?? []).map((recipeId) => ({ recipeId, servingCount: getServingsPerSnack(settings) })),
   ];
 }
 
@@ -81,15 +87,20 @@ function sumNeededQuantities(cookedServings, settings) {
   return neededByProductId;
 }
 
-function buildLine(product, neededQuantity) {
-  const packageCount = Math.max(1, Math.ceil(neededQuantity / product.packageSize - PACKAGE_ROUNDING_TOLERANCE));
+function buildLine(product, neededQuantity, stockQuantity) {
+  const stockUsedQuantity = Math.min(stockQuantity, neededQuantity);
+  const quantityToBuy = neededQuantity - stockUsedQuantity;
+  const packageCount = quantityToBuy > PACKAGE_ROUNDING_TOLERANCE
+    ? Math.ceil(quantityToBuy / product.packageSize - PACKAGE_ROUNDING_TOLERANCE)
+    : 0;
   return {
     product,
     neededQuantity,
+    stockUsedQuantity,
     packageCount,
-    leftoverQuantity: Math.max(0, packageCount * product.packageSize - neededQuantity),
+    leftoverQuantity: Math.max(0, packageCount * product.packageSize - quantityToBuy),
     cost: roundToCents(packageCount * product.price),
-    consumedValue: (neededQuantity * product.price) / product.packageSize,
+    consumedValue: (quantityToBuy * product.price) / product.packageSize,
   };
 }
 
@@ -112,9 +123,11 @@ export function buildShoppingList(plan, settings) {
   const allLines = [...neededByProductId]
     .map(([productId, neededQuantity]) => ({ product: PRODUCTS_BY_ID.get(productId), neededQuantity }))
     .filter(({ product }) => product !== undefined)
-    .map(({ product, neededQuantity }) => buildLine(product, neededQuantity));
+    .map(({ product, neededQuantity }) => buildLine(product, neededQuantity, getStockQuantity(settings, product.id)));
 
-  const purchasedLines = allLines.filter((line) => !isAlreadyOwned(line.product, settings));
+  const ownedLines = allLines.filter((line) => !isAlreadyOwned(line.product, settings));
+  const purchasedLines = ownedLines.filter((line) => line.packageCount > 0);
+  const stockLines = ownedLines.filter((line) => line.packageCount === 0);
   const pantryLines = allLines.filter((line) => isAlreadyOwned(line.product, settings));
 
   const totalToPay = roundToCents(purchasedLines.reduce((total, line) => total + line.cost, 0));
@@ -126,6 +139,7 @@ export function buildShoppingList(plan, settings) {
 
   return {
     aisleGroups: groupLinesByAisle(purchasedLines),
+    stockLines,
     pantryLines,
     articleCount: purchasedLines.reduce((total, line) => total + line.packageCount, 0),
     totalToPay,

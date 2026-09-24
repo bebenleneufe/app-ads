@@ -11,6 +11,7 @@ export const CATEGORIES = Object.freeze({
 export const MEAL_TYPES = Object.freeze({
   MAIN: 'plat',
   BREAKFAST: 'petit-dejeuner',
+  SNACK: 'collation',
 });
 
 // Une recette rapide doit aussi rester courte : au-delà de 6 ingrédients frais, elle demande
@@ -1432,6 +1433,61 @@ export const RECIPES = Object.freeze([
     prepMinutes: 10,
     ingredients: { oeuf: 1, 'pain-complet': 60, beurre: 5, banane: 100 },
     steps: ['Cuire l’œuf 9 min (ou la veille).', 'Griller le pain, servir avec la banane.'],
+  }),
+
+  defineRecipe({
+    id: 'collation-fromage-blanc',
+    name: 'Fromage blanc nature',
+    category: CATEGORIES.VEGETARIAN,
+    mealType: MEAL_TYPES.SNACK,
+    prepMinutes: 1,
+    ingredients: { 'fromage-blanc': 140 },
+    steps: ['Servir frais, nature ou avec une pincée de cannelle. Un pot d’1 kg fait la semaine.'],
+  }),
+  defineRecipe({
+    id: 'collation-fromage-blanc-pomme',
+    name: 'Fromage blanc et pomme râpée',
+    category: CATEGORIES.VEGETARIAN,
+    mealType: MEAL_TYPES.SNACK,
+    prepMinutes: 3,
+    ingredients: { 'fromage-blanc': 100, pomme: 80 },
+    steps: ['Râper la pomme et la mélanger au fromage blanc.'],
+  }),
+  defineRecipe({
+    id: 'collation-pomme',
+    name: 'Une pomme',
+    category: CATEGORIES.VEGETARIAN,
+    mealType: MEAL_TYPES.SNACK,
+    prepMinutes: 1,
+    ingredients: { pomme: 150 },
+    steps: ['À croquer telle quelle.'],
+  }),
+  defineRecipe({
+    id: 'collation-banane',
+    name: 'Une petite banane',
+    category: CATEGORIES.VEGETARIAN,
+    mealType: MEAL_TYPES.SNACK,
+    prepMinutes: 1,
+    ingredients: { banane: 100 },
+    steps: ['À manger telle quelle.'],
+  }),
+  defineRecipe({
+    id: 'collation-carottes-houmous',
+    name: 'Bâtonnets de carotte et houmous',
+    category: CATEGORIES.VEGETARIAN,
+    mealType: MEAL_TYPES.SNACK,
+    prepMinutes: 3,
+    ingredients: { carotte: 100, houmous: 15 },
+    steps: ['Couper la carotte en bâtonnets et les tremper dans le houmous.'],
+  }),
+  defineRecipe({
+    id: 'collation-amandes',
+    name: 'Une poignée d’amandes',
+    category: CATEGORIES.VEGETARIAN,
+    mealType: MEAL_TYPES.SNACK,
+    prepMinutes: 1,
+    ingredients: { amandes: 15 },
+    steps: ['Une petite poignée, environ 12 amandes.'],
   }),
 ]);
 

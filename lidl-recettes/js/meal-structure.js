@@ -23,6 +23,10 @@ export function getServingsPerBreakfast(settings) {
   return settings.personCount;
 }
 
+export function getServingsPerSnack(settings) {
+  return settings.personCount;
+}
+
 export function getMainSlotLabels(settings) {
   if (settings.mainMealMode === MAIN_MEAL_MODES.DIFFERENT_LUNCH_AND_DINNER) {
     return ['Déjeuner', 'Dîner'];
@@ -41,11 +45,15 @@ export function getBreakfastSlotCount(settings) {
   return settings.includeBreakfast ? settings.dayCount : 0;
 }
 
+export function getSnackSlotCount(settings) {
+  return settings.includeSnack ? settings.dayCount : 0;
+}
+
 export function getMealsEatenPerDay(settings) {
   const mainMealsPerDay = settings.mainMealMode === MAIN_MEAL_MODES.DINNER_ONLY ? 1 : 2;
   return mainMealsPerDay + (settings.includeBreakfast ? 1 : 0);
 }
 
 export function createEmptyPlan() {
-  return { mainRecipeIds: [], breakfastRecipeIds: [] };
+  return { mainRecipeIds: [], breakfastRecipeIds: [], snackRecipeIds: [] };
 }

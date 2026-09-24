@@ -1,12 +1,34 @@
+import { CookMode } from './cook-mode.js';
 import { debounce } from './dom.js';
 import { buildShoppingListText } from './list-text.js';
-import { generatePlan, reconcilePlan, swapMeal } from './planner.js';
-import { createEmptyPlan } from './meal-structure.js';
+import { generatePlan, PLAN_KINDS, reconcilePlan, swapMeal } from './planner.js';
+import { createEmptyPlan, getServingsPerBreakfast, getServingsPerMainSlot, getServingsPerSnack } from './meal-structure.js';
 import { hasWeightLossGoal } from './nutrition.js';
-import { renderGoalHint, renderPlan, renderReceipt, renderSummary, updateReceiptProgress } from './render.js';
+import {
+  clearDisliked,
+  EMPTY_PREFERENCES,
+  markDisliked,
+  normalizePreferences,
+  rememberWeek,
+  toggleLiked,
+} from './preferences.js';
+import { RECIPES_BY_ID } from './recipes.js';
+import {
+  renderGoalHint,
+  renderPlan,
+  renderPreferencesSummary,
+  renderReceipt,
+  renderStockSummary,
+  renderSummary,
+  updateReceiptProgress,
+} from './render.js';
 import { normalizeSettings, readSettingsFromForm, writeSettingsToForm } from './settings.js';
 import { buildShoppingList } from './shopping-list.js';
+import { renderWeightTracker } from './render-weight.js';
+import { computeNextStock, describeStock, hasShoppingEvidence, normalizeStock } from './stock.js';
 import { loadSavedState, saveState } from './storage.js';
+import { createScreenWakeLock } from './wake-lock.js';
+import { addWeightEntry, analyzeWeightTrend, isValidWeight, normalizeWeightLog } from './weight-log.js';
 import { getUpcomingMonday, resolveWeekStart, toIsoDate } from './week.js';
 
 const SETTINGS_DEBOUNCE_MILLISECONDS = 300;
@@ -15,10 +37,21 @@ const COPY_STATUS_DURATION_MILLISECONDS = 4000;
 // tapées (« 4 » avant « 45 ») remplaceraient des plats pour rien.
 const FIELDS_APPLIED_ON_COMMIT_ONLY = new Set(['weeklyBudget']);
 
+const SERVINGS_BY_PLAN_KIND = Object.freeze({
+  [PLAN_KINDS.MAIN]: getServingsPerMainSlot,
+  [PLAN_KINDS.BREAKFAST]: getServingsPerBreakfast,
+  [PLAN_KINDS.SNACK]: getServingsPerSnack,
+});
+
 class WeeklyPlannerApp {
   #elements;
   #settings;
   #plan = createEmptyPlan();
+  #preferences = EMPTY_PREFERENCES;
+  #weightLog = [];
+  #pantryStock = {};
+  #cookMode;
+  #storeWakeLock = createScreenWakeLock();
   #checkedProductIds = new Set();
   #shoppingList = null;
   #weekStartDate = getUpcomingMonday();
@@ -39,7 +72,18 @@ class WeeklyPlannerApp {
       copyFallback: rootDocument.getElementById('copy-fallback'),
       profileFields: rootDocument.getElementById('profile-fields'),
       goalHint: rootDocument.getElementById('kcal-hint'),
+      preferencesSummary: rootDocument.getElementById('preferences-summary'),
+      resetDislikesButton: rootDocument.getElementById('reset-dislikes-button'),
+      weightEntryInput: rootDocument.getElementById('weight-entry'),
+      addWeightButton: rootDocument.getElementById('add-weight-button'),
+      weightChartContainer: rootDocument.getElementById('weight-chart-container'),
+      weightAdvice: rootDocument.getElementById('weight-advice'),
+      stockSummary: rootDocument.getElementById('stock-summary'),
+      clearStockButton: rootDocument.getElementById('clear-stock-button'),
+      storeModeButton: rootDocument.getElementById('store-mode-button'),
+      body: rootDocument.body,
     };
+    this.#cookMode = new CookMode(rootDocument.getElementById('cook-dialog'));
   }
 
   start() {
@@ -54,18 +98,33 @@ class WeeklyPlannerApp {
     const savedState = loadSavedState();
     try {
       this.#settings = normalizeSettings(savedState?.settings);
+      this.#preferences = normalizePreferences(savedState?.preferences, RECIPES_BY_ID);
+      this.#weightLog = normalizeWeightLog(savedState?.weightLog);
+      this.#pantryStock = normalizeStock(savedState?.pantryStock);
       this.#checkedProductIds = new Set(Array.isArray(savedState?.checkedProductIds) ? savedState.checkedProductIds : []);
       this.#weekStartDate = resolveWeekStart(savedState?.weekStart);
       this.#plan = savedState?.plan && typeof savedState.plan === 'object'
-        ? reconcilePlan(savedState.plan, this.#settings)
-        : generatePlan(this.#settings);
+        ? reconcilePlan(savedState.plan, this.#planningSettings())
+        : generatePlan(this.#planningSettings());
+      // La semaine enregistrée est terminée : on passe à la suivante comme avec « Nouvelle semaine ».
+      if (typeof savedState?.weekStart === 'string' && savedState.weekStart !== toIsoDate(this.#weekStartDate)) {
+        this.#startNextWeek();
+      }
     } catch (restoreError) {
       console.warn('Semaine enregistrée illisible, nouvelle semaine générée.', restoreError);
       this.#settings = normalizeSettings(null);
+      this.#preferences = EMPTY_PREFERENCES;
+      this.#weightLog = [];
+      this.#pantryStock = {};
       this.#checkedProductIds = new Set();
       this.#weekStartDate = getUpcomingMonday();
-      this.#plan = generatePlan(this.#settings);
+      this.#plan = generatePlan(this.#planningSettings());
     }
+  }
+
+  // Les préférences voyagent avec les réglages jusqu'au générateur, sans être des champs du formulaire.
+  #planningSettings() {
+    return { ...this.#settings, preferences: this.#preferences, pantryStock: this.#pantryStock };
   }
 
   // Une saisie encore en attente est appliquée (et donc enregistrée) avant de quitter la page.
@@ -73,6 +132,8 @@ class WeeklyPlannerApp {
     this.#debouncedSettingsUpdate.flush();
     this.#listenersController.abort();
     clearTimeout(this.#copyStatusTimeoutId);
+    this.#cookMode.destroy();
+    this.#storeWakeLock.disable();
   }
 
   #attachListeners() {
@@ -89,10 +150,21 @@ class WeeklyPlannerApp {
     receipt.addEventListener('change', (changeEvent) => this.#handleReceiptCheck(changeEvent), { signal });
     copyButton.addEventListener('click', () => this.#copyShoppingList(), { signal });
     uncheckButton.addEventListener('click', () => this.#uncheckAll(), { signal });
+    this.#elements.resetDislikesButton.addEventListener('click', () => this.#resetDislikes(), { signal });
+    this.#elements.clearStockButton.addEventListener('click', () => this.#clearStock(), { signal });
+    this.#elements.storeModeButton.addEventListener('click', () => this.#toggleStoreMode(), { signal });
+    this.#elements.addWeightButton.addEventListener('click', () => this.#recordWeight(), { signal });
+    this.#elements.weightEntryInput.addEventListener('keydown', (keyEvent) => {
+      if (keyEvent.key === 'Enter') {
+        keyEvent.preventDefault();
+        this.#recordWeight();
+      }
+    }, { signal });
   }
 
   #handleSettingsInput(inputEvent) {
-    if (FIELDS_APPLIED_ON_COMMIT_ONLY.has(inputEvent.target.name)) {
+    // Les champs sans nom (poids du jour) ne sont pas des réglages : ils ont leur propre bouton.
+    if (!inputEvent.target.name || FIELDS_APPLIED_ON_COMMIT_ONLY.has(inputEvent.target.name)) {
       return;
     }
     if (inputEvent.target.type === 'number') {
@@ -105,7 +177,7 @@ class WeeklyPlannerApp {
   // Les champs numériques ne sont réécrits qu'à la sortie du champ, pour ne pas
   // corriger la saisie pendant que la personne tape encore.
   #handleSettingsCommit(changeEvent) {
-    if (changeEvent.target.type !== 'number') {
+    if (changeEvent.target.type !== 'number' || !changeEvent.target.name) {
       return;
     }
     this.#debouncedSettingsUpdate.cancel();
@@ -122,26 +194,96 @@ class WeeklyPlannerApp {
       this.#regenerateWeek();
       return;
     }
-    this.#plan = reconcilePlan(this.#plan, this.#settings);
+    this.#plan = reconcilePlan(this.#plan, this.#planningSettings());
     this.#renderAll();
   }
 
   #regenerateWeek() {
-    this.#plan = generatePlan(this.#settings);
-    this.#weekStartDate = resolveWeekStart(toIsoDate(this.#weekStartDate));
+    this.#startNextWeek();
+    this.#renderAll();
+  }
+
+  // Passer à une nouvelle semaine : on retient ses plats (pour ne pas les resservir tout de suite)
+  // et, si des courses ont été cochées, ce qu'il reste en stock pour la semaine suivante.
+  #startNextWeek() {
+    if (hasShoppingEvidence(this.#checkedProductIds)) {
+      const shoppingList = buildShoppingList(this.#plan, this.#planningSettings());
+      this.#pantryStock = computeNextStock({ stock: this.#pantryStock, shoppingList, checkedProductIds: this.#checkedProductIds });
+    }
+    this.#preferences = rememberWeek(this.#preferences, this.#plan.mainRecipeIds);
     this.#checkedProductIds.clear();
+    this.#weekStartDate = resolveWeekStart(toIsoDate(this.#weekStartDate));
+    this.#plan = generatePlan(this.#planningSettings());
+  }
+
+  #toggleStoreMode() {
+    const isStoreMode = this.#elements.body.classList.toggle('is-store-mode');
+    const { storeModeButton } = this.#elements;
+    storeModeButton.setAttribute('aria-pressed', String(isStoreMode));
+    storeModeButton.textContent = isStoreMode ? 'Quitter le mode magasin' : 'Mode magasin';
+    if (isStoreMode) {
+      this.#storeWakeLock.enable();
+      this.#elements.receipt.scrollIntoView({ block: 'start' });
+    } else {
+      this.#storeWakeLock.disable();
+    }
+  }
+
+  #clearStock() {
+    this.#pantryStock = {};
+    this.#plan = reconcilePlan(this.#plan, this.#planningSettings());
     this.#renderAll();
   }
 
   #handlePlanClick(clickEvent) {
-    const swapButton = clickEvent.target.closest('[data-action="swap"]');
-    if (!swapButton) {
+    const actionButton = clickEvent.target.closest('[data-action]');
+    if (!actionButton) {
       return;
     }
-    const { planKind, slotIndex } = swapButton.dataset;
-    this.#plan = swapMeal(this.#plan, planKind, Number.parseInt(slotIndex, 10), this.#settings);
+    const { action, planKind, slotIndex, recipeId } = actionButton.dataset;
+    const slotNumber = Number.parseInt(slotIndex, 10);
+    if (action === 'cook') {
+      const recipe = RECIPES_BY_ID.get(recipeId);
+      const getServings = SERVINGS_BY_PLAN_KIND[planKind];
+      if (recipe && getServings) {
+        this.#cookMode.open(recipe, getServings(this.#settings), this.#planningSettings());
+      }
+      return;
+    }
+    if (action === 'like') {
+      this.#preferences = toggleLiked(this.#preferences, recipeId);
+    } else if (action === 'dislike') {
+      this.#preferences = markDisliked(this.#preferences, recipeId);
+      this.#plan = swapMeal(this.#plan, planKind, slotNumber, this.#planningSettings());
+    } else if (action === 'swap') {
+      this.#plan = swapMeal(this.#plan, planKind, slotNumber, this.#planningSettings());
+    } else {
+      return;
+    }
     this.#renderAll();
-    this.#elements.planList.querySelector(`[data-plan-kind="${planKind}"][data-slot-index="${slotIndex}"]`)?.focus();
+    this.#elements.planList.querySelector(`[data-action="${action}"][data-plan-kind="${planKind}"][data-slot-index="${slotIndex}"]`)?.focus();
+  }
+
+  // Une nouvelle pesée met aussi à jour le poids du profil : l'objectif calorique suit la perte.
+  #recordWeight() {
+    const { weightEntryInput } = this.#elements;
+    const weightKg = Number.parseFloat(weightEntryInput.value.replace(',', '.'));
+    if (!isValidWeight(weightKg)) {
+      this.#elements.weightAdvice.textContent = 'Indique un poids entre 40 et 250 kg, par exemple 84,6.';
+      weightEntryInput.focus();
+      return;
+    }
+    this.#weightLog = addWeightEntry(this.#weightLog, toIsoDate(new Date()), weightKg);
+    this.#settings = normalizeSettings({ ...this.#settings, weightKg });
+    writeSettingsToForm(this.#elements.settingsForm, this.#settings);
+    weightEntryInput.value = '';
+    this.#plan = reconcilePlan(this.#plan, this.#planningSettings());
+    this.#renderAll();
+  }
+
+  #resetDislikes() {
+    this.#preferences = clearDisliked(this.#preferences);
+    this.#renderAll();
   }
 
   #hideMissingPhoto(errorEvent) {
@@ -197,11 +339,21 @@ class WeeklyPlannerApp {
   }
 
   #renderAll() {
-    this.#shoppingList = buildShoppingList(this.#plan, this.#settings);
+    const planningSettings = this.#planningSettings();
+    this.#shoppingList = buildShoppingList(this.#plan, planningSettings);
     this.#elements.profileFields.hidden = !hasWeightLossGoal(this.#settings);
     renderGoalHint(this.#elements.goalHint, this.#settings);
     renderSummary(this.#elements.summary, this.#shoppingList, this.#settings);
-    renderPlan(this.#elements.planList, this.#plan, this.#settings, this.#weekStartDate);
+    renderPlan(this.#elements.planList, this.#plan, planningSettings, this.#weekStartDate);
+    renderPreferencesSummary(this.#elements.preferencesSummary, this.#elements.resetDislikesButton, this.#preferences);
+    renderStockSummary(this.#elements.stockSummary, this.#elements.clearStockButton, describeStock(this.#pantryStock));
+    renderWeightTracker({
+      chartContainer: this.#elements.weightChartContainer,
+      adviceElement: this.#elements.weightAdvice,
+      weightLog: this.#weightLog,
+      pantryStock: this.#pantryStock,
+      analysis: analyzeWeightTrend(this.#weightLog, toIsoDate(new Date())),
+    });
     this.#renderReceipt();
     this.#persist();
   }
@@ -222,13 +374,31 @@ class WeeklyPlannerApp {
       settings: this.#settings,
       plan: this.#plan,
       weekStart: toIsoDate(this.#weekStartDate),
+      preferences: this.#preferences,
+      weightLog: this.#weightLog,
+      pantryStock: this.#pantryStock,
       checkedProductIds: [...this.#checkedProductIds],
     });
   }
 }
 
+// Le mode hors ligne n'a de sens que sur un vrai site (https ou localhost) ;
+// ailleurs (aperçu intégré, fichier local) l'appli fonctionne simplement sans.
+async function registerOfflineSupport() {
+  const isSecureSite = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
+  if (!('serviceWorker' in navigator) || !isSecureSite) {
+    return;
+  }
+  try {
+    await navigator.serviceWorker.register('sw.js');
+  } catch (registrationError) {
+    console.info('Mode hors ligne indisponible ici.', registrationError);
+  }
+}
+
 const weeklyPlannerApp = new WeeklyPlannerApp(document);
 weeklyPlannerApp.start();
+registerOfflineSupport();
 // Une page mise en cache (bfcache, persisted) peut être restaurée : on ne détruit que les sorties définitives.
 function destroyOnFinalPageExit(pagehideEvent) {
   if (pagehideEvent.persisted) {

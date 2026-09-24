@@ -27,7 +27,8 @@ describe('calories', () => {
       assert.ok(KCAL_BY_PRODUCT_ID[product.id] > 0, `kcal manquantes pour ${product.id}`);
     }
     for (const recipe of RECIPES) {
-      assert.ok(getRecipeKcal(recipe.id) > 200, `${recipe.id} semble trop peu calorique`);
+      const minimumKcal = recipe.mealType === MEAL_TYPES.SNACK ? 50 : 200;
+      assert.ok(getRecipeKcal(recipe.id) > minimumKcal, `${recipe.id} semble trop peu calorique`);
     }
   });
 

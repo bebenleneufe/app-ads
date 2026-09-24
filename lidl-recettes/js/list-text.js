@@ -10,6 +10,13 @@ export function buildShoppingListText(shoppingList, settings, weekStartDate) {
     ...group.lines.map((line) => `- ${line.packageCount} × ${line.product.name} (${line.product.packageLabel}) : ${formatEuros(line.cost)}`),
     '',
   ]);
+  const stockLines = shoppingList.stockLines.length === 0
+    ? []
+    : [
+      'RESTES À UTILISER (DÉJÀ CHEZ TOI)',
+      ...shoppingList.stockLines.map((line) => `- ${formatProductQuantity(line.product, line.neededQuantity)}`),
+      '',
+    ];
   const pantryLines = shoppingList.pantryLines.length === 0
     ? []
     : [
@@ -20,6 +27,7 @@ export function buildShoppingListText(shoppingList, settings, weekStartDate) {
   return [
     ...headerLines,
     ...aisleLines,
+    ...stockLines,
     ...pantryLines,
     `Total estimé : ${formatEuros(shoppingList.totalToPay)}`,
   ].join('\n');

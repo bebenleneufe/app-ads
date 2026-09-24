@@ -18,6 +18,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   dayCount: 7,
   mainMealMode: MAIN_MEAL_MODES.SAME_LUNCH_AND_DINNER,
   includeBreakfast: true,
+  includeSnack: true,
   diet: DIETS.OMNIVORE,
   withoutPork: false,
   maxPrepMinutes: 20,
@@ -40,6 +41,14 @@ function clampInteger(rawValue, { min, max }, fallback) {
   return Math.min(max, Math.max(min, parsedValue));
 }
 
+function clampToTenth(rawValue, { min, max }, fallback) {
+  const parsedValue = Number.parseFloat(String(rawValue).replace(',', '.'));
+  if (Number.isNaN(parsedValue)) {
+    return fallback;
+  }
+  return Math.round(Math.min(max, Math.max(min, parsedValue)) * 10) / 10;
+}
+
 function pickKnownValue(rawValue, knownValues, fallback) {
   return knownValues.includes(rawValue) ? rawValue : fallback;
 }
@@ -53,6 +62,7 @@ export function normalizeSettings(savedSettings) {
     dayCount: clampInteger(rawSettings.dayCount, SETTINGS_LIMITS.dayCount, DEFAULT_SETTINGS.dayCount),
     mainMealMode: pickKnownValue(rawSettings.mainMealMode, Object.values(MAIN_MEAL_MODES), DEFAULT_SETTINGS.mainMealMode),
     includeBreakfast: rawSettings.includeBreakfast !== false,
+    includeSnack: rawSettings.includeSnack !== false,
     diet: pickKnownValue(rawSettings.diet, Object.values(DIETS), DEFAULT_SETTINGS.diet),
     withoutPork: rawSettings.withoutPork === true,
     priority: pickKnownValue(rawSettings.priority, Object.values(PRIORITIES), DEFAULT_SETTINGS.priority),
@@ -62,7 +72,7 @@ export function normalizeSettings(savedSettings) {
     goal: pickKnownValue(rawSettings.goal, Object.values(GOALS), DEFAULT_SETTINGS.goal),
     sex: pickKnownValue(rawSettings.sex, Object.values(SEXES), DEFAULT_SETTINGS.sex),
     age: clampInteger(rawSettings.age, SETTINGS_LIMITS.age, DEFAULT_SETTINGS.age),
-    weightKg: clampInteger(rawSettings.weightKg, SETTINGS_LIMITS.weightKg, DEFAULT_SETTINGS.weightKg),
+    weightKg: clampToTenth(rawSettings.weightKg, SETTINGS_LIMITS.weightKg, DEFAULT_SETTINGS.weightKg),
     heightCm: clampInteger(rawSettings.heightCm, SETTINGS_LIMITS.heightCm, DEFAULT_SETTINGS.heightCm),
     activityLevel: pickKnownValue(rawSettings.activityLevel, Object.keys(ACTIVITY_FACTORS), DEFAULT_SETTINGS.activityLevel),
   };
@@ -75,6 +85,7 @@ export function readSettingsFromForm(formElement) {
     dayCount: formData.get('dayCount'),
     mainMealMode: formData.get('mainMealMode'),
     includeBreakfast: formData.has('includeBreakfast'),
+    includeSnack: formData.has('includeSnack'),
     diet: formData.get('diet'),
     withoutPork: formData.has('withoutPork'),
     maxPrepMinutes: formData.get('maxPrepMinutes'),
@@ -96,6 +107,7 @@ export function writeSettingsToForm(formElement, settings) {
   elements.dayCount.value = String(settings.dayCount);
   elements.mainMealMode.value = settings.mainMealMode;
   elements.includeBreakfast.checked = settings.includeBreakfast;
+  elements.includeSnack.checked = settings.includeSnack;
   elements.diet.value = settings.diet;
   elements.withoutPork.checked = settings.withoutPork;
   elements.maxPrepMinutes.value = String(settings.maxPrepMinutes);

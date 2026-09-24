@@ -100,3 +100,30 @@ export const KCAL_BY_PRODUCT_ID = Object.freeze({
   herbes: 270,
   poivre: 250,
 });
+
+// Protéines moyennes (Ciqual), mêmes unités que les calories : g pour 100 g / 100 ml, ou g par pièce.
+export const PROTEIN_BY_PRODUCT_ID = Object.freeze({
+  oignon: 1.2, ail: 6, carotte: 0.9, 'pomme-de-terre': 2, 'patate-douce': 1.6, tomate: 0.9, courgette: 1.2,
+  poireau: 1.5, champignon: 3, poivron: 1.5, aubergine: 3, brocoli: 14, salade: 3, concombre: 2.5, avocat: 3,
+  citron: 0.3, persil: 1, banane: 1.1, pomme: 0.3,
+
+  'poulet-filet': 23, 'cuisse-poulet': 15, 'boeuf-hache': 21, dinde: 23, lardons: 16, saucisse: 14, jambon: 20, chorizo: 24,
+
+  saumon: 20, crevettes: 20, thon: 25, sardines: 24, maquereau: 15,
+
+  oeuf: 7, lait: 3.3, 'creme-epaisse': 2.5, beurre: 0.7, emmental: 28, mozzarella: 18, parmesan: 33, feta: 16,
+  'fromage-blanc': 8, ricotta: 9, chevre: 18, tofu: 13,
+
+  'pain-complet': 9, 'pain-pita': 5.5, 'pate-brisee': 15, 'pate-feuilletee': 14, gnocchi: 3.5, tortilla: 3.5,
+  'pain-burger': 5, houmous: 7, falafels: 7,
+
+  'flocons-avoine': 13, amandes: 21, spaghetti: 12.5, penne: 12.5, riz: 7.5, semoule: 12, nouilles: 13,
+  'lentilles-corail': 24, 'lentilles-vertes': 24, 'lentilles-boite': 8, 'pois-chiches': 7, 'haricots-rouges': 8,
+  'haricots-blancs': 7, mais: 3, 'tomates-concassees': 1.2, coulis: 1.5, 'lait-coco': 1.5, pesto: 5, boulgour: 12,
+  quinoa: 14,
+
+  epinards: 3, 'haricots-verts': 2, 'petits-pois': 5.5, 'brocoli-surgele': 3, 'poelee-legumes': 1.5, colin: 17,
+
+  'huile-olive': 0, vinaigre: 0.5, moutarde: 7, 'sauce-soja': 8, bouillon: 0.5, curry: 12, paprika: 14, cumin: 18,
+  herbes: 9, poivre: 10,
+});

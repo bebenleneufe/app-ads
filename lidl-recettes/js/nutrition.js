@@ -1,5 +1,5 @@
 import { PRODUCTS_BY_ID, UNITS } from './catalog.js';
-import { KCAL_BY_PRODUCT_ID } from './nutrition-facts.js';
+import { KCAL_BY_PRODUCT_ID, PROTEIN_BY_PRODUCT_ID } from './nutrition-facts.js';
 import { MEAL_TYPES, RECIPES, RECIPES_BY_ID } from './recipes.js';
 
 export const GOALS = Object.freeze({
@@ -20,23 +20,28 @@ export const ACTIVITY_FACTORS = Object.freeze({
 const DAILY_DEFICIT_KCAL = 500;
 const MINIMUM_DAILY_KCAL = Object.freeze({ [SEXES.MALE]: 1500, [SEXES.FEMALE]: 1200 });
 
-// Répartition usuelle : 25 % au petit-déjeuner, 35 % au déjeuner et 35 % au dîner.
-// Les 5 % restants laissent de la place pour un café au lait ou un fruit.
+// Répartition usuelle : 25 % au petit-déjeuner, 35 % au déjeuner et 35 % au dîner,
+// et 5 % pour une petite collation dans l'après-midi.
 const SHARE_OF_DAY_BY_MEAL_TYPE = Object.freeze({
   [MEAL_TYPES.BREAKFAST]: 0.25,
   [MEAL_TYPES.MAIN]: 0.35,
+  [MEAL_TYPES.SNACK]: 0.05,
 });
 
 // Marge acceptée au-dessus de la cible d'un repas : sous-estimer ou surestimer de 10 % reste dans la précision des tables.
 export const MEAL_KCAL_TOLERANCE = 1.1;
 
-function computeIngredientKcal(productId, quantity) {
+function computeIngredientValue(productId, quantity, valuesByProductId) {
   const product = PRODUCTS_BY_ID.get(productId);
-  const kcalReference = KCAL_BY_PRODUCT_ID[productId];
-  if (!product || kcalReference === undefined) {
+  const reference = valuesByProductId[productId];
+  if (!product || reference === undefined) {
     return 0;
   }
-  return product.unit === UNITS.PIECE ? quantity * kcalReference : (quantity * kcalReference) / 100;
+  return product.unit === UNITS.PIECE ? quantity * reference : (quantity * reference) / 100;
+}
+
+function computeIngredientKcal(productId, quantity) {
+  return computeIngredientValue(productId, quantity, KCAL_BY_PRODUCT_ID);
 }
 
 function computeRecipeKcal(recipe) {
@@ -97,7 +102,11 @@ function splitRecipeKcal(recipe) {
 // Les produits à la pièce (œufs, tortillas…) ne sont pas ajustés : « 3,3 œufs » n'a pas de sens en cuisine.
 export function getPortionFactor(recipeId, settings) {
   const recipe = RECIPES_BY_ID.get(recipeId);
-  const mealTargetKcal = recipe ? computeMealTargetKcal(settings, recipe.mealType) : null;
+  // Une collation reste une quantité simple (« une pomme », « un pot ») : on ne l'ajuste pas.
+  if (!recipe || recipe.mealType === MEAL_TYPES.SNACK) {
+    return 1;
+  }
+  const mealTargetKcal = computeMealTargetKcal(settings, recipe.mealType);
   if (mealTargetKcal === null) {
     return 1;
   }
@@ -143,4 +152,29 @@ export function fitsMealTarget(recipeId, settings) {
   const recipe = RECIPES_BY_ID.get(recipeId);
   const mealTargetKcal = recipe ? computeMealTargetKcal(settings, recipe.mealType) : null;
   return mealTargetKcal === null || getRecipeKcal(recipeId) <= mealTargetKcal * MEAL_KCAL_TOLERANCE;
+}
+
+export function getPortionProtein(recipeId, settings) {
+  const portionProtein = getPortionQuantities(recipeId, settings)
+    .reduce((proteinSum, [productId, quantity]) => proteinSum + computeIngredientValue(productId, quantity, PROTEIN_BY_PRODUCT_ID), 0);
+  return Math.round(portionProtein);
+}
+
+// 1,6 g par kilo aide à garder le muscle pendant un déficit. Au-delà d'un IMC de 25, on calcule
+// sur le poids correspondant à cet IMC : la masse grasse n'a pas besoin de protéines.
+const PROTEIN_GRAMS_PER_KG = 1.6;
+const REFERENCE_BODY_MASS_INDEX = 25;
+
+export function computeDailyProteinTarget(settings) {
+  if (!hasWeightLossGoal(settings)) {
+    return null;
+  }
+  const heightMeters = settings.heightCm / 100;
+  const referenceWeightKg = Math.min(settings.weightKg, REFERENCE_BODY_MASS_INDEX * heightMeters * heightMeters);
+  return Math.round(PROTEIN_GRAMS_PER_KG * referenceWeightKg);
+}
+
+export function computeMealProteinTarget(settings, mealType = MEAL_TYPES.MAIN) {
+  const dailyProteinTarget = computeDailyProteinTarget(settings);
+  return dailyProteinTarget === null ? null : dailyProteinTarget * SHARE_OF_DAY_BY_MEAL_TYPE[mealType];
 }

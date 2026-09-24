@@ -9,6 +9,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;600&family=Source+Sans+3:wght@400;600&display=swap">
 <link rel="stylesheet" href="styles.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#2c6a4c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Semainier">
 </head>
 <body>
 <div class="page">
@@ -50,7 +56,7 @@
             </div>
             <div class="field">
               <label for="weight-kg">Poids</label>
-              <input id="weight-kg" name="weightKg" type="number" inputmode="numeric" min="40" max="250" step="1" required>
+              <input id="weight-kg" name="weightKg" type="number" inputmode="decimal" min="40" max="250" step="0.1" required>
             </div>
             <div class="field">
               <label for="height-cm">Taille</label>
@@ -66,6 +72,16 @@
             </select>
           </div>
           <p class="hint" id="kcal-hint"></p>
+
+          <div class="weight-tracker">
+            <p class="subgroup-title">Suivi du poids</p>
+            <div class="weight-entry-row">
+              <input id="weight-entry" type="number" inputmode="decimal" min="40" max="250" step="0.1" placeholder="ex. 84,6" aria-label="Poids du jour en kilos">
+              <button id="add-weight-button" class="quiet-button" type="button">Noter</button>
+            </div>
+            <div id="weight-chart-container"></div>
+            <p class="hint" id="weight-advice" aria-live="polite"></p>
+          </div>
         </fieldset>
       </section>
 
@@ -114,10 +130,19 @@
           </div>
         </fieldset>
 
+        <div class="preferences-row">
+          <p class="hint" id="preferences-summary"></p>
+          <button id="reset-dislikes-button" class="text-button" type="button" hidden>Réautoriser les plats écartés</button>
+        </div>
+
         <div class="check-list">
           <label class="check" for="include-breakfast">
             <input id="include-breakfast" name="includeBreakfast" type="checkbox">
             <span>Petit-déjeuner</span>
+          </label>
+          <label class="check" for="include-snack">
+            <input id="include-snack" name="includeSnack" type="checkbox">
+            <span>Collation</span>
           </label>
           <label class="check" for="without-pork">
             <input id="without-pork" name="withoutPork" type="checkbox">
@@ -147,6 +172,11 @@
           <input id="pantry-staples-owned" name="pantryStaplesOwned" type="checkbox">
           <span>J’ai déjà l’huile, les épices et les condiments</span>
         </label>
+
+        <div class="preferences-row">
+          <p class="hint" id="stock-summary"></p>
+          <button id="clear-stock-button" class="text-button" type="button" hidden>Vider le stock de restes</button>
+        </div>
       </section>
     </form>
 
@@ -162,7 +192,8 @@
       <h2 id="receipt-title" class="section-title">Courses</h2>
       <div class="receipt" id="receipt"></div>
       <div class="receipt-actions">
-        <button id="copy-button" class="primary-button" type="button">Copier la liste</button>
+        <button id="store-mode-button" class="primary-button" type="button" aria-pressed="false">Mode magasin</button>
+        <button id="copy-button" class="quiet-button" type="button">Copier la liste</button>
         <button id="uncheck-button" class="quiet-button" type="button">Tout décocher</button>
       </div>
       <p class="copy-status" id="copy-status" role="status"></p>
@@ -173,9 +204,28 @@
   <footer class="page-foot">
     <p>Prix estimés d’après le niveau de prix Lidl France de septembre 2026, hors promotions et hors produits de la semaine. Le montant en caisse peut varier selon le magasin. L’ordre des rayons suit le parcours habituel d’un magasin Lidl, surgelés en dernier ; la disposition exacte varie d’un magasin à l’autre.</p>
     <p>« Consommé cette semaine » compte seulement ce que les recettes utilisent. « Restes qui se gardent » compte l’épicerie, les surgelés et les condiments non utilisés : ils allègent les courses de la semaine suivante.</p>
-    <p>Calories estimées à partir de valeurs moyennes (table Ciqual), pour une portion. Le besoin journalier est calculé avec la formule de Mifflin-St Jeor, moins 500 kcal, pour viser environ 0,5 kg perdu par semaine. C’est un repère, pas un avis médical.</p>
+    <p>Calories estimées à partir de valeurs moyennes (table Ciqual), pour une portion. Le besoin journalier est calculé avec la formule de Mifflin-St Jeor, moins 500 kcal, pour viser environ 0,5 kg perdu par semaine. Protéines : 1,6 g par kilo, calculées au-delà d’un IMC de 25 sur le poids correspondant à cet IMC. C’est un repère, pas un avis médical.</p>
     <p>Photos indicatives : elles montrent un plat proche, pas forcément la recette exacte.</p>
   </footer>
+
+  <dialog class="cook-dialog" id="cook-dialog" aria-labelledby="cook-title">
+    <div class="cook-head">
+      <div>
+        <p class="cook-counter" data-cook="counter"></p>
+        <h2 class="cook-title" id="cook-title" data-cook="title"></h2>
+      </div>
+      <button class="quiet-button" type="button" data-cook="close">Fermer</button>
+    </div>
+    <div class="cook-content" data-cook="content" aria-live="polite"></div>
+    <div class="cook-timer" data-cook="timer" hidden>
+      <p class="cook-clock" data-cook="clock" aria-live="polite"></p>
+      <button class="quiet-button" type="button" data-cook="timer-button">Lancer le minuteur</button>
+    </div>
+    <div class="cook-nav">
+      <button class="quiet-button" type="button" data-cook="previous">Précédent</button>
+      <button class="primary-button" type="button" data-cook="next">Suivant</button>
+    </div>
+  </dialog>
 
   <nav class="quick-nav" aria-label="Accès rapide">
     <a href="#settings-title">Réglages</a>
