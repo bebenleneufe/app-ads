@@ -89,6 +89,7 @@ class WeeklyPlannerApp {
       clearStockButton: rootDocument.getElementById('clear-stock-button'),
       storeModeButton: rootDocument.getElementById('store-mode-button'),
       installButton: rootDocument.getElementById('install-button'),
+      installHelp: rootDocument.getElementById('install-help'),
       body: rootDocument.body,
     };
     this.#cookMode = new CookMode(rootDocument.getElementById('cook-dialog'));
@@ -96,7 +97,10 @@ class WeeklyPlannerApp {
 
   start() {
     this.#restoreSavedState();
-    this.#removeInstallButton = setUpInstallButton(this.#elements.installButton);
+    this.#removeInstallButton = setUpInstallButton({
+      installButton: this.#elements.installButton,
+      installHelp: this.#elements.installHelp,
+    });
     writeSettingsToForm(this.#elements.settingsForm, this.#settings);
     this.#attachListeners();
     this.#renderAll();

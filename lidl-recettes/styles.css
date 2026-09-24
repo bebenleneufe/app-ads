@@ -189,6 +189,17 @@ h1 {
   order: 1;
 }
 
+.install-help {
+  order: 2;
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
 .lede {
   color: var(--muted);
   font-size: var(--step-large);
