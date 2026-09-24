@@ -3,6 +3,7 @@
   "short_name": "Semainier",
   "description": "Menus de la semaine, liste de courses par rayon et ticket estimé avec des produits Lidl.",
   "lang": "fr",
+  "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

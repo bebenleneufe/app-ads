@@ -184,6 +184,11 @@ h1 {
   color: var(--accent);
 }
 
+.install-button {
+  justify-self: start;
+  order: 1;
+}
+
 .lede {
   color: var(--muted);
   font-size: var(--step-large);
