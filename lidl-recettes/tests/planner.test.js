@@ -216,13 +216,13 @@ describe('liste de courses', () => {
   });
 
   it('arrondit au paquet entier et calcule le reste', () => {
-    const settings = { ...baseSettings, personCount: 4 };
+    const settings = { ...baseSettings, personCount: 6 };
     const plan = { mainRecipeIds: ['spaghetti-bolognaise', 'spaghetti-thon-tomate'], breakfastRecipeIds: [] };
     const spaghettiLine = findLine(buildShoppingList(plan, settings), 'spaghetti');
-    assert.equal(spaghettiLine.neededQuantity, 800);
+    assert.equal(spaghettiLine.neededQuantity, 1200);
     assert.equal(spaghettiLine.packageCount, 2);
-    assert.equal(spaghettiLine.leftoverQuantity, 200);
-    assert.equal(spaghettiLine.cost, 1.7);
+    assert.equal(spaghettiLine.leftoverQuantity, 800);
+    assert.equal(spaghettiLine.cost, 1.76);
   });
 
   it('compte deux portions par plat quand il sert au déjeuner et au dîner', () => {

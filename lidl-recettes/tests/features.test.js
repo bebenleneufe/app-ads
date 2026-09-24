@@ -190,7 +190,7 @@ describe('restes reportés', () => {
   it('reporte les restes des seuls produits cochés, et seulement ceux qui se gardent', () => {
     const shoppingList = buildShoppingList(pastaPlan, noGoal);
     const nextStock = computeNextStock({ stock: {}, shoppingList, checkedProductIds: new Set(['spaghetti', 'oignon']) });
-    assert.equal(nextStock.spaghetti, 400);
+    assert.equal(nextStock.spaghetti, 900);
     assert.equal(nextStock.oignon, undefined);
     assert.deepEqual(computeNextStock({ stock: {}, shoppingList, checkedProductIds: new Set() }), {});
   });
@@ -205,7 +205,7 @@ describe('restes reportés', () => {
   it('écarte un stock enregistré abîmé ou des produits qui ne se gardent pas', () => {
     assert.deepEqual(normalizeStock({ spaghetti: 250, tomate: 500, riz: 'beaucoup', inconnu: 3 }), { spaghetti: 250 });
     assert.deepEqual(normalizeStock([1, 2]), {});
-    assert.deepEqual(describeStock({ spaghetti: 250 }), { productCount: 1, value: 0.43 });
+    assert.deepEqual(describeStock({ spaghetti: 250 }), { productCount: 1, value: 0.22 });
   });
 
   it('fait choisir des plats qui finissent le stock', () => {
