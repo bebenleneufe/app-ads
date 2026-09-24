@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import { describe, it } from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import { AISLE_ORDER, AISLES, PRODUCTS, PRODUCTS_BY_ID, UNITS } from '../js/catalog.js';
 import { formatProductQuantity } from '../js/format.js';
@@ -259,5 +261,14 @@ describe('réglages et formatage', () => {
     assert.equal(formatProductQuantity(eggs, 1), '1 œuf');
     assert.equal(formatProductQuantity(eggs, 3), '3 œufs');
     assert.equal(formatProductQuantity(PRODUCTS_BY_ID.get('riz'), 1500), '1,5 kg riz basmati');
+  });
+});
+
+describe('photos', () => {
+  it('a une photo pour chaque recette', () => {
+    for (const recipe of RECIPES) {
+      const photoPath = fileURLToPath(new URL(`../images/recettes/${recipe.id}.webp`, import.meta.url));
+      assert.ok(existsSync(photoPath), `photo manquante : ${recipe.id}`);
+    }
   });
 });

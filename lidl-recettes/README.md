@@ -16,6 +16,7 @@ Générateur de menus pour la semaine. Il produit aussi la liste de courses et u
 - **Bouton « Changer »** : remplace un seul repas sans toucher aux autres.
 - **Liste de courses** : rangée par rayon dans l'ordre du parcours habituel d'un magasin Lidl (fruits et légumes, pain, épicerie, frais, puis surgelés en dernier), avec un sous-total par rayon et une barre de progression pendant les courses. Arrondie au paquet entier. Chaque ligne indique le besoin réel et le reste. Tu peux cocher les articles pendant les courses.
 - **Ticket estimé** : total à payer, valeur réellement consommée dans la semaine et coût par portion. Les basiques du placard (huile, épices, condiments) peuvent être exclus du total.
+- **Photos** : une photo indicative par recette (`images/recettes/<id>.webp`, 480 × 320, environ 18 Ko chacune).
 - **Copie** de la liste en texte (pour l'envoyer par message, par exemple).
 - La semaine, les réglages et les cases cochées sont mémorisés dans le navigateur (`localStorage`).
 

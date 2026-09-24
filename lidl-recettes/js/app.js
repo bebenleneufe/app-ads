@@ -73,6 +73,8 @@ class WeeklyPlannerApp {
     settingsForm.addEventListener('change', (changeEvent) => this.#handleSettingsCommit(changeEvent), { signal });
     regenerateButton.addEventListener('click', () => this.#regenerateWeek(), { signal });
     planList.addEventListener('click', (clickEvent) => this.#handlePlanClick(clickEvent), { signal });
+    // L'événement « error » d'une image ne remonte pas : on l'écoute en phase de capture.
+    planList.addEventListener('error', (errorEvent) => this.#hideMissingPhoto(errorEvent), { signal, capture: true });
     receipt.addEventListener('change', (changeEvent) => this.#handleReceiptCheck(changeEvent), { signal });
     copyButton.addEventListener('click', () => this.#copyShoppingList(), { signal });
     uncheckButton.addEventListener('click', () => this.#uncheckAll(), { signal });
@@ -121,6 +123,12 @@ class WeeklyPlannerApp {
     this.#plan = swapMeal(this.#plan, planKind, Number.parseInt(slotIndex, 10), this.#settings);
     this.#renderAll();
     this.#elements.planList.querySelector(`[data-plan-kind="${planKind}"][data-slot-index="${slotIndex}"]`)?.focus();
+  }
+
+  #hideMissingPhoto(errorEvent) {
+    if (errorEvent.target instanceof HTMLImageElement && errorEvent.target.classList.contains('meal-photo')) {
+      errorEvent.target.hidden = true;
+    }
   }
 
   #handleReceiptCheck(changeEvent) {

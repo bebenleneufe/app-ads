@@ -589,6 +589,22 @@ select:hover {
   align-content: start;
 }
 
+.meal-photo {
+  display: block;
+  inline-size: calc(100% + 28px);
+  max-inline-size: none;
+  block-size: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  margin: -12px -14px 4px;
+  border-radius: 10px 10px 0 0;
+  background: var(--surface-sunk);
+}
+
+.meal {
+  overflow: hidden;
+}
+
 .meal[data-category="viande"] {
   --category-color: var(--category-viande);
 }

@@ -28,6 +28,7 @@ import { CATEGORY_LABELS, countFreshIngredients, MEAL_TYPES, RECIPES_BY_ID } fro
 
 const DAY_NAMES = Object.freeze(['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']);
 const BREAKFAST_LABEL = 'Petit-déjeuner';
+const RECIPE_PHOTO_DIRECTORY = 'images/recettes';
 const KCAL_FORMATTER = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
 
 function formatKcal(kcal) {
@@ -69,12 +70,28 @@ function buildMealFacts(recipe, settings) {
     facts.map((fact) => createElement('li', { text: fact })));
 }
 
+// Le nom du plat est déjà le titre de la carte : la photo est décorative (alt vide).
+function buildMealPhoto(recipe) {
+  return createElement('img', {
+    className: 'meal-photo',
+    attributes: {
+      src: `${RECIPE_PHOTO_DIRECTORY}/${recipe.id}.webp`,
+      alt: '',
+      width: '480',
+      height: '320',
+      loading: 'lazy',
+      decoding: 'async',
+    },
+  });
+}
+
 function buildMealCard({ recipe, kind, slotIndex, slotLabel, servingCount, settings }) {
   const isBreakfast = kind === PLAN_KINDS.BREAKFAST;
   return createElement('article', {
     className: isBreakfast ? 'meal is-breakfast' : 'meal',
     attributes: { 'data-category': recipe.category },
   }, [
+    buildMealPhoto(recipe),
     createElement('div', { className: 'meal-head' }, [
       createElement('p', { className: 'meal-slot', text: slotLabel }),
       createElement('button', {
