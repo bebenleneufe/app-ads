@@ -254,6 +254,7 @@ export function renderReceipt(receiptElement, shoppingList, settings, checkedPro
       buildTotalRow('Articles', String(shoppingList.articleCount), 'total-row'),
       buildTotalRow('Total estimé', formatEuros(shoppingList.totalToPay), 'total-row is-grand-total'),
       buildTotalRow('Consommé cette semaine', formatEuros(shoppingList.consumedValue), 'total-row is-secondary'),
+      buildTotalRow('Restes qui se gardent', formatEuros(shoppingList.longLastingLeftoverValue), 'total-row is-secondary'),
       buildTotalRow('Soit par repas', formatEuros(shoppingList.costPerPortion), 'total-row is-secondary'),
     ]),
     buildPantrySection(shoppingList.pantryLines),

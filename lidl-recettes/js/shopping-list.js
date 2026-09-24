@@ -1,4 +1,4 @@
-import { AISLE_ORDER, PRODUCTS_BY_ID } from './catalog.js';
+import { AISLE_ORDER, LONG_LASTING_AISLES, PRODUCTS_BY_ID } from './catalog.js';
 import { getServingsPerMainRecipe } from './meal-structure.js';
 import { getPortionQuantities } from './nutrition.js';
 
@@ -22,6 +22,40 @@ export function computeServingCost(recipe) {
 
 export function computePortionCost(recipeId, settings) {
   return computeQuantitiesCost(getPortionQuantities(recipeId, settings));
+}
+
+function computePackagesCost(product, neededQuantity) {
+  if (neededQuantity <= 0) {
+    return 0;
+  }
+  return Math.ceil(neededQuantity / product.packageSize - PACKAGE_ROUNDING_TOLERANCE) * product.price;
+}
+
+// Suit les quantités déjà prévues pour estimer ce qu'une recette ajoute vraiment au ticket :
+// un plat qui finit un paquet déjà ouvert coûte presque rien, un plat qui en ouvre trois coûte cher.
+export function createPurchaseTracker(settings) {
+  const neededByProductId = new Map();
+  const isCounted = (product) => product !== undefined && !(settings.pantryStaplesOwned && product.isPantryStaple);
+
+  return {
+    addRecipe(recipeId, servingCount) {
+      for (const [productId, quantityPerServing] of getPortionQuantities(recipeId, settings)) {
+        const previousQuantity = neededByProductId.get(productId) ?? 0;
+        neededByProductId.set(productId, previousQuantity + quantityPerServing * servingCount);
+      }
+    },
+    computeMarginalCost(recipeId, servingCount) {
+      return getPortionQuantities(recipeId, settings).reduce((extraCost, [productId, quantityPerServing]) => {
+        const product = PRODUCTS_BY_ID.get(productId);
+        if (!isCounted(product)) {
+          return extraCost;
+        }
+        const quantityBefore = neededByProductId.get(productId) ?? 0;
+        const quantityAfter = quantityBefore + quantityPerServing * servingCount;
+        return extraCost + computePackagesCost(product, quantityAfter) - computePackagesCost(product, quantityBefore);
+      }, 0);
+    },
+  };
 }
 
 function listCookedServings(plan, settings) {
@@ -78,6 +112,9 @@ export function buildShoppingList(plan, settings) {
 
   const totalToPay = roundToCents(purchasedLines.reduce((total, line) => total + line.cost, 0));
   const consumedValue = roundToCents(purchasedLines.reduce((total, line) => total + line.consumedValue, 0));
+  const longLastingLeftoverValue = roundToCents(purchasedLines
+    .filter((line) => LONG_LASTING_AISLES.includes(line.product.aisle))
+    .reduce((total, line) => total + line.cost - line.consumedValue, 0));
   const portionCount = cookedServings.reduce((total, { servingCount }) => total + servingCount, 0);
 
   return {
@@ -86,6 +123,7 @@ export function buildShoppingList(plan, settings) {
     articleCount: purchasedLines.reduce((total, line) => total + line.packageCount, 0),
     totalToPay,
     consumedValue,
+    longLastingLeftoverValue,
     portionCount,
     costPerPortion: portionCount > 0 ? roundToCents(totalToPay / portionCount) : 0,
   };

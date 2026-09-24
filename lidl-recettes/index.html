@@ -103,10 +103,26 @@
         </div>
       </fieldset>
 
-      <label class="check" for="simple-recipes-only">
-        <input id="simple-recipes-only" name="simpleRecipesOnly" type="checkbox">
-        <span>Recettes simples : 30 min et 6 ingrédients maximum</span>
-      </label>
+      <div class="field">
+        <label for="max-prep-minutes">Temps de préparation</label>
+        <select id="max-prep-minutes" name="maxPrepMinutes">
+          <option value="15">15 min maximum</option>
+          <option value="20">20 min maximum</option>
+          <option value="30">30 min maximum</option>
+          <option value="0">Sans limite</option>
+        </select>
+        <p class="hint">Avec une limite, 6 ingrédients frais maximum par recette.</p>
+      </div>
+
+      <div class="field">
+        <label for="priority">Priorité</label>
+        <select id="priority" name="priority">
+          <option value="prix">Petit prix</option>
+          <option value="equilibre">Prix et variété</option>
+          <option value="variete">Variété</option>
+        </select>
+        <p class="hint">Petit prix : le générateur finit les paquets entamés, quitte à reprendre les mêmes ingrédients.</p>
+      </div>
 
       <label class="check" for="without-pork">
         <input id="without-pork" name="withoutPork" type="checkbox">
@@ -146,7 +162,7 @@
   </div>
 
   <footer class="page-foot">
-    <p>Prix estimés d’après le niveau de prix Lidl France de septembre 2026, hors promotions et hors produits de la semaine. Le montant en caisse peut varier selon le magasin. « Consommé cette semaine » compte seulement ce que les recettes utilisent ; le reste des paquets entamés reste au placard.</p>
+    <p>Prix estimés d’après le niveau de prix Lidl France de septembre 2026, hors promotions et hors produits de la semaine. Le montant en caisse peut varier selon le magasin. « Consommé cette semaine » compte seulement ce que les recettes utilisent ; le reste des paquets entamés reste au placard. « Restes qui se gardent » compte l’épicerie, les surgelés et les condiments non utilisés : ils allègent les courses de la semaine suivante.</p>
     <p>Calories estimées à partir de valeurs moyennes (table Ciqual), pour une portion. Le besoin journalier est calculé avec la formule de Mifflin-St Jeor, moins 500 kcal, pour viser environ 0,5 kg perdu par semaine. C’est un repère, pas un avis médical.</p>
   </footer>
 </div>

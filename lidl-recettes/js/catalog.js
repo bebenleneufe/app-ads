@@ -23,6 +23,9 @@ export const AISLE_ORDER = Object.freeze([
   AISLES.PANTRY,
 ]);
 
+// Rayons dont les restes se gardent plusieurs semaines : ils serviront aux courses suivantes.
+export const LONG_LASTING_AISLES = Object.freeze([AISLES.GROCERY, AISLES.FROZEN, AISLES.PANTRY]);
+
 export const UNITS = Object.freeze({ GRAM: 'g', MILLILITER: 'ml', PIECE: 'pièce' });
 
 function defineProduct({

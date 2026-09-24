@@ -1,6 +1,6 @@
 import { MAIN_MEAL_MODES } from './meal-structure.js';
 import { ACTIVITY_FACTORS, GOALS, SEXES } from './nutrition.js';
-import { DIETS } from './planner.js';
+import { DIETS, PRIORITIES } from './planner.js';
 
 export const SETTINGS_LIMITS = Object.freeze({
   personCount: { min: 1, max: 8 },
@@ -11,6 +11,8 @@ export const SETTINGS_LIMITS = Object.freeze({
   heightCm: { min: 130, max: 220 },
 });
 
+export const PREP_TIME_CHOICES = Object.freeze([15, 20, 30, 0]);
+
 export const DEFAULT_SETTINGS = Object.freeze({
   personCount: 1,
   dayCount: 7,
@@ -18,7 +20,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   includeBreakfast: true,
   diet: DIETS.OMNIVORE,
   withoutPork: false,
-  simpleRecipesOnly: true,
+  maxPrepMinutes: 20,
+  priority: PRIORITIES.PRICE,
   weeklyBudget: 0,
   pantryStaplesOwned: true,
   goal: GOALS.WEIGHT_LOSS,
@@ -49,7 +52,8 @@ export function normalizeSettings(rawSettings = {}) {
     includeBreakfast: rawSettings.includeBreakfast !== false,
     diet: pickKnownValue(rawSettings.diet, Object.values(DIETS), DEFAULT_SETTINGS.diet),
     withoutPork: rawSettings.withoutPork === true,
-    simpleRecipesOnly: rawSettings.simpleRecipesOnly !== false,
+    priority: pickKnownValue(rawSettings.priority, Object.values(PRIORITIES), DEFAULT_SETTINGS.priority),
+    maxPrepMinutes: pickKnownValue(Number(rawSettings.maxPrepMinutes), PREP_TIME_CHOICES, DEFAULT_SETTINGS.maxPrepMinutes),
     weeklyBudget: clampInteger(rawSettings.weeklyBudget, SETTINGS_LIMITS.weeklyBudget, DEFAULT_SETTINGS.weeklyBudget),
     pantryStaplesOwned: rawSettings.pantryStaplesOwned !== false,
     goal: pickKnownValue(rawSettings.goal, Object.values(GOALS), DEFAULT_SETTINGS.goal),
@@ -70,7 +74,8 @@ export function readSettingsFromForm(formElement) {
     includeBreakfast: formData.has('includeBreakfast'),
     diet: formData.get('diet'),
     withoutPork: formData.has('withoutPork'),
-    simpleRecipesOnly: formData.has('simpleRecipesOnly'),
+    maxPrepMinutes: formData.get('maxPrepMinutes'),
+    priority: formData.get('priority'),
     weeklyBudget: formData.get('weeklyBudget') || 0,
     pantryStaplesOwned: formData.has('pantryStaplesOwned'),
     goal: formData.get('goal'),
@@ -90,7 +95,8 @@ export function writeSettingsToForm(formElement, settings) {
   elements.includeBreakfast.checked = settings.includeBreakfast;
   elements.diet.value = settings.diet;
   elements.withoutPork.checked = settings.withoutPork;
-  elements.simpleRecipesOnly.checked = settings.simpleRecipesOnly;
+  elements.maxPrepMinutes.value = String(settings.maxPrepMinutes);
+  elements.priority.value = settings.priority;
   elements.weeklyBudget.value = settings.weeklyBudget > 0 ? String(settings.weeklyBudget) : '';
   elements.pantryStaplesOwned.checked = settings.pantryStaplesOwned;
   elements.goal.value = settings.goal;

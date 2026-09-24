@@ -9,7 +9,9 @@ import {
   DIETS,
   fitPlanToBudget,
   generatePlan,
+  isRecipeAllowed,
   PLAN_KINDS,
+  PRIORITIES,
   reconcilePlan,
   swapMeal,
 } from '../js/planner.js';
@@ -18,8 +20,8 @@ import {
   countFreshIngredients,
   MEAL_TYPES,
   RECIPES,
+  MAX_FRESH_INGREDIENTS_WHEN_TIME_LIMITED,
   RECIPES_BY_ID,
-  SIMPLE_RECIPE_LIMITS,
 } from '../js/recipes.js';
 import { DEFAULT_SETTINGS, normalizeSettings } from '../js/settings.js';
 import { buildShoppingList } from '../js/shopping-list.js';
@@ -102,15 +104,26 @@ describe('génération du planning', () => {
     assert.ok(allPorkFreeIds.every((recipeId) => !RECIPES_BY_ID.get(recipeId).containsPork));
   });
 
-  it('ne propose que des recettes rapides et courtes en mode simple', () => {
-    const settings = { ...baseSettings, simpleRecipesOnly: true, includeBreakfast: true };
-    const plan = generatePlan(settings, createSeededRandom(13));
-    assert.equal(new Set(plan.mainRecipeIds).size, plan.mainRecipeIds.length);
-    for (const recipeId of [...plan.mainRecipeIds, ...plan.breakfastRecipeIds]) {
-      const recipe = RECIPES_BY_ID.get(recipeId);
-      assert.ok(recipe.prepMinutes <= SIMPLE_RECIPE_LIMITS.maxPrepMinutes, recipe.id);
-      assert.ok(countFreshIngredients(recipe) <= SIMPLE_RECIPE_LIMITS.maxFreshIngredients, recipe.id);
+  it('respecte la limite de temps et reste varié même à 15 minutes', () => {
+    for (const maxPrepMinutes of [15, 20]) {
+      const settings = { ...baseSettings, maxPrepMinutes, includeBreakfast: true };
+      const plan = generatePlan(settings, createSeededRandom(13));
+      assert.equal(plan.mainRecipeIds.length, 7);
+      assert.equal(new Set(plan.mainRecipeIds).size, 7, `doublons à ${maxPrepMinutes} min`);
+      for (const recipeId of [...plan.mainRecipeIds, ...plan.breakfastRecipeIds]) {
+        const recipe = RECIPES_BY_ID.get(recipeId);
+        assert.ok(recipe.prepMinutes <= maxPrepMinutes, recipe.id);
+        assert.ok(countFreshIngredients(recipe) <= MAX_FRESH_INGREDIENTS_WHEN_TIME_LIMITED, recipe.id);
+      }
     }
+  });
+
+  it('a au moins 25 plats de 20 minutes ou moins compatibles avec l’objectif par défaut', () => {
+    const defaultSettings = normalizeSettings(DEFAULT_SETTINGS);
+    const quickMainCount = RECIPES
+      .filter((recipe) => recipe.mealType === MEAL_TYPES.MAIN && isRecipeAllowed(recipe, defaultSettings))
+      .length;
+    assert.ok(quickMainCount >= 25, `${quickMainCount} plats`);
   });
 
   it('garde les repas compatibles quand les réglages changent', () => {
@@ -142,6 +155,17 @@ describe('génération du planning', () => {
     assert.notEqual(swappedPlan.breakfastRecipeIds[0], plan.breakfastRecipeIds[0]);
     assert.equal(RECIPES_BY_ID.get(swappedPlan.breakfastRecipeIds[0]).mealType, MEAL_TYPES.BREAKFAST);
     assert.deepEqual(swappedPlan.mainRecipeIds, plan.mainRecipeIds);
+  });
+
+  it('coûte moins cher en priorité petit prix qu’en priorité variété', () => {
+    const defaultSettings = normalizeSettings(DEFAULT_SETTINGS);
+    const medianTotal = (priority) => {
+      const settings = { ...defaultSettings, priority };
+      const totals = Array.from({ length: 40 }, (_unused, seed) => buildShoppingList(generatePlan(settings, createSeededRandom(seed + 100)), settings).totalToPay)
+        .sort((first, second) => first - second);
+      return totals[20];
+    };
+    assert.ok(medianTotal(PRIORITIES.PRICE) < medianTotal(PRIORITIES.VARIETY));
   });
 
   it('fait baisser le ticket quand un budget serré est fixé', () => {

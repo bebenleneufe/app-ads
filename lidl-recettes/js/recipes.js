@@ -13,9 +13,9 @@ export const MEAL_TYPES = Object.freeze({
   BREAKFAST: 'petit-dejeuner',
 });
 
-// Seuils d'une recette « simple » : réalisable un soir de semaine sans planifier.
-// Les basiques du placard (huile, épices) ne comptent pas comme ingrédients à gérer.
-export const SIMPLE_RECIPE_LIMITS = Object.freeze({ maxPrepMinutes: 30, maxFreshIngredients: 6 });
+// Une recette rapide doit aussi rester courte : au-delà de 6 ingrédients frais, elle demande
+// trop de découpe. Les basiques du placard (huile, épices) ne comptent pas.
+export const MAX_FRESH_INGREDIENTS_WHEN_TIME_LIMITED = 6;
 
 export const CATEGORY_LABELS = Object.freeze({
   [CATEGORIES.MEAT]: 'Viande',
@@ -564,6 +564,226 @@ export const RECIPES = Object.freeze([
     ],
   }),
 
+  // Recettes express (20 min maximum), choisies pour leur petit prix et leurs ingrédients communs.
+  defineRecipe({
+    id: 'penne-courgettes-oeuf',
+    name: 'Penne aux courgettes, œuf et grana padano',
+    category: CATEGORIES.VEGETARIAN,
+    prepMinutes: 20,
+    ingredients: { penne: 80, courgette: 150, oeuf: 1, parmesan: 15, ail: 2, 'huile-olive': 5 },
+    steps: [
+      'Cuire les penne.',
+      "Faire sauter les courgettes râpées et l'ail 5 min.",
+      'Hors du feu, mélanger pâtes, courgettes, œuf battu et fromage.',
+    ],
+  }),
+  defineRecipe({
+    id: 'taboule-pois-chiches-feta',
+    name: 'Taboulé express aux pois chiches et feta',
+    category: CATEGORIES.VEGETARIAN,
+    prepMinutes: 15,
+    ingredients: { semoule: 60, 'pois-chiches': 80, tomate: 100, concombre: 0.25, feta: 30, citron: 0.25, 'huile-olive': 5 },
+    steps: [
+      'Verser la même quantité d’eau bouillante sur la semoule, couvrir 5 min.',
+      'Couper tomate et concombre en dés.',
+      'Mélanger avec les pois chiches, la feta, le jus de citron et l’huile.',
+    ],
+  }),
+  defineRecipe({
+    id: 'soupe-lentilles-corail-coco',
+    name: 'Soupe de lentilles corail, carotte et coco',
+    category: CATEGORIES.VEGETARIAN,
+    prepMinutes: 20,
+    ingredients: { 'lentilles-corail': 60, 'lait-coco': 50, carotte: 100, oignon: 30, curry: 1, bouillon: 0.5 },
+    steps: [
+      "Faire revenir l'oignon et la carotte en rondelles 2 min avec le curry.",
+      'Ajouter les lentilles, le bouillon et 350 ml d’eau. Cuire 15 min.',
+      'Ajouter le lait de coco et mixer.',
+    ],
+  }),
+  defineRecipe({
+    id: 'poulet-champignons-riz',
+    name: 'Poulet aux champignons à la crème, riz',
+    category: CATEGORIES.MEAT,
+    prepMinutes: 20,
+    ingredients: { 'poulet-filet': 110, champignon: 120, riz: 60, 'creme-epaisse': 20, 'huile-olive': 5 },
+    steps: [
+      'Cuire le riz.',
+      'Dorer le poulet en lanières 5 min, ajouter les champignons émincés 5 min.',
+      'Ajouter la crème, laisser réduire 2 min.',
+    ],
+  }),
+  defineRecipe({
+    id: 'boeuf-courgettes-riz',
+    name: 'Bœuf haché sauté aux courgettes et riz',
+    category: CATEGORIES.MEAT,
+    prepMinutes: 20,
+    ingredients: { 'boeuf-hache': 110, courgette: 150, riz: 60, oignon: 30, 'sauce-soja': 10, 'huile-olive': 5 },
+    steps: [
+      'Cuire le riz.',
+      "Faire revenir l'oignon et le bœuf 5 min, ajouter les courgettes en dés 7 min.",
+      'Assaisonner à la sauce soja et servir sur le riz.',
+    ],
+  }),
+  defineRecipe({
+    id: 'quesadillas-haricots',
+    name: 'Quesadillas haricots rouges et fromage',
+    category: CATEGORIES.VEGETARIAN,
+    prepMinutes: 15,
+    ingredients: { tortilla: 2, 'haricots-rouges': 80, emmental: 25, poivron: 0.33, salade: 0.15, cumin: 1 },
+    steps: [
+      'Écraser les haricots avec le cumin, ajouter le poivron en petits dés.',
+      'Étaler sur une tortilla, parsemer de fromage, couvrir de la seconde.',
+      'Dorer 3 min par face à la poêle, couper en parts, servir avec la salade.',
+    ],
+  }),
+  defineRecipe({
+    id: 'salade-riz-thon',
+    name: 'Salade de riz au thon, maïs et tomate',
+    category: CATEGORIES.FISH,
+    prepMinutes: 20,
+    ingredients: { riz: 60, thon: 70, mais: 50, tomate: 100, 'huile-olive': 5, vinaigre: 5 },
+    steps: [
+      'Cuire le riz et le rincer à l’eau froide.',
+      'Couper la tomate en dés, émietter le thon.',
+      'Mélanger avec le maïs et assaisonner.',
+    ],
+  }),
+  defineRecipe({
+    id: 'shakshuka-express',
+    name: 'Œufs pochés à la tomate et au poivron, pain complet',
+    category: CATEGORIES.VEGETARIAN,
+    prepMinutes: 20,
+    ingredients: { 'tomates-concassees': 200, oeuf: 2, oignon: 40, poivron: 0.33, 'pain-complet': 50, cumin: 1, 'huile-olive': 5 },
+    steps: [
+      "Faire revenir l'oignon et le poivron émincés 5 min avec le cumin.",
+      'Ajouter les tomates, mijoter 5 min.',
+      'Creuser deux puits, y casser les œufs, couvrir 6 min. Servir avec le pain.',
+    ],
+  }),
+  defineRecipe({
+    id: 'nouilles-poulet-carottes',
+    name: 'Nouilles sautées au poulet et carottes',
+    category: CATEGORIES.MEAT,
+    prepMinutes: 20,
+    ingredients: { nouilles: 70, 'poulet-filet': 100, carotte: 80, oignon: 30, 'sauce-soja': 15, 'huile-olive': 5 },
+    steps: [
+      'Cuire les nouilles 4 min, égoutter.',
+      'Saisir le poulet en lanières, ajouter oignon et carotte râpée 5 min.',
+      'Ajouter les nouilles et la sauce soja, mélanger 2 min.',
+    ],
+  }),
+  defineRecipe({
+    id: 'croque-monsieur-salade',
+    name: 'Croque-monsieur au pain complet et salade',
+    category: CATEGORIES.MEAT,
+    containsPork: true,
+    prepMinutes: 15,
+    ingredients: { 'pain-complet': 80, jambon: 40, emmental: 20, salade: 0.25, tomate: 80 },
+    steps: [
+      'Garnir le pain de jambon et d’emmental, refermer.',
+      'Dorer 4 min par face à la poêle, couvercle posé.',
+      'Servir avec la salade et la tomate.',
+    ],
+  }),
+  defineRecipe({
+    id: 'colin-riz-haricots-verts',
+    name: 'Colin poêlé au citron, riz et haricots verts',
+    category: CATEGORIES.FISH,
+    prepMinutes: 20,
+    ingredients: { colin: 150, riz: 60, 'haricots-verts': 150, citron: 0.25, 'huile-olive': 5 },
+    steps: [
+      'Cuire le riz et les haricots verts.',
+      'Poêler le colin encore surgelé 6 min par face à couvert.',
+      'Arroser de jus de citron.',
+    ],
+  }),
+  defineRecipe({
+    id: 'spaghetti-lentilles-tomate',
+    name: 'Spaghetti sauce tomate aux lentilles corail',
+    category: CATEGORIES.VEGETARIAN,
+    prepMinutes: 20,
+    ingredients: { spaghetti: 80, 'lentilles-corail': 40, 'tomates-concassees': 150, oignon: 30, herbes: 1, 'huile-olive': 5 },
+    steps: [
+      "Faire revenir l'oignon, ajouter tomates, lentilles, herbes et 100 ml d’eau. Cuire 15 min.",
+      'Pendant ce temps, cuire les spaghetti.',
+      'Mélanger et servir.',
+    ],
+  }),
+  defineRecipe({
+    id: 'curry-poulet-courgettes-express',
+    name: 'Curry express de poulet et courgettes, riz',
+    category: CATEGORIES.MEAT,
+    prepMinutes: 20,
+    ingredients: { 'poulet-filet': 110, courgette: 150, 'lait-coco': 50, riz: 60, curry: 2, 'huile-olive': 5 },
+    steps: [
+      'Cuire le riz.',
+      'Dorer le poulet en dés avec le curry, ajouter les courgettes 5 min.',
+      'Verser le lait de coco et laisser frémir 5 min.',
+    ],
+  }),
+  defineRecipe({
+    id: 'gnocchi-epinards-mozzarella',
+    name: 'Gnocchi poêlés aux épinards et mozzarella',
+    category: CATEGORIES.VEGETARIAN,
+    prepMinutes: 15,
+    ingredients: { gnocchi: 180, epinards: 150, mozzarella: 40, ail: 2, 'huile-olive': 5 },
+    steps: [
+      'Dorer les gnocchi 6 min dans l’huile.',
+      "Ajouter l'ail et les épinards jusqu’à ce qu’ils fondent.",
+      'Ajouter la mozzarella en morceaux, couvrir 1 min.',
+    ],
+  }),
+  defineRecipe({
+    id: 'wok-boeuf-brocoli',
+    name: 'Wok de bœuf et brocoli, riz',
+    category: CATEGORIES.MEAT,
+    prepMinutes: 20,
+    ingredients: { 'boeuf-hache': 110, brocoli: 0.4, riz: 60, ail: 2, 'sauce-soja': 15, 'huile-olive': 5 },
+    steps: [
+      'Cuire le riz et les fleurettes de brocoli 5 min à la vapeur.',
+      "Saisir le bœuf avec l'ail 5 min.",
+      'Ajouter le brocoli et la sauce soja, mélanger 2 min.',
+    ],
+  }),
+  defineRecipe({
+    id: 'omelette-jambon-fromage',
+    name: 'Omelette jambon-fromage et salade',
+    category: CATEGORIES.MEAT,
+    containsPork: true,
+    prepMinutes: 10,
+    ingredients: { oeuf: 3, jambon: 40, emmental: 15, salade: 0.25, 'pain-complet': 40, 'huile-olive': 5 },
+    steps: [
+      'Battre les œufs, ajouter le jambon en dés.',
+      'Cuire 4 min à feu moyen, parsemer d’emmental et plier.',
+      'Servir avec la salade et le pain.',
+    ],
+  }),
+  defineRecipe({
+    id: 'poulet-haricots-verts-riz',
+    name: 'Poulet paprika, haricots verts et riz',
+    category: CATEGORIES.MEAT,
+    prepMinutes: 20,
+    ingredients: { 'poulet-filet': 120, 'haricots-verts': 150, riz: 60, paprika: 1, 'huile-olive': 5 },
+    steps: [
+      'Cuire le riz et les haricots verts.',
+      'Saisir le poulet saupoudré de paprika, 6 min par face.',
+      'Servir ensemble.',
+    ],
+  }),
+  defineRecipe({
+    id: 'soupe-legumes-express',
+    name: 'Velouté de courgettes et fromage, pain complet',
+    category: CATEGORIES.VEGETARIAN,
+    prepMinutes: 20,
+    ingredients: { courgette: 250, 'pomme-de-terre': 100, bouillon: 0.5, emmental: 25, 'pain-complet': 60 },
+    steps: [
+      'Couper courgettes et pomme de terre, couvrir d’eau avec le bouillon, cuire 15 min.',
+      'Mixer avec l’emmental.',
+      'Servir avec le pain grillé.',
+    ],
+  }),
+
   defineRecipe({
     id: 'porridge-banane',
     name: 'Porridge à la banane',
@@ -622,6 +842,25 @@ export const RECIPES = Object.freeze([
     ingredients: { 'fromage-blanc': 250, banane: 120, amandes: 15 },
     steps: ['Verser le fromage blanc, ajouter la banane en rondelles et les amandes.'],
   }),
+
+  defineRecipe({
+    id: 'porridge-pomme',
+    name: 'Porridge à la pomme',
+    category: CATEGORIES.VEGETARIAN,
+    mealType: MEAL_TYPES.BREAKFAST,
+    prepMinutes: 5,
+    ingredients: { 'flocons-avoine': 50, lait: 200, pomme: 120 },
+    steps: ['Chauffer les flocons dans le lait 3 min.', 'Ajouter la pomme râpée.'],
+  }),
+  defineRecipe({
+    id: 'tartines-oeuf-banane',
+    name: 'Tartines, œuf dur et banane',
+    category: CATEGORIES.VEGETARIAN,
+    mealType: MEAL_TYPES.BREAKFAST,
+    prepMinutes: 10,
+    ingredients: { oeuf: 1, 'pain-complet': 60, beurre: 5, banane: 100 },
+    steps: ['Cuire l’œuf 9 min (ou la veille).', 'Griller le pain, servir avec la banane.'],
+  }),
 ]);
 
 export const RECIPES_BY_ID = new Map(RECIPES.map((recipe) => [recipe.id, recipe]));
@@ -630,7 +869,10 @@ export function countFreshIngredients(recipe) {
   return Object.keys(recipe.ingredients).filter((productId) => !PRODUCTS_BY_ID.get(productId)?.isPantryStaple).length;
 }
 
-export function isSimpleRecipe(recipe) {
-  return recipe.prepMinutes <= SIMPLE_RECIPE_LIMITS.maxPrepMinutes
-    && countFreshIngredients(recipe) <= SIMPLE_RECIPE_LIMITS.maxFreshIngredients;
+export function fitsTimeLimit(recipe, maxPrepMinutes) {
+  if (maxPrepMinutes <= 0) {
+    return true;
+  }
+  return recipe.prepMinutes <= maxPrepMinutes
+    && countFreshIngredients(recipe) <= MAX_FRESH_INGREDIENTS_WHEN_TIME_LIMITED;
 }
