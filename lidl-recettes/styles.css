@@ -163,14 +163,6 @@ p {
   max-width: 62ch;
 }
 
-.eyebrow {
-  font-size: var(--step-xs);
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
 h1 {
   font-family: var(--font-display);
   font-weight: 800;
@@ -203,12 +195,6 @@ h1 {
   border-radius: var(--radius);
   background: var(--accent-soft);
   font-size: 0.9375rem;
-  line-height: 1.45;
-}
-
-.lede {
-  color: var(--muted);
-  font-size: var(--step-large);
   line-height: 1.45;
 }
 
@@ -262,6 +248,16 @@ h1 {
   letter-spacing: -0.02em;
 }
 
+.summary-tile.is-budget {
+  grid-column: 1 / -1;
+}
+
+.summary-tile .summary-detail {
+  font-size: var(--step-small);
+  font-weight: 400;
+  color: var(--muted);
+}
+
 .summary-tile.is-good dd {
   color: var(--accent);
 }
@@ -313,13 +309,59 @@ h1 {
 
 .settings-group {
   display: grid;
-  gap: 14px;
+  gap: 6px;
   align-content: start;
-  padding-top: 18px;
+  padding-top: 8px;
   border-top: 1px solid var(--line);
 }
 
+.group-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-block-size: 44px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.group-summary::-webkit-details-marker {
+  display: none;
+}
+
+.group-summary::after {
+  content: '›';
+  margin-inline-start: auto;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--muted);
+  transition: transform 150ms ease;
+}
+
+.settings-group[open] > .group-summary::after {
+  transform: rotate(90deg);
+}
+
+.group-recap {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--step-small);
+  color: var(--muted);
+}
+
+.settings-group[open] .group-recap {
+  visibility: hidden;
+}
+
+.group-body {
+  display: grid;
+  gap: 14px;
+  padding-block: 4px 8px;
+}
+
 .group-title {
+  flex-shrink: 0;
   font-size: var(--step-xs);
   font-weight: 600;
   letter-spacing: 0.1em;
@@ -599,6 +641,75 @@ select:hover {
   display: grid;
   gap: 16px;
   min-width: 0;
+}
+
+/* Dans la semaine, des cartes compactes à vignette : la grande carte est réservée à la recette suivante. */
+#plan-list .meal {
+  grid-template-columns: 76px minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 6px;
+}
+
+#plan-list .meal > * {
+  grid-column: 1 / -1;
+}
+
+#plan-list .meal-photo {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  align-self: start;
+  inline-size: 76px;
+  aspect-ratio: 1;
+  margin: 0;
+  border-radius: 8px;
+}
+
+#plan-list :is(.meal-slot, .meal-name, .meal-tag) {
+  grid-column: 2;
+}
+
+#plan-list .meal-photo {
+  grid-row: 1 / span 3;
+}
+
+#plan-list .meal-actions .swap-button {
+  min-block-size: 36px;
+  padding: 4px 14px;
+}
+
+/* Recette suivante : cuisiner est l'action attendue. */
+.next-recipe-card .cook-button {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+#plan-list .meal-name {
+  font-size: 1rem;
+}
+
+.meal-slot:empty {
+  visibility: hidden;
+}
+
+.meal-facts-line {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--step-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.meal-preferences {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+#plan-list .chip-button {
+  min-block-size: 36px;
+  padding: 4px 12px;
 }
 
 .next-recipe {
@@ -1183,12 +1294,6 @@ body.is-store-mode .next-recipe {
   text-transform: uppercase;
 }
 
-.receipt-foot {
-  text-align: center;
-  color: var(--muted);
-  font-size: var(--step-xs);
-}
-
 .receipt-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1238,16 +1343,6 @@ body.is-store-mode .next-recipe {
   border: 1px solid var(--line);
   border-radius: var(--radius-small);
   padding: 10px;
-}
-
-.page-foot {
-  display: grid;
-  gap: 8px;
-  font-size: var(--step-small);
-  color: var(--muted);
-  max-width: 80ch;
-  padding-top: 18px;
-  border-top: 1px solid var(--line);
 }
 
 /* Mode cuisine */
@@ -1391,10 +1486,8 @@ body.is-store-mode .next-recipe {
 body.is-store-mode .masthead,
 body.is-store-mode .settings,
 body.is-store-mode .plan,
-body.is-store-mode .page-foot,
 body.is-store-mode .quick-nav,
 body.is-store-mode .receipt-totals,
-body.is-store-mode .receipt-foot,
 body.is-store-mode .receipt-column > .section-title {
   display: none;
 }
@@ -1565,9 +1658,27 @@ body.is-store-mode.hides-checked .is-settled:is(.receipt-line, .receipt-group) {
     padding-block-end: 96px;
   }
 
-  /* Sur téléphone, la recette suivante doit apparaître dès l'ouverture. */
-  .lede {
-    display: none;
+  /* Sur téléphone : recette suivante, semaine, courses, puis les réglages qu'on touche rarement. */
+  .settings {
+    order: 3;
+  }
+
+  .summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .summary-tile {
+    padding: 10px 12px;
+  }
+
+  .summary-tile dd {
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+
+  .summary-tile.is-total dd {
+    font-size: 2rem;
   }
 }
 

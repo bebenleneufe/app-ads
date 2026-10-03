@@ -28,7 +28,7 @@ import {
   getPortionQuantities,
   hasWeightLossGoal,
 } from './nutrition.js';
-import { PLAN_KINDS } from './planner.js';
+import { DIETS, PLAN_KINDS, PRIORITIES } from './planner.js';
 import { computePortionCost } from './shopping-list.js';
 import { EMPTY_PREFERENCES } from './preferences.js';
 import { CATEGORY_LABELS, countFreshIngredients, MEAL_TYPES, RECIPES_BY_ID } from './recipes.js';
@@ -59,7 +59,7 @@ export function describeWeek(settings) {
   return `${settings.dayCount} j · ${getMealsEatenPerDay(settings)} repas/jour${snackSuffix} · ${settings.personCount} pers.`;
 }
 
-function buildRecipeDetails(recipe, servingCount, settings) {
+function buildRecipeDetails(recipe, servingCount, settings, extraContent = null) {
   const ingredientItems = getPortionQuantities(recipe.id, settings).map(([productId, quantityPerServing]) => {
     const product = PRODUCTS_BY_ID.get(productId);
     return createElement('li', { text: formatProductQuantity(product, computeCookedQuantity(productId, quantityPerServing, servingCount)) });
@@ -70,7 +70,19 @@ function buildRecipeDetails(recipe, servingCount, settings) {
     createElement('summary', { text: `Ingrédients pour ${servingCount} ${portionWord} et étapes` }),
     createElement('ul', { className: 'ingredient-list' }, ingredientItems),
     createElement('ol', { className: 'step-list' }, stepItems),
+    extraContent,
   ]);
+}
+
+// Carte compacte (semaine) : une seule ligne de texte au lieu des pastilles.
+function buildMealFactsLine(recipe, settings) {
+  const facts = [
+    `${recipe.prepMinutes} min`,
+    formatKcal(getPortionKcal(recipe.id, settings)),
+    `${getPortionProtein(recipe.id, settings)} g prot.`,
+    formatEuros(computePortionCost(recipe.id, settings)),
+  ];
+  return createElement('p', { className: 'meal-facts-line', text: facts.join(' · '), attributes: { 'aria-label': `Par portion : ${facts.join(', ')}` } });
 }
 
 function buildMealFacts(recipe, settings) {
@@ -118,8 +130,35 @@ function describeCookedButton(isCooked) {
   return isCooked ? 'Cuisiné ✓' : 'Cuisiné ?';
 }
 
-function buildMealActions(recipe, kind, slotIndex, settings, isCooked) {
+function buildSwapButton(recipe, kind, slotIndex) {
+  return createElement('button', {
+    className: 'swap-button',
+    text: 'Changer',
+    attributes: {
+      type: 'button',
+      'data-action': 'swap',
+      'data-plan-kind': kind,
+      'data-slot-index': String(slotIndex),
+      'data-recipe-id': recipe.id,
+      'aria-label': `Changer : ${recipe.name}`,
+    },
+  });
+}
+
+function buildPreferenceButtons(recipe, kind, slotIndex, settings) {
   const isLiked = (settings.preferences ?? EMPTY_PREFERENCES).liked.includes(recipe.id);
+  return [
+    buildActionButton({
+      action: 'like', text: isLiked ? 'Aimé' : 'J’aime', kind, slotIndex, recipe, className: 'chip-button like-button', pressed: isLiked,
+    }),
+    buildActionButton({
+      action: 'dislike', text: 'Pas pour moi', kind, slotIndex, recipe, className: 'chip-button dislike-button',
+    }),
+  ];
+}
+
+// Les actions de tous les jours d'abord ; les goûts ensuite, ou dans le dépliant d'une carte compacte.
+function buildMealActions({ recipe, kind, slotIndex, settings, isCooked, isCompact }) {
   // Le petit-déjeuner et la collation reviennent chaque jour : seuls les plats se cochent.
   const cookedButton = kind === PLAN_KINDS.MAIN
     ? buildActionButton({
@@ -128,15 +167,10 @@ function buildMealActions(recipe, kind, slotIndex, settings, isCooked) {
     : null;
   return createElement('div', { className: 'meal-actions' }, [
     buildActionButton({
-      action: 'like', text: isLiked ? 'Aimé' : 'J’aime', kind, slotIndex, recipe, className: 'chip-button like-button', pressed: isLiked,
-    }),
-    buildActionButton({
-      action: 'dislike', text: 'Pas pour moi', kind, slotIndex, recipe, className: 'chip-button dislike-button',
-    }),
-    buildActionButton({
       action: 'cook', text: 'Cuisiner', kind, slotIndex, recipe, className: 'chip-button cook-button',
     }),
     cookedButton,
+    ...(isCompact ? [buildSwapButton(recipe, kind, slotIndex)] : buildPreferenceButtons(recipe, kind, slotIndex, settings)),
   ]);
 }
 
@@ -149,36 +183,32 @@ function buildMissingWarning(recipe, settings) {
   return createElement('p', { className: 'meal-warning', text: `Introuvable dans ton Lidl : ${missingNames}` });
 }
 
-function buildMealCard({ recipe, kind, slotIndex, slotLabel, servingCount, settings, isCooked = false }) {
+function buildMealCard({ recipe, kind, slotIndex, slotLabel, servingCount, settings, isCooked = false, isCompact = false }) {
   const isBreakfast = kind === PLAN_KINDS.BREAKFAST;
   // « is-settled » : déjà cuisiné à l'affichage, donc masqué sans animation quand les plats cuisinés sont cachés.
-  const cardClasses = ['meal', isBreakfast ? 'is-breakfast' : '', isCooked ? 'is-cooked is-settled' : ''].filter(Boolean).join(' ');
+  const cardClasses = ['meal', isBreakfast ? 'is-breakfast' : '', isCompact ? 'is-compact' : '', isCooked ? 'is-cooked is-settled' : '']
+    .filter(Boolean).join(' ');
+  const preferenceRow = isCompact
+    ? createElement('div', { className: 'meal-preferences' }, buildPreferenceButtons(recipe, kind, slotIndex, settings))
+    : null;
   return createElement('article', {
     className: cardClasses,
     attributes: { 'data-category': recipe.category },
   }, [
     buildMealPhoto(recipe),
-    createElement('div', { className: 'meal-head' }, [
-      createElement('p', { className: 'meal-slot', text: slotLabel }),
-      createElement('button', {
-        className: 'swap-button',
-        text: 'Changer',
-        attributes: {
-          type: 'button',
-          'data-action': 'swap',
-          'data-plan-kind': kind,
-          'data-slot-index': String(slotIndex),
-          'data-recipe-id': recipe.id,
-          'aria-label': `Changer : ${recipe.name}`,
-        },
-      }),
-    ]),
+    // Carte compacte : « Changer » rejoint les autres actions, l'en-tête ne garde que le repas.
+    isCompact
+      ? (slotLabel ? createElement('p', { className: 'meal-slot', text: slotLabel }) : null)
+      : createElement('div', { className: 'meal-head' }, [
+        createElement('p', { className: 'meal-slot', text: slotLabel }),
+        buildSwapButton(recipe, kind, slotIndex),
+      ]),
     createElement('h4', { className: 'meal-name', text: recipe.name }),
     createElement('p', { className: 'meal-tag', text: CATEGORY_LABELS[recipe.category] }),
     buildMissingWarning(recipe, settings),
-    buildMealFacts(recipe, settings),
-    buildMealActions(recipe, kind, slotIndex, settings, isCooked),
-    buildRecipeDetails(recipe, servingCount, settings),
+    isCompact ? buildMealFactsLine(recipe, settings) : buildMealFacts(recipe, settings),
+    buildMealActions({ recipe, kind, slotIndex, settings, isCooked, isCompact }),
+    buildRecipeDetails(recipe, servingCount, settings, preferenceRow),
   ]);
 }
 
@@ -207,11 +237,14 @@ function buildDayKcal(weeklyRecipes, mainRecipes, settings) {
   }, [
     createElement('span', {
       className: 'kcal-bar',
-      attributes: { role: 'img', 'aria-label': `${formatKcal(eatenKcal)} sur un objectif de ${formatKcal(dailyTargetKcal)}` },
+      attributes: {
+        role: 'img',
+        'aria-label': `${formatKcal(eatenKcal)} sur ${formatKcal(dailyTargetKcal)}, ${eatenProtein} g de protéines sur ${dailyProteinTarget} g`,
+      },
     }, [fillElement]),
     createElement('span', {
       className: 'kcal-text',
-      text: `${KCAL_FORMATTER.format(eatenKcal)} / ${formatKcal(dailyTargetKcal)} · ${eatenProtein} / ${dailyProteinTarget} g prot.`,
+      text: `${formatKcal(eatenKcal)} · ${eatenProtein} g prot.`,
     }),
   ]);
 }
@@ -223,6 +256,8 @@ function buildDayItem(dayIndex, plan, settings, weekStartDate, cookedSlotIndexes
   const mainRecipes = getMainSlotLabels(settings)
     .map((_slotLabel, mealIndex) => RECIPES_BY_ID.get(plan.mainRecipeIds[dayIndex * mainSlotsPerDay + mealIndex]));
 
+  // Avec un seul plat par jour, « Déjeuner et dîner » répété sur chaque carte n'apprend rien.
+  const showsSlotLabel = mainSlotsPerDay > 1;
   const mainCards = getMainSlotLabels(settings).map((slotLabel, mealIndex) => {
     const recipe = mainRecipes[mealIndex];
     const slotIndex = dayIndex * mainSlotsPerDay + mealIndex;
@@ -231,10 +266,11 @@ function buildDayItem(dayIndex, plan, settings, weekStartDate, cookedSlotIndexes
         recipe,
         kind: PLAN_KINDS.MAIN,
         slotIndex,
-        slotLabel,
+        slotLabel: showsSlotLabel ? slotLabel : '',
         servingCount,
         settings,
         isCooked: cookedSlotIndexes.has(slotIndex),
+        isCompact: true,
       })
       : null;
   });
@@ -259,7 +295,7 @@ function buildWeeklyItem(plan, settings) {
   const weeklyCards = WEEKLY_MEALS.map(({ kind, planKey, label, getServings }) => {
     const recipe = RECIPES_BY_ID.get((plan[planKey] ?? [])[0]);
     return recipe
-      ? buildMealCard({ recipe, kind, slotIndex: 0, slotLabel: label, servingCount: getServings(settings), settings })
+      ? buildMealCard({ recipe, kind, slotIndex: 0, slotLabel: label, servingCount: getServings(settings), settings, isCompact: true })
       : null;
   }).filter(Boolean);
   if (weeklyCards.length === 0) {
@@ -330,16 +366,17 @@ export function updateCookedCard(cardElement, isCooked) {
   }
 }
 
-function buildSummaryTile(label, value, modifier = '') {
+function buildSummaryTile(label, value, modifier = '', detail = '') {
   return createElement('div', { className: `summary-tile ${modifier}`.trim() }, [
     createElement('dt', { text: label }),
     createElement('dd', { text: value }),
+    detail ? createElement('dd', { className: 'summary-detail', text: detail }) : null,
   ]);
 }
 
 function describeBudget(shoppingList, settings) {
   if (settings.weeklyBudget <= 0) {
-    return { label: 'Budget', value: 'Aucun plafond', modifier: '' };
+    return null;
   }
   const difference = settings.weeklyBudget - shoppingList.totalToPay;
   if (difference >= 0) {
@@ -355,17 +392,18 @@ function describeDishProgress(dishCount, cookedCount) {
   return { label: 'Plats cuisinés', value: `${cookedCount} sur ${dishCount}` };
 }
 
+// Le ticket en grand, puis trois repères courts ; le budget seulement s'il y en a un.
 export function renderSummary(summaryElement, shoppingList, settings, cookedCount = 0) {
   const budget = describeBudget(shoppingList, settings);
   const dishCount = getMainSlotCount(settings);
   const dishProgress = describeDishProgress(dishCount, cookedCount);
   replaceChildrenWithFragment(summaryElement, [
     buildSummaryTile('Ticket estimé', formatEuros(shoppingList.totalToPay), 'is-total'),
+    budget ? buildSummaryTile(budget.label, budget.value, `is-budget ${budget.modifier}`) : null,
     buildSummaryTile('Par repas', formatEuros(shoppingList.costPerPortion)),
-    buildSummaryTile(budget.label, budget.value, budget.modifier),
     buildSummaryTile(dishProgress.label, dishProgress.value),
     hasWeightLossGoal(settings)
-      ? buildSummaryTile('Objectif / jour', `${formatKcal(computeDailyTargetKcal(settings))} · ${computeDailyProteinTarget(settings)} g prot.`)
+      ? buildSummaryTile('Par jour', formatKcal(computeDailyTargetKcal(settings)), '', `${computeDailyProteinTarget(settings)} g prot.`)
       : null,
   ].filter(Boolean));
 }
@@ -548,10 +586,6 @@ export function renderReceipt(receiptElement, shoppingList, settings, checkedPro
     ]),
     buildPantrySection(shoppingList.stockLines, 'Restes de la semaine dernière, à utiliser'),
     buildPantrySection(shoppingList.pantryLines, 'Déjà au placard, non compté'),
-    createElement('p', {
-      className: 'receipt-foot',
-      text: 'Prix indicatifs de l’assortiment permanent, hors promotions. Ils varient selon le magasin.',
-    }),
   ].filter(Boolean));
 }
 
@@ -560,11 +594,41 @@ export function renderGoalHint(hintElement, settings) {
     hintElement.textContent = '';
     return;
   }
-  hintElement.textContent = `Besoin estimé : ${formatKcal(computeMaintenanceKcal(settings))} par jour. `
-    + `Objectif : ${formatKcal(computeDailyTargetKcal(settings))} par jour, soit au plus `
-    + `${formatKcal(computeMealTargetKcal(settings, MEAL_TYPES.BREAKFAST))} au petit-déjeuner `
-    + `et ${formatKcal(computeMealTargetKcal(settings, MEAL_TYPES.MAIN))} au déjeuner comme au dîner. `
-    + `Protéines : viser ${computeDailyProteinTarget(settings)} g par jour pour garder le muscle.`;
+  hintElement.textContent = `Besoin ${formatKcal(computeMaintenanceKcal(settings))} → objectif ${formatKcal(computeDailyTargetKcal(settings))} et `
+    + `${computeDailyProteinTarget(settings)} g de protéines par jour (${formatKcal(computeMealTargetKcal(settings, MEAL_TYPES.MAIN))} par plat).`;
+}
+
+const MEAL_MODE_RECAPS = Object.freeze({
+  'midi-soir-identiques': 'même plat midi et soir',
+  'midi-soir-differents': 'deux plats par jour',
+  diner: 'dîner seulement',
+});
+const DIET_RECAPS = Object.freeze({
+  [DIETS.OMNIVORE]: '',
+  [DIETS.PESCETARIAN]: 'sans viande',
+  [DIETS.VEGETARIAN]: 'végétarien',
+});
+const PRIORITY_RECAPS = Object.freeze({
+  [PRIORITIES.PRICE]: 'Petit prix',
+  [PRIORITIES.BALANCED]: 'Prix et variété',
+  [PRIORITIES.VARIETY]: 'Variété',
+});
+
+// Les groupes de réglages sont repliés : leur titre montre les valeurs en cours.
+export function renderSettingsRecap({ goalRecap, mealsRecap, shoppingRecap }, settings) {
+  goalRecap.textContent = hasWeightLossGoal(settings)
+    ? `Perdre du poids · ${settings.weightKg.toLocaleString('fr-FR')} kg`
+    : 'Équilibré';
+  mealsRecap.textContent = [
+    `${settings.dayCount} j`,
+    MEAL_MODE_RECAPS[settings.mainMealMode],
+    settings.maxPrepMinutes > 0 ? `${settings.maxPrepMinutes} min` : 'sans limite',
+    DIET_RECAPS[settings.diet],
+  ].filter(Boolean).join(' · ');
+  shoppingRecap.textContent = [
+    PRIORITY_RECAPS[settings.priority],
+    settings.weeklyBudget > 0 ? `budget ${formatEuros(settings.weeklyBudget)}` : '',
+  ].filter(Boolean).join(' · ');
 }
 
 export function renderPreferencesSummary(summaryElement, resetButton, preferences) {
@@ -577,7 +641,8 @@ export function renderPreferencesSummary(summaryElement, resetButton, preference
   if (dislikedCount > 0) {
     parts.push(`${dislikedCount} écarté${dislikedCount > 1 ? 's' : ''}`);
   }
-  summaryElement.textContent = parts.length > 0 ? parts.join(' · ') : 'Aucun plat aimé ou écarté pour l’instant.';
+  summaryElement.textContent = parts.join(' · ');
+  summaryElement.hidden = parts.length === 0;
   resetButton.hidden = dislikedCount === 0;
 }
 
@@ -592,7 +657,8 @@ export function renderStoreSummary({ summaryElement, clearMissingButton, resetAi
 export function renderStockSummary(summaryElement, clearButton, stockDescription) {
   const { productCount, value } = stockDescription;
   summaryElement.textContent = productCount === 0
-    ? 'Aucun reste en stock. Coche ce que tu achètes : à la semaine suivante, les restes d’épicerie et de surgelés seront déduits des courses.'
+    ? ''
     : `${productCount} reste${productCount > 1 ? 's' : ''} en stock (≈ ${formatEuros(value)}), déduit${productCount > 1 ? 's' : ''} des courses.`;
+  summaryElement.hidden = productCount === 0;
   clearButton.hidden = productCount === 0;
 }
