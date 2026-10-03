@@ -1,4 +1,5 @@
-import { AISLE_ORDER, LONG_LASTING_AISLES, PRODUCTS_BY_ID } from './catalog.js';
+import { LONG_LASTING_AISLES, PRODUCTS_BY_ID } from './catalog.js';
+import { getStoreSetup } from './store-setup.js';
 import { getServingsPerBreakfast, getServingsPerMainSlot, getServingsPerSnack } from './meal-structure.js';
 import { getPortionQuantities } from './nutrition.js';
 
@@ -104,8 +105,8 @@ function buildLine(product, neededQuantity, stockQuantity) {
   };
 }
 
-function groupLinesByAisle(lines) {
-  return AISLE_ORDER.map((aisle) => {
+function groupLinesByAisle(lines, aisleOrder) {
+  return aisleOrder.map((aisle) => {
     const aisleLines = lines
       .filter((line) => line.product.aisle === aisle)
       .sort((firstLine, secondLine) => firstLine.product.name.localeCompare(secondLine.product.name, 'fr'));
@@ -138,7 +139,7 @@ export function buildShoppingList(plan, settings) {
   const portionCount = cookedServings.reduce((total, { servingCount }) => total + servingCount, 0);
 
   return {
-    aisleGroups: groupLinesByAisle(purchasedLines),
+    aisleGroups: groupLinesByAisle(purchasedLines, getStoreSetup(settings).aisleOrder),
     stockLines,
     pantryLines,
     articleCount: purchasedLines.reduce((total, line) => total + line.packageCount, 0),

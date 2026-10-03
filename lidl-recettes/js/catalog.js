@@ -2,6 +2,8 @@
 // - les listes de prix nationaux publiées par Lidl (lidl.fr, « Liste des produits comparés », 02/2025 et 07/2026) ;
 // - les relevés en magasin Lidl France d'Open Prices (prices.openfoodfacts.org, 2025-2026) ;
 // - lidl.fr et les catalogues Lidl (prix hors promotion).
+// Pour le frais, les relevés des Lidl de Lyon passent avant ceux du reste de la France
+// (magasin de référence : Villeurbanne, rue Greuze).
 // Sans relevé trouvé, le prix reste une estimation : persil, dinde, chorizo, crevettes, colin, lait,
 // ricotta, nouilles, boulgour, quinoa, maïs, haricots blancs, lentilles en boîte, sauce soja, bouillon,
 // épinards, petits pois et poêlée surgelés, patates douces, courgettes.
@@ -85,10 +87,10 @@ export const PRODUCTS = Object.freeze([
   defineProduct({ id: 'carotte', name: 'Carottes', aisle: AISLES.PRODUCE, packageLabel: 'sachet 1 kg', packageSize: 1000, unit: UNITS.GRAM, price: 1.69, shortName: 'carottes' }),
   defineProduct({ id: 'pomme-de-terre', name: 'Pommes de terre', aisle: AISLES.PRODUCE, packageLabel: 'sac 2,5 kg', packageSize: 2500, unit: UNITS.GRAM, price: 2.99, shortName: 'pommes de terre' }),
   defineProduct({ id: 'patate-douce', name: 'Patates douces', aisle: AISLES.PRODUCE, packageLabel: 'sachet 1 kg', packageSize: 1000, unit: UNITS.GRAM, price: 2.49, shortName: 'patates douces' }),
-  defineProduct({ id: 'tomate', name: 'Tomates rondes', aisle: AISLES.PRODUCE, packageLabel: 'barquette 1 kg', packageSize: 1000, unit: UNITS.GRAM, price: 1.99, shortName: 'tomates' }),
+  defineProduct({ id: 'tomate', name: 'Tomates rondes', aisle: AISLES.PRODUCE, packageLabel: 'barquette 1 kg', packageSize: 1000, unit: UNITS.GRAM, price: 1.89, shortName: 'tomates' }),
   defineProduct({ id: 'courgette', name: 'Courgettes', aisle: AISLES.PRODUCE, packageLabel: 'sachet 1 kg', packageSize: 1000, unit: UNITS.GRAM, price: 1.99, shortName: 'courgettes' }),
   defineProduct({ id: 'poireau', name: 'Poireaux', aisle: AISLES.PRODUCE, packageLabel: 'botte 1 kg', packageSize: 1000, unit: UNITS.GRAM, price: 1.69, shortName: 'poireaux' }),
-  defineProduct({ id: 'champignon', name: 'Champignons de Paris', aisle: AISLES.PRODUCE, packageLabel: 'barquette 400 g', packageSize: 400, unit: UNITS.GRAM, price: 2.39, shortName: 'champignons' }),
+  defineProduct({ id: 'champignon', name: 'Champignons de Paris', aisle: AISLES.PRODUCE, packageLabel: 'barquette 200 g', packageSize: 200, unit: UNITS.GRAM, price: 0.95, shortName: 'champignons' }),
   defineProduct({ id: 'poivron', name: 'Poivrons tricolores', aisle: AISLES.PRODUCE, packageLabel: 'sachet de 3', packageSize: 3, unit: UNITS.PIECE, price: 1.95, shortName: 'poivron', pieceNames: ['poivron', 'poivrons'] }),
   defineProduct({ id: 'aubergine', name: 'Aubergine', aisle: AISLES.PRODUCE, packageLabel: 'à la pièce', packageSize: 1, unit: UNITS.PIECE, price: 1.69, shortName: 'aubergine', pieceNames: ['aubergine', 'aubergines'] }),
   defineProduct({ id: 'brocoli', name: 'Brocoli', aisle: AISLES.PRODUCE, packageLabel: 'à la pièce', packageSize: 1, unit: UNITS.PIECE, price: 1.29, shortName: 'brocoli', pieceNames: ['brocoli', 'brocolis'] }),
@@ -96,7 +98,7 @@ export const PRODUCTS = Object.freeze([
   defineProduct({ id: 'concombre', name: 'Concombre', aisle: AISLES.PRODUCE, packageLabel: 'à la pièce', packageSize: 1, unit: UNITS.PIECE, price: 0.99, shortName: 'concombre', pieceNames: ['concombre', 'concombres'] }),
   defineProduct({ id: 'avocat', name: 'Avocat', aisle: AISLES.PRODUCE, packageLabel: 'à la pièce', packageSize: 1, unit: UNITS.PIECE, price: 0.99, shortName: 'avocat', pieceNames: ['avocat', 'avocats'] }),
   defineProduct({ id: 'citron', name: 'Citrons jaunes', aisle: AISLES.PRODUCE, packageLabel: 'filet 750 g (5 citrons)', packageSize: 5, unit: UNITS.PIECE, price: 1.85, shortName: 'citron', pieceNames: ['citron', 'citrons'] }),
-  defineProduct({ id: 'banane', name: 'Bananes', aisle: AISLES.PRODUCE, packageLabel: 'régime ≈ 1 kg', packageSize: 1000, unit: UNITS.GRAM, price: 1.79, shortName: 'banane' }),
+  defineProduct({ id: 'banane', name: 'Bananes', aisle: AISLES.PRODUCE, packageLabel: 'régime ≈ 1 kg', packageSize: 1000, unit: UNITS.GRAM, price: 0.99, shortName: 'banane' }),
   defineProduct({ id: 'pomme', name: 'Pommes Golden', aisle: AISLES.PRODUCE, packageLabel: 'sachet 1,5 kg', packageSize: 1500, unit: UNITS.GRAM, price: 2.79, shortName: 'pomme' }),
   defineProduct({ id: 'persil', name: 'Persil plat', aisle: AISLES.PRODUCE, packageLabel: 'bouquet', packageSize: 1, unit: UNITS.PIECE, price: 0.79, shortName: 'persil', pieceNames: ['bouquet de persil', 'bouquets de persil'] }),
 

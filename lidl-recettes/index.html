@@ -173,7 +173,7 @@
 
         <div class="field">
           <label for="weekly-budget">Budget maximum (€)</label>
-          <input id="weekly-budget" name="weeklyBudget" type="number" inputmode="numeric" min="0" max="500" step="5" placeholder="Aucun">
+          <input id="weekly-budget" name="weeklyBudget" type="number" inputmode="numeric" min="0" max="500" step="1" placeholder="Aucun">
         </div>
 
         <label class="check" for="pantry-staples-owned">
@@ -184,6 +184,12 @@
         <div class="preferences-row">
           <p class="hint" id="stock-summary"></p>
           <button id="clear-stock-button" class="text-button" type="button" hidden>Vider le stock de restes</button>
+        </div>
+
+        <div class="preferences-row">
+          <p class="hint" id="store-summary" hidden></p>
+          <button id="clear-missing-button" class="text-button" type="button" hidden>Tout réautoriser</button>
+          <button id="reset-aisles-button" class="text-button" type="button" hidden>Remettre l’ordre des rayons par défaut</button>
         </div>
       </section>
     </form>
@@ -201,6 +207,7 @@
       <div class="receipt" id="receipt"></div>
       <div class="receipt-actions">
         <button id="store-mode-button" class="primary-button" type="button" aria-pressed="false">Mode magasin</button>
+        <button id="hide-checked-button" class="quiet-button store-only" type="button" aria-pressed="false">Masquer les cochés</button>
         <button id="copy-button" class="quiet-button" type="button">Copier la liste</button>
         <button id="uncheck-button" class="quiet-button" type="button">Tout décocher</button>
       </div>
@@ -226,14 +233,23 @@
     </div>
     <div class="cook-content" data-cook="content" aria-live="polite"></div>
     <div class="cook-timer" data-cook="timer" hidden>
+      <p class="cook-timer-label" data-cook="timer-label"></p>
       <p class="cook-clock" data-cook="clock" aria-live="polite"></p>
-      <button class="quiet-button" type="button" data-cook="timer-button">Lancer le minuteur</button>
+      <div class="cook-timer-actions">
+        <button class="quiet-button" type="button" data-cook="timer-button">Lancer le minuteur</button>
+        <button class="quiet-button" type="button" data-cook="timer-stop" hidden>Arrêter</button>
+      </div>
     </div>
     <div class="cook-nav">
       <button class="quiet-button" type="button" data-cook="previous">Précédent</button>
       <button class="primary-button" type="button" data-cook="next">Suivant</button>
     </div>
   </dialog>
+
+  <div class="undo-toast" id="undo-toast" role="status" hidden>
+    <span id="undo-message"></span>
+    <button id="undo-button" class="text-button" type="button">Annuler</button>
+  </div>
 
   <nav class="quick-nav" aria-label="Accès rapide">
     <a href="#settings-title">Réglages</a>

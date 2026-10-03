@@ -1,6 +1,6 @@
 // Service worker : l'appli reste utilisable sans réseau (dans le magasin, en cuisine).
 // Changer CACHE_VERSION à chaque mise en ligne pour que les téléphones récupèrent la nouvelle version.
-const CACHE_VERSION = 'semainier-v7';
+const CACHE_VERSION = 'semainier-v8';
 const APP_SHELL = [
   './',
   'index.html',
@@ -28,6 +28,7 @@ const APP_SHELL = [
   'js/shopping-list.js',
   'js/stock.js',
   'js/storage.js',
+  'js/store-setup.js',
   'js/wake-lock.js',
   'js/week.js',
   'js/weight-log.js'
@@ -75,6 +76,47 @@ async function respondNetworkFirst(request, cacheKey = request) {
   }
 }
 
+// Réseau faible en magasin : au-delà de ce délai, la page enregistrée s'ouvre sans attendre.
+const NAVIGATION_TIMEOUT_MILLISECONDS = 3000;
+// Une page servie depuis le cache charge ensuite tout son code depuis le cache, pour ne jamais
+// mélanger l'ancienne page avec des scripts plus récents (imports introuvables).
+const CACHED_PAGE_SESSION_MILLISECONDS = 60000;
+let cachedPageSessionUntil = 0;
+
+function waitForTimeout(delayMilliseconds) {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(null), delayMilliseconds);
+  });
+}
+
+async function respondToNavigation(request) {
+  const cache = await caches.open(CACHE_VERSION);
+  const cachedPage = await cache.match('index.html');
+  if (!cachedPage) {
+    return respondNetworkFirst(request, 'index.html');
+  }
+  const networkAttempt = fetchFresh(request);
+  try {
+    const networkResponse = await Promise.race([networkAttempt, waitForTimeout(NAVIGATION_TIMEOUT_MILLISECONDS)]);
+    if (networkResponse?.ok) {
+      cachedPageSessionUntil = 0;
+      await cache.put('index.html', networkResponse.clone());
+      return networkResponse;
+    }
+  } catch (networkError) {
+    console.info('Réseau indisponible : page enregistrée.', networkError);
+  }
+  // La réponse tardive n'est pas enregistrée : elle irait avec des scripts plus récents que ceux du cache.
+  networkAttempt.catch(() => undefined);
+  cachedPageSessionUntil = Date.now() + CACHED_PAGE_SESSION_MILLISECONDS;
+  return cachedPage;
+}
+
+async function respondFromCacheFirst(request) {
+  const cachedResponse = await caches.match(request);
+  return cachedResponse ?? fetch(request);
+}
+
 // Photos et icônes : elles ne changent pas, la copie en cache est servie tout de suite.
 async function respondFromCacheThenRefresh(request, backgroundTasks) {
   const cache = await caches.open(CACHE_VERSION);
@@ -115,12 +157,12 @@ self.addEventListener('fetch', (fetchEvent) => {
     return;
   }
   if (request.mode === 'navigate') {
-    fetchEvent.respondWith(respondNetworkFirst(request, 'index.html'));
+    fetchEvent.respondWith(respondToNavigation(request));
     return;
   }
   if (MEDIA_PATH_PATTERN.test(new URL(request.url).pathname)) {
     fetchEvent.respondWith(respondFromCacheThenRefresh(request, (task) => fetchEvent.waitUntil(task)));
     return;
   }
-  fetchEvent.respondWith(respondNetworkFirst(request));
+  fetchEvent.respondWith(Date.now() < cachedPageSessionUntil ? respondFromCacheFirst(request) : respondNetworkFirst(request));
 });
