@@ -288,6 +288,30 @@ export function renderPlan(planListElement, plan, settings, weekStartDate, cooke
   replaceChildrenWithFragment(planListElement, dayItems);
 }
 
+// Le premier plat de la semaine pas encore cuisiné, quel que soit le jour où il était prévu.
+export function renderNextRecipe({ cardContainer, progressElement }, plan, settings, cookedSlotIndexes) {
+  const plannedSlotIndexes = plan.mainRecipeIds
+    .map((recipeId, slotIndex) => (RECIPES_BY_ID.has(recipeId) ? slotIndex : null))
+    .filter((slotIndex) => slotIndex !== null);
+  const nextSlotIndex = plannedSlotIndexes.find((slotIndex) => !cookedSlotIndexes.has(slotIndex));
+  if (nextSlotIndex === undefined) {
+    progressElement.textContent = '';
+    const message = plannedSlotIndexes.length > 0 ? 'Tous les plats de la semaine sont cuisinés.' : 'Aucun plat prévu.';
+    replaceChildrenWithFragment(cardContainer, [createElement('p', { className: 'next-recipe-done', text: message })]);
+    return;
+  }
+  const slotLabels = getMainSlotLabels(settings);
+  progressElement.textContent = `${cookedSlotIndexes.size} sur ${plannedSlotIndexes.length} cuisinés`;
+  replaceChildrenWithFragment(cardContainer, [buildMealCard({
+    recipe: RECIPES_BY_ID.get(plan.mainRecipeIds[nextSlotIndex]),
+    kind: PLAN_KINDS.MAIN,
+    slotIndex: nextSlotIndex,
+    slotLabel: slotLabels[nextSlotIndex % slotLabels.length],
+    servingCount: getServingsPerMainSlot(settings),
+    settings,
+  })]);
+}
+
 // Cocher « Cuisiné » met à jour la carte sur place : la reconstruire ferait disparaître
 // le plat d'un coup, sans laisser voir la coche.
 export function updateCookedCard(cardElement, isCooked) {

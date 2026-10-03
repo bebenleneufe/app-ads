@@ -601,6 +601,39 @@ select:hover {
   min-width: 0;
 }
 
+.next-recipe {
+  display: grid;
+  gap: 12px;
+}
+
+.next-recipe-progress {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--step-small);
+  color: var(--muted);
+}
+
+.next-recipe-card {
+  max-inline-size: 560px;
+}
+
+.next-recipe-card .meal {
+  border: 2px solid var(--accent);
+}
+
+.next-recipe-done {
+  margin: 0;
+  padding: 16px;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+body.is-store-mode .next-recipe {
+  display: none;
+}
+
 .days {
   list-style: none;
   margin: 0;
@@ -1530,6 +1563,11 @@ body.is-store-mode.hides-checked .is-settled:is(.receipt-line, .receipt-group) {
 @media (max-width: 759px) {
   .page {
     padding-block-end: 96px;
+  }
+
+  /* Sur téléphone, la recette suivante doit apparaître dès l'ouverture. */
+  .lede {
+    display: none;
   }
 }
 

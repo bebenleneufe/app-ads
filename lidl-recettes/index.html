@@ -35,6 +35,14 @@
     <dl class="summary" id="summary" aria-live="polite"></dl>
   </header>
 
+  <section class="next-recipe" id="next-recipe" aria-labelledby="next-recipe-title">
+    <div class="section-head">
+      <h2 id="next-recipe-title" class="section-title">Recette suivante</h2>
+      <p class="next-recipe-progress" id="next-recipe-progress"></p>
+    </div>
+    <div class="next-recipe-card" id="next-recipe-card"></div>
+  </section>
+
   <div class="layout">
     <form class="settings" id="settings-form" aria-labelledby="settings-title">
       <h2 id="settings-title" class="section-title">Réglages</h2>
@@ -261,9 +269,10 @@
   </div>
 
   <nav class="quick-nav" aria-label="Accès rapide">
-    <a href="#settings-title">Réglages</a>
+    <a href="#next-recipe-title">Suivante</a>
     <a href="#plan-title">Menus</a>
     <a href="#receipt-title">Courses</a>
+    <a href="#settings-title">Réglages</a>
   </nav>
 </div>
 <script type="module" src="js/app.js"></script>
