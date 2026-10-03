@@ -26,6 +26,7 @@ import {
   renderStockSummary,
   renderStoreSummary,
   renderSummary,
+  updateCookedCard,
   updateMissingLine,
   updateReceiptProgress,
 } from './render.js';
@@ -81,6 +82,7 @@ class WeeklyPlannerApp {
   // Le mode magasin est retenu : si le téléphone ferme l'appli au milieu des rayons, on y revient.
   #isStoreMode = false;
   #hidesCheckedItems = false;
+  #showsCookedMeals = false;
   #shoppingList = null;
   #weekStartDate = getUpcomingMonday();
   #listenersController = new AbortController();
@@ -114,6 +116,8 @@ class WeeklyPlannerApp {
       installButton: rootDocument.getElementById('install-button'),
       installHelp: rootDocument.getElementById('install-help'),
       hideCheckedButton: rootDocument.getElementById('hide-checked-button'),
+      planSection: rootDocument.getElementById('plan-section'),
+      showCookedButton: rootDocument.getElementById('show-cooked-button'),
       storeSummary: rootDocument.getElementById('store-summary'),
       clearMissingButton: rootDocument.getElementById('clear-missing-button'),
       resetAislesButton: rootDocument.getElementById('reset-aisles-button'),
@@ -159,6 +163,7 @@ class WeeklyPlannerApp {
     this.#cookedMeals = normalizeCookedMeals(savedState?.cookedMeals);
     this.#isStoreMode = savedState?.interface?.isStoreMode === true;
     this.#hidesCheckedItems = savedState?.interface?.hidesCheckedItems === true;
+    this.#showsCookedMeals = savedState?.interface?.showsCookedMeals === true;
     this.#checkedProductIds = new Set(Array.isArray(savedState?.checkedProductIds) ? savedState.checkedProductIds : []);
     this.#weekStartDate = resolveWeekStart(savedState?.weekStart);
     try {
@@ -213,6 +218,7 @@ class WeeklyPlannerApp {
     receipt.addEventListener('change', (changeEvent) => this.#handleReceiptCheck(changeEvent), { signal });
     receipt.addEventListener('click', (clickEvent) => this.#handleReceiptClick(clickEvent), { signal });
     this.#elements.hideCheckedButton.addEventListener('click', () => this.#toggleHideChecked(), { signal });
+    this.#elements.showCookedButton.addEventListener('click', () => this.#toggleShowCooked(), { signal });
     this.#elements.undoButton.addEventListener('click', () => this.#undoLastAction(), { signal });
     this.#elements.addItemForm.addEventListener('submit', (submitEvent) => this.#handleAddItem(submitEvent), { signal });
     this.#elements.clearMissingButton.addEventListener('click', () => this.#updateStoreSetup(clearMissingProducts(this.#storeSetup)), { signal });
@@ -464,11 +470,7 @@ class WeeklyPlannerApp {
       return;
     }
     if (action === 'cooked') {
-      const isCooked = isMealCooked(this.#cookedMeals, this.#plan, slotNumber);
-      this.#cookedMeals = setMealCooked(this.#cookedMeals, this.#plan, slotNumber, !isCooked);
-      this.#renderPlanning();
-      this.#persist();
-      this.#elements.planList.querySelector(`[data-action="cooked"][data-slot-index="${slotIndex}"]`)?.focus();
+      this.#setCooked(slotNumber, !isMealCooked(this.#cookedMeals, this.#plan, slotNumber));
       return;
     }
     if (action === 'like') {
@@ -511,12 +513,49 @@ class WeeklyPlannerApp {
 
   // Le créneau a pu changer de plat pendant la cuisine : on ne coche que s'il s'agit du même.
   #markCookedAfterCooking(slotNumber, recipeId) {
-    if (this.#plan.mainRecipeIds[slotNumber] !== recipeId) {
-      return;
+    if (this.#plan.mainRecipeIds[slotNumber] === recipeId) {
+      this.#setCooked(slotNumber, true);
     }
-    this.#cookedMeals = setMealCooked(this.#cookedMeals, this.#plan, slotNumber, true);
-    this.#renderPlanning();
+  }
+
+  // La carte est mise à jour sur place pour laisser voir la coche avant qu'elle ne s'efface.
+  #setCooked(slotNumber, isCooked) {
+    this.#cookedMeals = setMealCooked(this.#cookedMeals, this.#plan, slotNumber, isCooked);
+    const cardElement = this.#elements.planList.querySelector(`[data-action="cooked"][data-slot-index="${slotNumber}"]`)?.closest('.meal');
+    if (cardElement) {
+      updateCookedCard(cardElement, isCooked);
+    }
+    this.#renderCookedProgress();
     this.#persist();
+    const recipe = RECIPES_BY_ID.get(this.#plan.mainRecipeIds[slotNumber]);
+    if (isCooked && recipe && !this.#showsCookedMeals) {
+      this.#offerUndo(`« ${recipe.name} » cuisiné.`, () => {
+        this.#cookedMeals = setMealCooked(this.#cookedMeals, this.#plan, slotNumber, false);
+        this.#renderPlanning();
+        this.#persist();
+      });
+    }
+  }
+
+  #toggleShowCooked() {
+    this.#showsCookedMeals = !this.#showsCookedMeals;
+    this.#renderCookedProgress();
+    this.#persist();
+  }
+
+  // Résumé « 3 sur 7 », bouton d'affichage des plats cuisinés et message « tout est cuisiné ».
+  #renderCookedProgress() {
+    const cookedCount = listCookedSlotIndexes(this.#cookedMeals, this.#plan).length;
+    const dishCount = this.#plan.mainRecipeIds.filter(Boolean).length;
+    const { planSection, showCookedButton } = this.#elements;
+    renderSummary(this.#elements.summary, this.#shoppingList, this.#settings, cookedCount);
+    planSection.classList.toggle('shows-cooked', this.#showsCookedMeals);
+    planSection.classList.toggle('all-cooked', dishCount > 0 && cookedCount === dishCount);
+    showCookedButton.hidden = cookedCount === 0;
+    showCookedButton.setAttribute('aria-pressed', String(this.#showsCookedMeals));
+    showCookedButton.textContent = this.#showsCookedMeals
+      ? 'Masquer les plats cuisinés'
+      : `Afficher les plats cuisinés (${cookedCount})`;
   }
 
   // Le plat est retiré de tous les jours où il apparaît. Un appui raté se rattrape avec « Annuler ».
@@ -638,8 +677,8 @@ class WeeklyPlannerApp {
     this.#elements.profileFields.hidden = !hasWeightLossGoal(this.#settings);
     renderGoalHint(this.#elements.goalHint, this.#settings);
     const cookedSlotIndexes = new Set(listCookedSlotIndexes(this.#cookedMeals, this.#plan));
-    renderSummary(this.#elements.summary, this.#shoppingList, this.#settings, cookedSlotIndexes.size);
     renderPlan(this.#elements.planList, this.#plan, planningSettings, this.#weekStartDate, cookedSlotIndexes);
+    this.#renderCookedProgress();
     renderPreferencesSummary(this.#elements.preferencesSummary, this.#elements.resetDislikesButton, this.#preferences);
     renderStockSummary(this.#elements.stockSummary, this.#elements.clearStockButton, describeStock(this.#pantryStock));
     renderStoreSummary({
@@ -682,7 +721,11 @@ class WeeklyPlannerApp {
       storeSetup: this.#storeSetup,
       extraItems: this.#extraItems,
       cookedMeals: this.#cookedMeals,
-      interface: { isStoreMode: this.#isStoreMode, hidesCheckedItems: this.#hidesCheckedItems },
+      interface: {
+        isStoreMode: this.#isStoreMode,
+        hidesCheckedItems: this.#hidesCheckedItems,
+        showsCookedMeals: this.#showsCookedMeals,
+      },
     });
   }
 }

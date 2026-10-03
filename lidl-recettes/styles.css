@@ -846,6 +846,41 @@ select:hover {
   color: var(--accent-ink);
 }
 
+.plan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Plats cuisinés : ils s'effacent comme les articles cochés en mode magasin. */
+.plan:not(.shows-cooked) :is(.meal.is-cooked, .day.is-complete) {
+  overflow: hidden;
+  animation: fade-out-done 300ms ease 450ms forwards;
+}
+
+.plan:not(.shows-cooked) :is(.meal.is-cooked.is-settled, .day.is-complete.is-settled) {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan:not(.shows-cooked) :is(.meal.is-cooked, .day.is-complete) {
+    animation: none;
+    display: none;
+  }
+}
+
+.all-cooked-note {
+  display: none;
+  padding: 16px;
+  text-align: center;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.plan.all-cooked:not(.shows-cooked) .all-cooked-note {
+  display: block;
+}
+
 .meal.is-cooked .meal-photo {
   opacity: 0.55;
   filter: grayscale(0.4);

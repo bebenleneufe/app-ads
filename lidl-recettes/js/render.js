@@ -114,12 +114,16 @@ function buildActionButton({ action, text, kind, slotIndex, recipe, className, p
   return createElement('button', { className, text, attributes });
 }
 
+function describeCookedButton(isCooked) {
+  return isCooked ? 'Cuisiné ✓' : 'Cuisiné ?';
+}
+
 function buildMealActions(recipe, kind, slotIndex, settings, isCooked) {
   const isLiked = (settings.preferences ?? EMPTY_PREFERENCES).liked.includes(recipe.id);
   // Le petit-déjeuner et la collation reviennent chaque jour : seuls les plats se cochent.
   const cookedButton = kind === PLAN_KINDS.MAIN
     ? buildActionButton({
-      action: 'cooked', text: isCooked ? 'Cuisiné ✓' : 'Cuisiné ?', kind, slotIndex, recipe, className: 'chip-button cooked-button', pressed: isCooked,
+      action: 'cooked', text: describeCookedButton(isCooked), kind, slotIndex, recipe, className: 'chip-button cooked-button', pressed: isCooked,
     })
     : null;
   return createElement('div', { className: 'meal-actions' }, [
@@ -147,7 +151,8 @@ function buildMissingWarning(recipe, settings) {
 
 function buildMealCard({ recipe, kind, slotIndex, slotLabel, servingCount, settings, isCooked = false }) {
   const isBreakfast = kind === PLAN_KINDS.BREAKFAST;
-  const cardClasses = ['meal', isBreakfast ? 'is-breakfast' : '', isCooked ? 'is-cooked' : ''].filter(Boolean).join(' ');
+  // « is-settled » : déjà cuisiné à l'affichage, donc masqué sans animation quand les plats cuisinés sont cachés.
+  const cardClasses = ['meal', isBreakfast ? 'is-breakfast' : '', isCooked ? 'is-cooked is-settled' : ''].filter(Boolean).join(' ');
   return createElement('article', {
     className: cardClasses,
     attributes: { 'data-category': recipe.category },
@@ -234,7 +239,11 @@ function buildDayItem(dayIndex, plan, settings, weekStartDate, cookedSlotIndexes
       : null;
   });
 
-  return createElement('li', { className: 'day' }, [
+  const presentSlotIndexes = mainRecipes
+    .map((recipe, mealIndex) => (recipe ? dayIndex * mainSlotsPerDay + mealIndex : null))
+    .filter((slotIndex) => slotIndex !== null);
+  const isDayComplete = presentSlotIndexes.length > 0 && presentSlotIndexes.every((slotIndex) => cookedSlotIndexes.has(slotIndex));
+  return createElement('li', { className: isDayComplete ? 'day is-complete is-settled' : 'day' }, [
     createElement('div', { className: 'day-head' }, [
       createElement('h3', { className: 'day-name' }, [
         createElement('span', { text: DAY_NAMES[dayIndex] }),
@@ -275,7 +284,26 @@ export function renderPlan(planListElement, plan, settings, weekStartDate, cooke
   if (plan.mainRecipeIds.length === 0) {
     dayItems.unshift(createElement('li', { className: 'empty-plan', text: 'Aucun plat ne correspond à ces critères.' }));
   }
+  dayItems.push(createElement('li', { className: 'all-cooked-note', text: 'Tous les plats de la semaine sont cuisinés.' }));
   replaceChildrenWithFragment(planListElement, dayItems);
+}
+
+// Cocher « Cuisiné » met à jour la carte sur place : la reconstruire ferait disparaître
+// le plat d'un coup, sans laisser voir la coche.
+export function updateCookedCard(cardElement, isCooked) {
+  cardElement.classList.toggle('is-cooked', isCooked);
+  cardElement.classList.remove('is-settled');
+  const cookedButton = cardElement.querySelector('[data-action="cooked"]');
+  if (cookedButton) {
+    cookedButton.textContent = describeCookedButton(isCooked);
+    cookedButton.setAttribute('aria-pressed', String(isCooked));
+  }
+  const dayElement = cardElement.closest('.day');
+  if (dayElement && !dayElement.classList.contains('week-breakfast')) {
+    const dayCards = [...dayElement.querySelectorAll('.meal')];
+    dayElement.classList.toggle('is-complete', dayCards.length > 0 && dayCards.every((card) => card.classList.contains('is-cooked')));
+    dayElement.classList.remove('is-settled');
+  }
 }
 
 function buildSummaryTile(label, value, modifier = '') {
