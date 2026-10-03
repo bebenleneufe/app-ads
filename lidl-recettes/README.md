@@ -7,9 +7,9 @@ Générateur de menus pour la semaine. Il produit aussi la liste de courses et u
 ### Menus
 - **Trois repas et une collation par jour** : le même petit-déjeuner et la même collation toute la semaine (affichés une fois en tête des menus), puis par défaut le même plat au déjeuner et au dîner, cuisiné une fois en double (7 plats par semaine au lieu de 14). On peut aussi choisir deux plats différents ou le dîner seul.
 - **Recettes rapides** : 15, 20 (par défaut) ou 30 minutes maximum, ou sans limite. Avec une limite, 6 ingrédients frais maximum (l'huile et les épices ne comptent pas). 88 plats (aucun avec de la tomate crue), 7 petits-déjeuners et 6 collations au total, dont près de 60 plats en 20 minutes ou moins compatibles avec l'objectif par défaut.
-- **« J'aime » / « Pas pour moi »** : un plat aimé revient plus souvent, un plat écarté ne revient plus (réautorisable dans les réglages). Les plats des deux dernières semaines sont évités.
+- **« J'aime » / « Pas pour moi »** : un plat aimé revient plus souvent, un plat écarté disparaît de toute la semaine et ne revient plus (« Annuler » pendant 6 secondes, réautorisable dans les réglages). Les plats des deux dernières semaines sont évités.
 - **Bouton « Changer »** : remplace un seul repas, ou le petit-déjeuner et la collation de toute la semaine.
-- **Mode cuisine** : les ingrédients puis une étape à la fois, en grand, avec un minuteur quand l'étape annonce une durée. L'écran reste allumé.
+- **Mode cuisine** : les ingrédients puis une étape à la fois, en grand, avec un minuteur quand l'étape annonce une durée. Le minuteur continue quand on change d'étape ou qu'on ferme la fenêtre, et reste juste même écran éteint. L'écran reste allumé.
 - **Photos** : une photo indicative par recette (`images/recettes/<id>.webp`, 480 × 320, environ 18 Ko chacune).
 - **Régimes** : tout, sans viande (poisson autorisé), végétarien, avec une option sans porc.
 
@@ -22,14 +22,17 @@ Générateur de menus pour la semaine. Il produit aussi la liste de courses et u
 ### Courses
 - **Petit prix** : le générateur calcule ce que chaque recette ajoute vraiment au ticket, en tenant compte des paquets déjà ouverts. Environ 38 € la semaine pour 1 personne, 3 repas et une collation par jour (médiane mesurée sur 200 semaines). Les priorités « Prix et variété » (≈ 40 €) et « Variété » (≈ 45 €) proposent plus de plats différents.
 - **Liste rangée par rayon** dans l'ordre du parcours habituel d'un magasin Lidl (surgelés en dernier), avec sous-total par rayon, besoin réel, reste de chaque paquet et barre de progression.
-- **Mode magasin** : la liste seule, en grand, avec l'écran qui reste allumé.
+- **Mode magasin** : la liste seule, en grand, avec l'écran qui reste allumé (retenu si l'appli est fermée en plein rayon). « Masquer les cochés » fait disparaître les articles déjà pris et les rayons terminés.
+- **Mon Lidl** : en mode magasin, les flèches rangent les rayons dans l'ordre de son magasin, et « Introuvable » écarte un produit des prochains menus (les plats déjà prévus restent, signalés).
 - **Restes reportés** : quand on passe à la semaine suivante, les restes d'épicerie, de conserves et de surgelés **cochés** (donc achetés) sont gardés en stock et déduits des courses suivantes ; le générateur privilégie les plats qui les finissent.
-- **Budget** : plafond respecté à la génération, quand les réglages changent et avec « Changer ».
+- **Budget** : plafond respecté à la génération, avec « Changer », et quand un réglage renchérit la semaine (un réglage sans effet sur le prix ne remplace jamais de plat).
 - **Copie** de la liste en texte (pour l'envoyer par message, par exemple).
 
 ### Application
 - **Installable sur téléphone** et **utilisable hors ligne** (manifeste et service worker).
-- Tout est mémorisé dans le navigateur (`localStorage`) : réglages, semaine, cases cochées, préférences, pesées, stock.
+- Tout est mémorisé dans le navigateur (`localStorage`) : réglages, semaine, cases cochées, préférences, pesées, stock, magasin. Une mise à jour de l'appli ne remplace jamais les plats de la semaine enregistrée.
+- « Nouvelle semaine » prépare toujours la semaine du prochain lundi, et demande confirmation si des articles sont cochés.
+- Avec un réseau faible, l'appli enregistrée s'ouvre au bout de 3 secondes au plus.
 
 ## Lancer l'application
 

@@ -31,6 +31,7 @@ import { PLAN_KINDS } from './planner.js';
 import { computePortionCost } from './shopping-list.js';
 import { EMPTY_PREFERENCES } from './preferences.js';
 import { CATEGORY_LABELS, countFreshIngredients, MEAL_TYPES, RECIPES_BY_ID } from './recipes.js';
+import { AISLE_MOVES, getStoreSetup, hasCustomAisleOrder, listMissingIngredients } from './store-setup.js';
 
 const DAY_NAMES = Object.freeze(['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']);
 const WEEKLY_MEALS = Object.freeze([
@@ -127,6 +128,15 @@ function buildMealActions(recipe, kind, slotIndex, settings) {
   ]);
 }
 
+function buildMissingWarning(recipe, settings) {
+  const missingProductIds = listMissingIngredients(recipe, getStoreSetup(settings));
+  if (missingProductIds.length === 0) {
+    return null;
+  }
+  const missingNames = missingProductIds.map((productId) => PRODUCTS_BY_ID.get(productId).shortName).join(', ');
+  return createElement('p', { className: 'meal-warning', text: `Introuvable dans ton Lidl : ${missingNames}` });
+}
+
 function buildMealCard({ recipe, kind, slotIndex, slotLabel, servingCount, settings }) {
   const isBreakfast = kind === PLAN_KINDS.BREAKFAST;
   return createElement('article', {
@@ -151,6 +161,7 @@ function buildMealCard({ recipe, kind, slotIndex, slotLabel, servingCount, setti
     ]),
     createElement('h4', { className: 'meal-name', text: recipe.name }),
     createElement('p', { className: 'meal-tag', text: CATEGORY_LABELS[recipe.category] }),
+    buildMissingWarning(recipe, settings),
     buildMealFacts(recipe, settings),
     buildMealActions(recipe, kind, slotIndex, settings),
     buildRecipeDetails(recipe, servingCount, settings),
@@ -288,7 +299,20 @@ export function renderSummary(summaryElement, shoppingList, settings) {
   ].filter(Boolean));
 }
 
-function buildReceiptLine(line, isChecked) {
+function buildMissingButton(product, isMissing) {
+  return createElement('button', {
+    className: 'missing-button',
+    text: isMissing ? 'Trouvé finalement' : 'Introuvable',
+    attributes: {
+      type: 'button',
+      'data-missing-product-id': product.id,
+      'aria-pressed': String(isMissing),
+      'aria-label': isMissing ? `${product.name} : trouvé finalement` : `${product.name} : introuvable dans mon Lidl`,
+    },
+  });
+}
+
+function buildReceiptLine(line, { isChecked, isMissing }) {
   const { product } = line;
   const checkboxId = `article-${product.id}`;
   const detailParts = [
@@ -302,7 +326,13 @@ function buildReceiptLine(line, isChecked) {
     detailParts.push(`reste ${formatQuantity(line.leftoverQuantity, product.unit)}`);
   }
   const brandSuffix = product.brand ? ` ${product.brand}` : '';
-  return createElement('li', { className: isChecked ? 'receipt-line is-checked' : 'receipt-line' }, [
+  // « is-settled » : déjà réglé à l'affichage, donc masqué sans animation en mode « Masquer les cochés ».
+  const stateClasses = [
+    isChecked ? 'is-checked' : '',
+    isMissing ? 'is-missing' : '',
+    isChecked || isMissing ? 'is-settled' : '',
+  ].filter(Boolean).join(' ');
+  return createElement('li', { className: `receipt-line ${stateClasses}`.trim(), attributes: { 'data-product-id': product.id } }, [
     createElement('input', {
       attributes: { type: 'checkbox', id: checkboxId, 'data-product-id': product.id, ...(isChecked ? { checked: '' } : {}) },
     }),
@@ -311,6 +341,7 @@ function buildReceiptLine(line, isChecked) {
       createElement('span', { className: 'line-price', text: formatEuros(line.cost) }),
       createElement('span', { className: 'line-detail', text: detailParts.join(' · ') }),
     ]),
+    buildMissingButton(product, isMissing),
   ]);
 }
 
@@ -341,6 +372,11 @@ function buildReceiptProgress() {
   ]);
 }
 
+export function updateMissingLine(lineElement, product, isMissing) {
+  lineElement.classList.toggle('is-missing', isMissing);
+  lineElement.querySelector('.missing-button')?.replaceWith(buildMissingButton(product, isMissing));
+}
+
 export function updateReceiptProgress(receiptElement, checkedCount, lineCount) {
   const progressText = receiptElement.querySelector('.progress-text');
   const progressFill = receiptElement.querySelector('.progress-fill');
@@ -353,15 +389,48 @@ export function updateReceiptProgress(receiptElement, checkedCount, lineCount) {
   progressFill.style.inlineSize = lineCount > 0 ? `${Math.round((checkedCount / lineCount) * 100)}%` : '0%';
 }
 
-export function renderReceipt(receiptElement, shoppingList, settings, checkedProductIds, weekStartDate) {
-  const aisleSections = shoppingList.aisleGroups.map((group, groupIndex) => createElement('section', { className: 'receipt-group' }, [
+function buildAisleMoveButton(aisle, direction, isDisabled) {
+  const isUp = direction === AISLE_MOVES.UP;
+  const attributes = {
+    type: 'button',
+    'data-aisle': aisle,
+    'data-direction': String(direction),
+    'aria-label': `${isUp ? 'Monter' : 'Descendre'} le rayon ${aisle}`,
+  };
+  if (isDisabled) {
+    attributes.disabled = '';
+  }
+  return createElement('button', { className: 'aisle-move', text: isUp ? '↑' : '↓', attributes });
+}
+
+// Un produit introuvable compte comme réglé : il n'y a plus rien à aller chercher.
+export function isLineDone(productId, checkedProductIds, storeSetup) {
+  return checkedProductIds.has(productId) || storeSetup.missingProductIds.includes(productId);
+}
+
+function buildAisleSection(group, groupIndex, groupCount, { checkedProductIds, storeSetup }) {
+  const isComplete = group.lines.every((line) => isLineDone(line.product.id, checkedProductIds, storeSetup));
+  return createElement('section', { className: isComplete ? 'receipt-group is-complete is-settled' : 'receipt-group' }, [
     createElement('h3', { className: 'aisle-head' }, [
       createElement('span', { className: 'aisle-step', text: String(groupIndex + 1).padStart(2, '0') }),
       createElement('span', { className: 'aisle-name', text: group.aisle }),
       createElement('span', { className: 'aisle-subtotal', text: formatEuros(group.subtotal) }),
+      createElement('span', { className: 'aisle-moves' }, [
+        buildAisleMoveButton(group.aisle, AISLE_MOVES.UP, groupIndex === 0),
+        buildAisleMoveButton(group.aisle, AISLE_MOVES.DOWN, groupIndex === groupCount - 1),
+      ]),
     ]),
-    createElement('ul', {}, group.lines.map((line) => buildReceiptLine(line, checkedProductIds.has(line.product.id)))),
-  ]));
+    createElement('ul', {}, group.lines.map((line) => buildReceiptLine(line, {
+      isChecked: checkedProductIds.has(line.product.id),
+      isMissing: storeSetup.missingProductIds.includes(line.product.id),
+    }))),
+  ]);
+}
+
+export function renderReceipt(receiptElement, shoppingList, settings, checkedProductIds, weekStartDate) {
+  const lineStates = { checkedProductIds, storeSetup: getStoreSetup(settings) };
+  const groupCount = shoppingList.aisleGroups.length;
+  const aisleSections = shoppingList.aisleGroups.map((group, groupIndex) => buildAisleSection(group, groupIndex, groupCount, lineStates));
 
   replaceChildrenWithFragment(receiptElement, [
     createElement('header', { className: 'receipt-head' }, [
@@ -411,6 +480,14 @@ export function renderPreferencesSummary(summaryElement, resetButton, preference
   }
   summaryElement.textContent = parts.length > 0 ? parts.join(' · ') : 'Aucun plat aimé ou écarté pour l’instant.';
   resetButton.hidden = dislikedCount === 0;
+}
+
+export function renderStoreSummary({ summaryElement, clearMissingButton, resetAislesButton }, storeSetup) {
+  const missingNames = storeSetup.missingProductIds.map((productId) => PRODUCTS_BY_ID.get(productId).shortName);
+  summaryElement.textContent = missingNames.length > 0 ? `Introuvable dans mon Lidl : ${missingNames.join(', ')}.` : '';
+  summaryElement.hidden = missingNames.length === 0;
+  clearMissingButton.hidden = missingNames.length === 0;
+  resetAislesButton.hidden = !hasCustomAisleOrder(storeSetup);
 }
 
 export function renderStockSummary(summaryElement, clearButton, stockDescription) {

@@ -5,7 +5,10 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.WindowManager;
 import android.webkit.CookieManager;
+import android.webkit.JavascriptInterface;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -28,6 +31,16 @@ public class MainActivity extends Activity {
         + "</head><body><h1>Pas de connexion</h1>"
         + "<p>La première ouverture du Semainier a besoin d’internet. Ensuite, l’appli marche aussi hors ligne.</p>"
         + "<a href=\"" + APP_URL + "\">Réessayer</a></body></html>";
+    // Le retour d'Android ferme d'abord ce qui est ouvert dans la page (mode cuisine, mode magasin)
+    // au lieu de quitter l'appli et de perdre un minuteur en cours.
+    private static final String CLOSE_OPEN_LAYER_SCRIPT =
+        "(() => {"
+        + "const openDialog = document.querySelector('dialog[open]');"
+        + "if (openDialog) { openDialog.close(); return true; }"
+        + "const storeModeButton = document.getElementById('store-mode-button');"
+        + "if (storeModeButton && document.body.classList.contains('is-store-mode')) { storeModeButton.click(); return true; }"
+        + "return false;"
+        + "})()";
 
     private WebView webView;
 
@@ -51,6 +64,61 @@ public class MainActivity extends Activity {
         // Sans WebChromeClient, la WebView ignore les boîtes de dialogue JavaScript.
         targetWebView.setWebChromeClient(new WebChromeClient());
         targetWebView.setWebViewClient(new SemainierWebViewClient(this));
+        targetWebView.addJavascriptInterface(new ScreenBridge(this), "SemainierAndroid");
+    }
+
+    private void setKeepScreenOn(boolean keepScreenOn) {
+        if (keepScreenOn) {
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        } else {
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
+    }
+
+    // La WebView ne gère pas l'API Screen Wake Lock : la page demande ici de garder l'écran
+    // allumé en mode magasin et en mode cuisine. Seule la page du Semainier est chargée dans l'appli.
+    private static final class ScreenBridge {
+        private final MainActivity activity;
+
+        ScreenBridge(MainActivity activity) {
+            this.activity = activity;
+        }
+
+        @JavascriptInterface
+        public void setKeepScreenOn(boolean keepScreenOn) {
+            activity.runOnUiThread(new KeepScreenOnTask(activity, keepScreenOn));
+        }
+    }
+
+    // Classes nommées plutôt que des lambdas : la chaîne de compilation sans Gradle ne les gère pas.
+    private static final class KeepScreenOnTask implements Runnable {
+        private final MainActivity activity;
+        private final boolean keepScreenOn;
+
+        KeepScreenOnTask(MainActivity activity, boolean keepScreenOn) {
+            this.activity = activity;
+            this.keepScreenOn = keepScreenOn;
+        }
+
+        @Override
+        public void run() {
+            activity.setKeepScreenOn(keepScreenOn);
+        }
+    }
+
+    // Type brut : avec ValueCallback<String>, javac ajoute une méthode « pont » sur laquelle d8 plante.
+    @SuppressWarnings("rawtypes")
+    private static final class BackPressCallback implements ValueCallback {
+        private final MainActivity activity;
+
+        BackPressCallback(MainActivity activity) {
+            this.activity = activity;
+        }
+
+        @Override
+        public void onReceiveValue(Object closedSomething) {
+            activity.finishBackPress("true".equals(closedSomething));
+        }
     }
 
     private static boolean isAppUrl(Uri uri) {
@@ -92,6 +160,15 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
+        @SuppressWarnings("unchecked")
+        ValueCallback<String> backPressCallback = new BackPressCallback(this);
+        webView.evaluateJavascript(CLOSE_OPEN_LAYER_SCRIPT, backPressCallback);
+    }
+
+    private void finishBackPress(boolean pageClosedSomething) {
+        if (pageClosedSomething) {
+            return;
+        }
         if (webView.canGoBack()) {
             webView.goBack();
             return;

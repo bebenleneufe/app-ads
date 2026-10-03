@@ -22,12 +22,27 @@ const defaultSettings = normalizeSettings(DEFAULT_SETTINGS);
 
 describe('budget appliqué partout', () => {
   it('réajuste la semaine au budget quand le nombre de personnes augmente', () => {
-    const plan = generatePlan({ ...defaultSettings, weeklyBudget: 35 }, createSeededRandom(1));
+    const onePersonSettings = { ...defaultSettings, weeklyBudget: 35 };
+    const plan = generatePlan(onePersonSettings, createSeededRandom(1));
+    const previousTotalToPay = buildShoppingList(plan, onePersonSettings).totalToPay;
     const threePeople = { ...defaultSettings, personCount: 3 };
     const withoutBudget = buildShoppingList(reconcilePlan(plan, { ...threePeople, weeklyBudget: 0 }, createSeededRandom(2)), threePeople);
     const withBudgetSettings = { ...threePeople, weeklyBudget: 35 };
-    const withBudget = buildShoppingList(reconcilePlan(plan, withBudgetSettings, createSeededRandom(2)), withBudgetSettings);
+    const withBudget = buildShoppingList(
+      reconcilePlan(plan, withBudgetSettings, createSeededRandom(2), { previousTotalToPay }),
+      withBudgetSettings,
+    );
     assert.ok(withBudget.totalToPay < withoutBudget.totalToPay, `${withBudget.totalToPay} >= ${withoutBudget.totalToPay}`);
+  });
+
+  it('ne remplace aucun plat pour un réglage sans effet sur le prix, même au-dessus du budget', () => {
+    const settings = { ...defaultSettings, weeklyBudget: 20 };
+    for (let seed = 0; seed < 20; seed += 1) {
+      const plan = generatePlan(settings, createSeededRandom(seed + 200));
+      const previousTotalToPay = buildShoppingList(plan, settings).totalToPay;
+      const reconciledPlan = reconcilePlan(plan, settings, createSeededRandom(seed + 300), { previousTotalToPay });
+      assert.deepEqual(reconciledPlan.mainRecipeIds, plan.mainRecipeIds);
+    }
   });
 
   it('ne fait pas dépasser le budget avec « Changer », ou choisit parmi les moins chers', () => {

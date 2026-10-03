@@ -17,6 +17,7 @@ import {
 import { CATEGORIES, fitsTimeLimit, MEAL_TYPES, RECIPES, RECIPES_BY_ID } from './recipes.js';
 import { EMPTY_PREFERENCES } from './preferences.js';
 import { buildShoppingList, computePortionCost, createPurchaseTracker } from './shopping-list.js';
+import { getStoreSetup, listMissingIngredients } from './store-setup.js';
 
 export const DIETS = Object.freeze({
   OMNIVORE: 'omnivore',
@@ -105,7 +106,13 @@ function hasBudget(settings) {
   return settings.weeklyBudget > 0;
 }
 
+// Un produit introuvable écarte la recette des prochains tirages seulement : les plats déjà
+// prévus restent (les autres ingrédients sont peut-être déjà dans le panier).
 export function isRecipeAllowed(recipe, settings) {
+  return listMissingIngredients(recipe, getStoreSetup(settings)).length === 0 && isRecipeCompatible(recipe, settings);
+}
+
+function isRecipeCompatible(recipe, settings) {
   if (getPreferences(settings).disliked.includes(recipe.id)) {
     return false;
   }
@@ -351,7 +358,7 @@ export function fitPlanToBudget(plan, settings) {
 
 // Les plats sont choisis avant le petit-déjeuner et la collation : ceux-ci peuvent alors
 // finir le pain, les œufs ou le fromage blanc déjà achetés pour les plats.
-function fillPlan(keptPlan, settings, random) {
+function fillEmptySlots(keptPlan, settings, random) {
   const purchaseTracker = createPurchaseTracker(settings);
   const filledPlan = {
     mainRecipeIds: fillMainSlots({ keptRecipeIds: keptPlan.mainRecipeIds, settings, random, purchaseTracker }),
@@ -366,7 +373,11 @@ function fillPlan(keptPlan, settings, random) {
       purchaseTracker,
     });
   }
-  return fitPlanToBudget(filledPlan, settings);
+  return filledPlan;
+}
+
+function fillPlan(keptPlan, settings, random) {
+  return fitPlanToBudget(fillEmptySlots(keptPlan, settings, random), settings);
 }
 
 export function generatePlan(settings, random = Math.random) {
@@ -387,28 +398,57 @@ function remapMainSlotsByDay(recipeIds, previousSlotsPerDay, settings) {
   return remappedRecipeIds;
 }
 
-function keepAllowedMainRecipeIds(currentPlan, settings) {
+function keepExistingMainRecipeIds(currentPlan, settings) {
+  return keepAllowedMainRecipeIds(currentPlan, settings, () => true);
+}
+
+function keepAllowedMainRecipeIds(currentPlan, settings, isKept = (recipe) => isRecipeCompatible(recipe, settings)) {
   const recipeIds = Array.isArray(currentPlan?.mainRecipeIds) ? currentPlan.mainRecipeIds : [];
   const previousSlotsPerDay = Number.isInteger(currentPlan?.mainSlotsPerDay) && currentPlan.mainSlotsPerDay > 0
     ? currentPlan.mainSlotsPerDay
     : getMainSlotsPerDay(settings);
   return remapMainSlotsByDay(recipeIds, previousSlotsPerDay, settings).map((recipeId) => {
     const recipe = RECIPES_BY_ID.get(recipeId);
-    return recipe && recipe.mealType === MEAL_TYPES.MAIN && isRecipeAllowed(recipe, settings) ? recipeId : null;
+    return recipe && recipe.mealType === MEAL_TYPES.MAIN && isKept(recipe) ? recipeId : null;
   });
 }
 
-function keepAllowedWeeklyId(currentPlan, kind, settings) {
+function keepAllowedWeeklyId(currentPlan, kind, settings, isKept = (recipe) => isRecipeCompatible(recipe, settings)) {
   const recipe = RECIPES_BY_ID.get(listRecipeIds(currentPlan, kind).find(Boolean));
-  return recipe && recipe.mealType === MEAL_TYPE_BY_KIND[kind] && isRecipeAllowed(recipe, settings) ? recipe.id : null;
+  return recipe && recipe.mealType === MEAL_TYPE_BY_KIND[kind] && isKept(recipe) ? recipe.id : null;
 }
 
-export function reconcilePlan(currentPlan, settings, random = Math.random) {
+// Reprise d'une semaine enregistrée : les réglages n'ont pas changé, seul le code a pu évoluer
+// (prix, recettes, calculs). On garde donc chaque plat qui existe encore, sans refiltrer ni
+// réajuster au budget ; seules les cases vides (recette supprimée) reçoivent un plat.
+export function restorePlan(savedPlan, settings, random = Math.random) {
+  const keptPlan = { mainRecipeIds: keepExistingMainRecipeIds(savedPlan, settings) };
+  for (const kind of WEEKLY_KINDS) {
+    keptPlan[PLAN_KEY_BY_KIND[kind]] = [keepAllowedWeeklyId(savedPlan, kind, settings, () => true)];
+  }
+  return fillEmptySlots(keptPlan, settings, random);
+}
+
+// Après un changement de réglage : les plats devenus incompatibles sont remplacés, les autres restent.
+// Le budget n'est réappliqué que s'il vient de changer, ou si le réglage a renchéri la semaine
+// (plus de personnes, de jours…) : un réglage sans effet sur le prix (pesée, huile au placard)
+// ne doit jamais remplacer des plats peut-être déjà achetés.
+export function reconcilePlan(
+  currentPlan,
+  settings,
+  random = Math.random,
+  { previousTotalToPay = Number.POSITIVE_INFINITY, budgetChanged = false } = {},
+) {
   const keptPlan = { mainRecipeIds: keepAllowedMainRecipeIds(currentPlan, settings) };
   for (const kind of WEEKLY_KINDS) {
     keptPlan[PLAN_KEY_BY_KIND[kind]] = [keepAllowedWeeklyId(currentPlan, kind, settings)];
   }
-  return fillPlan(keptPlan, settings, random);
+  const filledPlan = fillEmptySlots(keptPlan, settings, random);
+  if (!hasBudget(settings)) {
+    return filledPlan;
+  }
+  const isCostlier = buildShoppingList(filledPlan, settings).totalToPay > previousTotalToPay;
+  return budgetChanged || isCostlier ? fitPlanToBudget(filledPlan, settings) : filledPlan;
 }
 
 function swapWeeklyRecipe(currentPlan, kind, settings, random, avoidedRecipeIds) {
@@ -469,8 +509,12 @@ export function swapMeal(currentPlan, kind, slotIndex, settings, random = Math.r
     return currentPlan;
   }
   const purchaseTracker = createTrackerForPlan(currentPlan, settings, { skippedMainSlotIndex: slotIndex });
-  const candidates = listAllowedRecipes(PLAN_KINDS.MAIN, settings)
-    .filter((recipe) => !currentRecipeIds.includes(recipe.id));
+  const otherRecipes = listAllowedRecipes(PLAN_KINDS.MAIN, settings)
+    .filter((recipe) => recipe.id !== currentRecipeIds[slotIndex]);
+  const recipesNotInPlan = otherRecipes.filter((recipe) => !currentRecipeIds.includes(recipe.id));
+  // Avec peu de recettes compatibles, toutes peuvent déjà être au menu : on accepte alors
+  // un plat servi un autre jour plutôt que de laisser « Changer » sans effet.
+  const candidates = recipesNotInPlan.length > 0 ? recipesNotInPlan : otherRecipes;
   const replacement = pickVariedRecipe({
     allowedRecipes: listAffordableReplacements(excludeAvoided(candidates, avoidedRecipeIds), currentPlan, slotIndex, settings, purchaseTracker),
     chosenRecipes: currentRecipeIds

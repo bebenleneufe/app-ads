@@ -4,10 +4,12 @@
 let deferredInstallPrompt = null;
 
 // Écouté dès le chargement du module : Chrome peut faire son annonce très tôt.
+// Retiré par le nettoyage que renvoie setUpInstallButton.
+const earlyListenerController = new AbortController();
 window.addEventListener('beforeinstallprompt', (installEvent) => {
   installEvent.preventDefault();
   deferredInstallPrompt = installEvent;
-});
+}, { signal: earlyListenerController.signal });
 
 // L'appli Android (dossier android/) ajoute cette marque à l'agent utilisateur de sa WebView.
 const ANDROID_APP_USER_AGENT_MARK = 'SemainierAndroid';
@@ -32,9 +34,14 @@ export function setUpInstallButton({ installButton, installHelp, apkLink }) {
     apkLink.hidden = true;
   };
 
+  const removeListeners = () => {
+    listenersController.abort();
+    earlyListenerController.abort();
+  };
+
   if (isRunningAsApp()) {
     hideAll();
-    return () => listenersController.abort();
+    return removeListeners;
   }
   installButton.hidden = false;
   // Sur certains Android, l'installation par Chrome échoue : l'appli Android reste possible.
@@ -62,5 +69,5 @@ export function setUpInstallButton({ installButton, installHelp, apkLink }) {
     }
   }, { signal });
 
-  return () => listenersController.abort();
+  return removeListeners;
 }
