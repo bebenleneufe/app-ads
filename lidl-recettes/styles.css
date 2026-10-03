@@ -367,6 +367,7 @@ h1 {
 }
 
 input[type="number"],
+input[type="text"],
 select {
   width: 100%;
   font: inherit;
@@ -380,6 +381,7 @@ select {
 }
 
 input[type="number"]:hover,
+input[type="text"]:hover,
 select:hover {
   border-color: var(--muted);
 }
@@ -911,6 +913,30 @@ select:hover {
   min-width: 0;
 }
 
+.add-item-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.add-item-form input {
+  min-block-size: 44px;
+}
+
+.remove-extra-button {
+  grid-column: 2;
+  justify-self: start;
+  min-block-size: 32px;
+  font: inherit;
+  font-size: var(--step-xs);
+  font-weight: 600;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
 .receipt {
   background: var(--paper);
   color: var(--paper-ink);
@@ -1215,6 +1241,24 @@ select:hover {
 
 .cook-timer[hidden] {
   display: none;
+}
+
+.cook-timer.is-ringing {
+  animation: ringing-pulse 750ms ease-in-out infinite alternate;
+}
+
+@keyframes ringing-pulse {
+  to {
+    background: var(--tomato-soft);
+    box-shadow: 0 0 0 4px var(--tomato);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cook-timer.is-ringing {
+    animation: none;
+    background: var(--tomato-soft);
+  }
 }
 
 .cook-timer-label {

@@ -345,6 +345,30 @@ function buildReceiptLine(line, { isChecked, isMissing }) {
   ]);
 }
 
+function buildExtraLine(line, isChecked) {
+  const { extra, product } = line;
+  const checkboxId = `article-${extra.id}`;
+  const detailText = product ? `${product.packageLabel} · ajouté` : 'ajouté';
+  return createElement('li', {
+    className: isChecked ? 'receipt-line is-extra is-checked is-settled' : 'receipt-line is-extra',
+    attributes: { 'data-product-id': extra.id },
+  }, [
+    createElement('input', {
+      attributes: { type: 'checkbox', id: checkboxId, 'data-product-id': extra.id, ...(isChecked ? { checked: '' } : {}) },
+    }),
+    createElement('label', { className: 'line-label', attributes: { for: checkboxId } }, [
+      createElement('span', { className: 'line-name', text: `${line.packageCount} × ${extra.label}` }),
+      createElement('span', { className: 'line-price', text: product ? formatEuros(line.cost) : '—' }),
+      createElement('span', { className: 'line-detail', text: detailText }),
+    ]),
+    createElement('button', {
+      className: 'remove-extra-button',
+      text: 'Retirer',
+      attributes: { type: 'button', 'data-extra-id': extra.id, 'aria-label': `Retirer ${extra.label} de la liste` },
+    }),
+  ]);
+}
+
 function buildTotalRow(label, value, className) {
   return createElement('div', { className }, [
     createElement('span', { text: label }),
@@ -409,7 +433,8 @@ export function isLineDone(productId, checkedProductIds, storeSetup) {
 }
 
 function buildAisleSection(group, groupIndex, groupCount, { checkedProductIds, storeSetup }) {
-  const isComplete = group.lines.every((line) => isLineDone(line.product.id, checkedProductIds, storeSetup));
+  const lineKeys = [...group.lines.map((line) => line.product.id), ...group.extraLines.map((line) => line.extra.id)];
+  const isComplete = lineKeys.every((lineKey) => isLineDone(lineKey, checkedProductIds, storeSetup));
   return createElement('section', { className: isComplete ? 'receipt-group is-complete is-settled' : 'receipt-group' }, [
     createElement('h3', { className: 'aisle-head' }, [
       createElement('span', { className: 'aisle-step', text: String(groupIndex + 1).padStart(2, '0') }),
@@ -420,10 +445,13 @@ function buildAisleSection(group, groupIndex, groupCount, { checkedProductIds, s
         buildAisleMoveButton(group.aisle, AISLE_MOVES.DOWN, groupIndex === groupCount - 1),
       ]),
     ]),
-    createElement('ul', {}, group.lines.map((line) => buildReceiptLine(line, {
-      isChecked: checkedProductIds.has(line.product.id),
-      isMissing: storeSetup.missingProductIds.includes(line.product.id),
-    }))),
+    createElement('ul', {}, [
+      ...group.lines.map((line) => buildReceiptLine(line, {
+        isChecked: checkedProductIds.has(line.product.id),
+        isMissing: storeSetup.missingProductIds.includes(line.product.id),
+      })),
+      ...group.extraLines.map((line) => buildExtraLine(line, checkedProductIds.has(line.extra.id))),
+    ]),
   ]);
 }
 

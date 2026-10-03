@@ -8,6 +8,7 @@ export function buildShoppingListText(shoppingList, settings, weekStartDate) {
   const aisleLines = shoppingList.aisleGroups.flatMap((group) => [
     group.aisle.toUpperCase(),
     ...group.lines.map((line) => `- ${line.packageCount} × ${line.product.name} (${line.product.packageLabel}) : ${formatEuros(line.cost)}`),
+    ...group.extraLines.map((line) => `- ${line.packageCount} × ${line.extra.label}${line.product ? ` : ${formatEuros(line.cost)}` : ''}`),
     '',
   ]);
   const stockLines = shoppingList.stockLines.length === 0

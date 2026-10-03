@@ -24,6 +24,8 @@ export const AISLES = Object.freeze({
   MEAT: 'Boucherie & charcuterie',
   FISH: 'Poissonnerie',
   FROZEN: 'Surgelés',
+  // Articles ajoutés à la main hors catalogue (lessive, papier…).
+  OTHER: 'Autres articles',
 });
 
 export const AISLE_ORDER = Object.freeze([
@@ -38,6 +40,7 @@ export const AISLE_ORDER = Object.freeze([
   AISLES.CHILLED,
   AISLES.MEAT,
   AISLES.FISH,
+  AISLES.OTHER,
   AISLES.FROZEN,
 ]);
 
