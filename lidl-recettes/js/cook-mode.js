@@ -1,7 +1,7 @@
 import { createElement, replaceChildrenWithFragment } from './dom.js';
 import { formatProductQuantity } from './format.js';
 import { PRODUCTS_BY_ID } from './catalog.js';
-import { getPortionQuantities } from './nutrition.js';
+import { computeCookedQuantity, getPortionQuantities } from './nutrition.js';
 import { createScreenWakeLock } from './wake-lock.js';
 
 const MINUTES_PATTERN = /(\d+)\s*min/;
@@ -113,6 +113,7 @@ export class CookMode {
   #isTimerFinished = false;
   #openController = null;
   #lastOpenArguments = null;
+  #onFinish = null;
   #alarmIntervalId = null;
   #alarmStopTimeoutId = null;
   #audioContext = null;
@@ -135,8 +136,10 @@ export class CookMode {
     };
   }
 
-  open(recipe, servingCount, settings) {
-    this.#lastOpenArguments = [recipe, servingCount, settings];
+  // onFinish : appelé quand on termine la dernière étape (le plat est alors marqué cuisiné).
+  open(recipe, servingCount, settings, { onFinish = null } = {}) {
+    this.#lastOpenArguments = [recipe, servingCount, settings, { onFinish }];
+    this.#onFinish = onFinish;
     this.#openController?.abort();
     this.#openController = new AbortController();
     const { signal } = this.#openController;
@@ -147,7 +150,7 @@ export class CookMode {
     }
     this.#recipeId = recipe.id;
     const ingredientLines = getPortionQuantities(recipe.id, settings)
-      .map(([productId, quantity]) => formatProductQuantity(PRODUCTS_BY_ID.get(productId), quantity * servingCount));
+      .map(([productId, quantity]) => formatProductQuantity(PRODUCTS_BY_ID.get(productId), computeCookedQuantity(productId, quantity, servingCount)));
     this.#steps = [{ ingredientLines }, ...recipe.steps.map((text) => ({ text }))];
     this.#elements.title.textContent = recipe.name;
 
@@ -174,6 +177,7 @@ export class CookMode {
     this.#handleClose();
     this.#clearTimer();
     this.#lastOpenArguments = null;
+    this.#onFinish = null;
     this.#audioContext?.close().catch((closeError) => console.info('Son déjà fermé.', closeError));
     this.#audioContext = null;
   }
@@ -191,6 +195,7 @@ export class CookMode {
 
   #handleNext() {
     if (this.#stepIndex >= this.#steps.length - 1) {
+      this.#onFinish?.();
       this.close();
       return;
     }

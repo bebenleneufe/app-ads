@@ -840,6 +840,21 @@ select:hover {
   border-color: var(--muted);
 }
 
+.cooked-button[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.meal.is-cooked .meal-photo {
+  opacity: 0.55;
+  filter: grayscale(0.4);
+}
+
+.meal.is-cooked .meal-name {
+  color: var(--muted);
+}
+
 .like-button[aria-pressed="true"] {
   background: var(--accent-soft);
   border-color: var(--accent);

@@ -10,6 +10,8 @@ Générateur de menus pour la semaine. Il produit aussi la liste de courses et u
 - **« J'aime » / « Pas pour moi »** : un plat aimé revient plus souvent, un plat écarté disparaît de toute la semaine et ne revient plus (« Annuler » pendant 6 secondes, réautorisable dans les réglages). Les plats des deux dernières semaines sont évités.
 - **Bouton « Changer »** : remplace un seul repas, ou le petit-déjeuner et la collation de toute la semaine.
 - **Mode cuisine** : les ingrédients puis une étape à la fois, en grand, avec un minuteur quand l'étape annonce une durée. Le minuteur continue quand on change d'étape ou qu'on ferme la fenêtre, et reste juste même écran éteint. À la fin, une alarme (bips forts et vibrations) se répète jusqu'à « OK », 3 minutes au plus, et la fenêtre se rouvre. L'écran reste allumé.
+- **Plats cuisinés** : « Cuisiné ? » sur chaque plat (coché tout seul en terminant le mode cuisine), « 3 sur 7 » dans le résumé. Au passage à la semaine suivante, les restes ne comptent comme mangés que les plats cuisinés (si au moins un est coché).
+- **Quantités à la pièce** arrondies au demi supérieur par plat cuisiné (« ½ laitue », « 1 poivron »), dans les recettes comme dans la liste.
 - **Photos** : une photo indicative par recette (`images/recettes/<id>.webp`, 480 × 320, environ 18 Ko chacune).
 - **Régimes** : tout, sans viande (poisson autorisé), végétarien, avec une option sans porc.
 

@@ -18,6 +18,7 @@ import {
   getServingsPerSnack,
 } from './meal-structure.js';
 import {
+  computeCookedQuantity,
   computeDailyProteinTarget,
   computeDailyTargetKcal,
   computeMaintenanceKcal,
@@ -61,7 +62,7 @@ export function describeWeek(settings) {
 function buildRecipeDetails(recipe, servingCount, settings) {
   const ingredientItems = getPortionQuantities(recipe.id, settings).map(([productId, quantityPerServing]) => {
     const product = PRODUCTS_BY_ID.get(productId);
-    return createElement('li', { text: formatProductQuantity(product, quantityPerServing * servingCount) });
+    return createElement('li', { text: formatProductQuantity(product, computeCookedQuantity(productId, quantityPerServing, servingCount)) });
   });
   const stepItems = recipe.steps.map((step) => createElement('li', { text: step }));
   const portionWord = servingCount > 1 ? 'portions' : 'portion';
@@ -113,8 +114,14 @@ function buildActionButton({ action, text, kind, slotIndex, recipe, className, p
   return createElement('button', { className, text, attributes });
 }
 
-function buildMealActions(recipe, kind, slotIndex, settings) {
+function buildMealActions(recipe, kind, slotIndex, settings, isCooked) {
   const isLiked = (settings.preferences ?? EMPTY_PREFERENCES).liked.includes(recipe.id);
+  // Le petit-déjeuner et la collation reviennent chaque jour : seuls les plats se cochent.
+  const cookedButton = kind === PLAN_KINDS.MAIN
+    ? buildActionButton({
+      action: 'cooked', text: isCooked ? 'Cuisiné ✓' : 'Cuisiné ?', kind, slotIndex, recipe, className: 'chip-button cooked-button', pressed: isCooked,
+    })
+    : null;
   return createElement('div', { className: 'meal-actions' }, [
     buildActionButton({
       action: 'like', text: isLiked ? 'Aimé' : 'J’aime', kind, slotIndex, recipe, className: 'chip-button like-button', pressed: isLiked,
@@ -125,6 +132,7 @@ function buildMealActions(recipe, kind, slotIndex, settings) {
     buildActionButton({
       action: 'cook', text: 'Cuisiner', kind, slotIndex, recipe, className: 'chip-button cook-button',
     }),
+    cookedButton,
   ]);
 }
 
@@ -137,10 +145,11 @@ function buildMissingWarning(recipe, settings) {
   return createElement('p', { className: 'meal-warning', text: `Introuvable dans ton Lidl : ${missingNames}` });
 }
 
-function buildMealCard({ recipe, kind, slotIndex, slotLabel, servingCount, settings }) {
+function buildMealCard({ recipe, kind, slotIndex, slotLabel, servingCount, settings, isCooked = false }) {
   const isBreakfast = kind === PLAN_KINDS.BREAKFAST;
+  const cardClasses = ['meal', isBreakfast ? 'is-breakfast' : '', isCooked ? 'is-cooked' : ''].filter(Boolean).join(' ');
   return createElement('article', {
-    className: isBreakfast ? 'meal is-breakfast' : 'meal',
+    className: cardClasses,
     attributes: { 'data-category': recipe.category },
   }, [
     buildMealPhoto(recipe),
@@ -163,7 +172,7 @@ function buildMealCard({ recipe, kind, slotIndex, slotLabel, servingCount, setti
     createElement('p', { className: 'meal-tag', text: CATEGORY_LABELS[recipe.category] }),
     buildMissingWarning(recipe, settings),
     buildMealFacts(recipe, settings),
-    buildMealActions(recipe, kind, slotIndex, settings),
+    buildMealActions(recipe, kind, slotIndex, settings, isCooked),
     buildRecipeDetails(recipe, servingCount, settings),
   ]);
 }
@@ -202,7 +211,7 @@ function buildDayKcal(weeklyRecipes, mainRecipes, settings) {
   ]);
 }
 
-function buildDayItem(dayIndex, plan, settings, weekStartDate) {
+function buildDayItem(dayIndex, plan, settings, weekStartDate, cookedSlotIndexes) {
   const mainSlotsPerDay = getMainSlotsPerDay(settings);
   const servingCount = getServingsPerMainSlot(settings);
   const weeklyRecipes = WEEKLY_MEALS.map(({ planKey }) => RECIPES_BY_ID.get((plan[planKey] ?? [])[dayIndex]));
@@ -211,14 +220,16 @@ function buildDayItem(dayIndex, plan, settings, weekStartDate) {
 
   const mainCards = getMainSlotLabels(settings).map((slotLabel, mealIndex) => {
     const recipe = mainRecipes[mealIndex];
+    const slotIndex = dayIndex * mainSlotsPerDay + mealIndex;
     return recipe
       ? buildMealCard({
         recipe,
         kind: PLAN_KINDS.MAIN,
-        slotIndex: dayIndex * mainSlotsPerDay + mealIndex,
+        slotIndex,
         slotLabel,
         servingCount,
         settings,
+        isCooked: cookedSlotIndexes.has(slotIndex),
       })
       : null;
   });
@@ -256,10 +267,10 @@ function buildWeeklyItem(plan, settings) {
   ]);
 }
 
-export function renderPlan(planListElement, plan, settings, weekStartDate) {
+export function renderPlan(planListElement, plan, settings, weekStartDate, cookedSlotIndexes = new Set()) {
   const dayItems = [buildWeeklyItem(plan, settings)].filter(Boolean);
   for (let dayIndex = 0; dayIndex < settings.dayCount; dayIndex += 1) {
-    dayItems.push(buildDayItem(dayIndex, plan, settings, weekStartDate));
+    dayItems.push(buildDayItem(dayIndex, plan, settings, weekStartDate, cookedSlotIndexes));
   }
   if (plan.mainRecipeIds.length === 0) {
     dayItems.unshift(createElement('li', { className: 'empty-plan', text: 'Aucun plat ne correspond à ces critères.' }));
@@ -285,14 +296,22 @@ function describeBudget(shoppingList, settings) {
   return { label: `Budget ${formatEuros(settings.weeklyBudget)}`, value: `Dépassé de ${formatEuros(-difference)}`, modifier: 'is-over' };
 }
 
-export function renderSummary(summaryElement, shoppingList, settings) {
+function describeDishProgress(dishCount, cookedCount) {
+  if (cookedCount === 0) {
+    return { label: 'À cuisiner', value: `${dishCount} plat${dishCount > 1 ? 's' : ''}` };
+  }
+  return { label: 'Plats cuisinés', value: `${cookedCount} sur ${dishCount}` };
+}
+
+export function renderSummary(summaryElement, shoppingList, settings, cookedCount = 0) {
   const budget = describeBudget(shoppingList, settings);
   const dishCount = getMainSlotCount(settings);
+  const dishProgress = describeDishProgress(dishCount, cookedCount);
   replaceChildrenWithFragment(summaryElement, [
     buildSummaryTile('Ticket estimé', formatEuros(shoppingList.totalToPay), 'is-total'),
     buildSummaryTile('Par repas', formatEuros(shoppingList.costPerPortion)),
     buildSummaryTile(budget.label, budget.value, budget.modifier),
-    buildSummaryTile('À cuisiner', `${dishCount} plat${dishCount > 1 ? 's' : ''}`),
+    buildSummaryTile(dishProgress.label, dishProgress.value),
     hasWeightLossGoal(settings)
       ? buildSummaryTile('Objectif / jour', `${formatKcal(computeDailyTargetKcal(settings))} · ${computeDailyProteinTarget(settings)} g prot.`)
       : null,

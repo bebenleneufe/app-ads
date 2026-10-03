@@ -142,6 +142,20 @@ export function getPortionQuantities(recipeId, settings) {
   return portionQuantities;
 }
 
+// Les recettes comptent des fractions de pièce par portion (⅓ de poivron) : une fois multipliées
+// par le nombre de portions cuisinées ensemble, on arrondit au demi supérieur, comme en cuisine
+// (0,66 poivron devient 1 poivron, 0,3 laitue devient ½ laitue).
+const PIECE_ROUNDING_STEP = 0.5;
+const PIECE_ROUNDING_TOLERANCE = 0.02;
+
+export function computeCookedQuantity(productId, quantityPerServing, servingCount) {
+  const totalQuantity = quantityPerServing * servingCount;
+  if (PRODUCTS_BY_ID.get(productId)?.unit !== UNITS.PIECE || totalQuantity <= 0) {
+    return totalQuantity;
+  }
+  return Math.ceil(totalQuantity / PIECE_ROUNDING_STEP - PIECE_ROUNDING_TOLERANCE) * PIECE_ROUNDING_STEP;
+}
+
 export function getPortionKcal(recipeId, settings) {
   const portionKcal = getPortionQuantities(recipeId, settings)
     .reduce((kcalSum, [productId, quantity]) => kcalSum + computeIngredientKcal(productId, quantity), 0);
