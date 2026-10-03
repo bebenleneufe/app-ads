@@ -24,6 +24,7 @@ import {
   renderPlan,
   renderPreferencesSummary,
   renderReceipt,
+  renderSettingsRecap,
   renderStockSummary,
   renderStoreSummary,
   renderSummary,
@@ -118,6 +119,9 @@ class WeeklyPlannerApp {
       installHelp: rootDocument.getElementById('install-help'),
       hideCheckedButton: rootDocument.getElementById('hide-checked-button'),
       planSection: rootDocument.getElementById('plan-section'),
+      goalRecap: rootDocument.getElementById('goal-recap'),
+      mealsRecap: rootDocument.getElementById('meals-recap'),
+      shoppingRecap: rootDocument.getElementById('shopping-recap'),
       nextRecipeSection: rootDocument.getElementById('next-recipe'),
       nextRecipeCard: rootDocument.getElementById('next-recipe-card'),
       nextRecipeProgress: rootDocument.getElementById('next-recipe-progress'),
@@ -695,6 +699,11 @@ class WeeklyPlannerApp {
     const planningSettings = this.#planningSettings();
     this.#elements.profileFields.hidden = !hasWeightLossGoal(this.#settings);
     renderGoalHint(this.#elements.goalHint, this.#settings);
+    renderSettingsRecap({
+      goalRecap: this.#elements.goalRecap,
+      mealsRecap: this.#elements.mealsRecap,
+      shoppingRecap: this.#elements.shoppingRecap,
+    }, this.#settings);
     const cookedSlotIndexes = new Set(listCookedSlotIndexes(this.#cookedMeals, this.#plan));
     renderPlan(this.#elements.planList, this.#plan, planningSettings, this.#weekStartDate, cookedSlotIndexes);
     this.#renderCookedProgress();
