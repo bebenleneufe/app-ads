@@ -20,6 +20,7 @@ import { RECIPES_BY_ID } from './recipes.js';
 import {
   isLineDone,
   renderGoalHint,
+  renderNextRecipe,
   renderPlan,
   renderPreferencesSummary,
   renderReceipt,
@@ -117,6 +118,9 @@ class WeeklyPlannerApp {
       installHelp: rootDocument.getElementById('install-help'),
       hideCheckedButton: rootDocument.getElementById('hide-checked-button'),
       planSection: rootDocument.getElementById('plan-section'),
+      nextRecipeSection: rootDocument.getElementById('next-recipe'),
+      nextRecipeCard: rootDocument.getElementById('next-recipe-card'),
+      nextRecipeProgress: rootDocument.getElementById('next-recipe-progress'),
       showCookedButton: rootDocument.getElementById('show-cooked-button'),
       storeSummary: rootDocument.getElementById('store-summary'),
       clearMissingButton: rootDocument.getElementById('clear-missing-button'),
@@ -215,6 +219,9 @@ class WeeklyPlannerApp {
     planList.addEventListener('click', (clickEvent) => this.#handlePlanClick(clickEvent), { signal });
     // L'événement « error » d'une image ne remonte pas : on l'écoute en phase de capture.
     planList.addEventListener('error', (errorEvent) => this.#hideMissingPhoto(errorEvent), { signal, capture: true });
+    // La carte « Recette suivante » a les mêmes boutons que dans la semaine.
+    this.#elements.nextRecipeSection.addEventListener('click', (clickEvent) => this.#handlePlanClick(clickEvent), { signal });
+    this.#elements.nextRecipeSection.addEventListener('error', (errorEvent) => this.#hideMissingPhoto(errorEvent), { signal, capture: true });
     receipt.addEventListener('change', (changeEvent) => this.#handleReceiptCheck(changeEvent), { signal });
     receipt.addEventListener('click', (clickEvent) => this.#handleReceiptClick(clickEvent), { signal });
     this.#elements.hideCheckedButton.addEventListener('click', () => this.#toggleHideChecked(), { signal });
@@ -454,6 +461,8 @@ class WeeklyPlannerApp {
   }
 
   #handlePlanClick(clickEvent) {
+    // Semaine ou « Recette suivante » : le focus revient là où l'on a appuyé, sans faire défiler.
+    const actionContainer = clickEvent.currentTarget;
     const actionButton = clickEvent.target.closest('[data-action]');
     if (!actionButton) {
       return;
@@ -484,7 +493,7 @@ class WeeklyPlannerApp {
       return;
     }
     this.#renderAll();
-    this.#elements.planList.querySelector(`[data-action="${action}"][data-plan-kind="${planKind}"][data-slot-index="${slotIndex}"]`)?.focus();
+    actionContainer.querySelector(`[data-action="${action}"][data-plan-kind="${planKind}"][data-slot-index="${slotIndex}"]`)?.focus({ preventScroll: true });
   }
 
   // Une nouvelle pesée met aussi à jour le poids du profil : l'objectif calorique suit la perte.
@@ -526,6 +535,7 @@ class WeeklyPlannerApp {
       updateCookedCard(cardElement, isCooked);
     }
     this.#renderCookedProgress();
+    this.#renderNextRecipe();
     this.#persist();
     const recipe = RECIPES_BY_ID.get(this.#plan.mainRecipeIds[slotNumber]);
     if (isCooked && recipe && !this.#showsCookedMeals) {
@@ -535,6 +545,15 @@ class WeeklyPlannerApp {
         this.#persist();
       });
     }
+  }
+
+  #renderNextRecipe() {
+    renderNextRecipe(
+      { cardContainer: this.#elements.nextRecipeCard, progressElement: this.#elements.nextRecipeProgress },
+      this.#plan,
+      this.#planningSettings(),
+      new Set(listCookedSlotIndexes(this.#cookedMeals, this.#plan)),
+    );
   }
 
   #toggleShowCooked() {
@@ -679,6 +698,7 @@ class WeeklyPlannerApp {
     const cookedSlotIndexes = new Set(listCookedSlotIndexes(this.#cookedMeals, this.#plan));
     renderPlan(this.#elements.planList, this.#plan, planningSettings, this.#weekStartDate, cookedSlotIndexes);
     this.#renderCookedProgress();
+    this.#renderNextRecipe();
     renderPreferencesSummary(this.#elements.preferencesSummary, this.#elements.resetDislikesButton, this.#preferences);
     renderStockSummary(this.#elements.stockSummary, this.#elements.clearStockButton, describeStock(this.#pantryStock));
     renderStoreSummary({
