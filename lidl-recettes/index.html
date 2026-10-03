@@ -204,6 +204,12 @@
 
     <aside class="receipt-column" aria-labelledby="receipt-title">
       <h2 id="receipt-title" class="section-title">Courses</h2>
+      <form class="add-item-form" id="add-item-form" autocomplete="off">
+        <label for="add-item-input" class="visually-hidden">Ajouter un article à la liste</label>
+        <input id="add-item-input" type="text" list="catalog-products" maxlength="60" enterkeyhint="done" placeholder="Ajouter un article (lessive, pommes…)">
+        <button class="quiet-button" type="submit">Ajouter</button>
+        <datalist id="catalog-products"></datalist>
+      </form>
       <div class="receipt" id="receipt"></div>
       <div class="receipt-actions">
         <button id="store-mode-button" class="primary-button" type="button" aria-pressed="false">Mode magasin</button>

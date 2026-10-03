@@ -9,7 +9,7 @@ Générateur de menus pour la semaine. Il produit aussi la liste de courses et u
 - **Recettes rapides** : 15, 20 (par défaut) ou 30 minutes maximum, ou sans limite. Avec une limite, 6 ingrédients frais maximum (l'huile et les épices ne comptent pas). 88 plats (aucun avec de la tomate crue), 7 petits-déjeuners et 6 collations au total, dont près de 60 plats en 20 minutes ou moins compatibles avec l'objectif par défaut.
 - **« J'aime » / « Pas pour moi »** : un plat aimé revient plus souvent, un plat écarté disparaît de toute la semaine et ne revient plus (« Annuler » pendant 6 secondes, réautorisable dans les réglages). Les plats des deux dernières semaines sont évités.
 - **Bouton « Changer »** : remplace un seul repas, ou le petit-déjeuner et la collation de toute la semaine.
-- **Mode cuisine** : les ingrédients puis une étape à la fois, en grand, avec un minuteur quand l'étape annonce une durée. Le minuteur continue quand on change d'étape ou qu'on ferme la fenêtre, et reste juste même écran éteint. L'écran reste allumé.
+- **Mode cuisine** : les ingrédients puis une étape à la fois, en grand, avec un minuteur quand l'étape annonce une durée. Le minuteur continue quand on change d'étape ou qu'on ferme la fenêtre, et reste juste même écran éteint. À la fin, une alarme (bips forts et vibrations) se répète jusqu'à « OK », 3 minutes au plus, et la fenêtre se rouvre. L'écran reste allumé.
 - **Photos** : une photo indicative par recette (`images/recettes/<id>.webp`, 480 × 320, environ 18 Ko chacune).
 - **Régimes** : tout, sans viande (poisson autorisé), végétarien, avec une option sans porc.
 
@@ -26,6 +26,7 @@ Générateur de menus pour la semaine. Il produit aussi la liste de courses et u
 - **Mon Lidl** : en mode magasin, les flèches rangent les rayons dans l'ordre de son magasin, et « Introuvable » écarte un produit des prochains menus (les plats déjà prévus restent, signalés).
 - **Restes reportés** : quand on passe à la semaine suivante, les restes d'épicerie, de conserves et de surgelés **cochés** (donc achetés) sont gardés en stock et déduits des courses suivantes ; le générateur privilégie les plats qui les finissent.
 - **Budget** : plafond respecté à la génération, avec « Changer », et quand un réglage renchérit la semaine (un réglage sans effet sur le prix ne remplace jamais de plat).
+- **Ajouter un article** à la liste : un produit du catalogue se range dans son rayon avec son prix, un texte libre (« lessive ») va dans « Autres articles ». Un ajout pas encore acheté reste sur la liste de la semaine suivante.
 - **Copie** de la liste en texte (pour l'envoyer par message, par exemple).
 
 ### Application

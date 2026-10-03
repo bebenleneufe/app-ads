@@ -1,6 +1,6 @@
 // Service worker : l'appli reste utilisable sans réseau (dans le magasin, en cuisine).
 // Changer CACHE_VERSION à chaque mise en ligne pour que les téléphones récupèrent la nouvelle version.
-const CACHE_VERSION = 'semainier-v8';
+const CACHE_VERSION = 'semainier-v9';
 const APP_SHELL = [
   './',
   'index.html',
@@ -13,6 +13,7 @@ const APP_SHELL = [
   'js/catalog.js',
   'js/cook-mode.js',
   'js/dom.js',
+  'js/extra-items.js',
   'js/format.js',
   'js/install-prompt.js',
   'js/list-text.js',

@@ -1,4 +1,4 @@
-import { LONG_LASTING_AISLES, PRODUCTS_BY_ID } from './catalog.js';
+import { AISLES, LONG_LASTING_AISLES, PRODUCTS_BY_ID } from './catalog.js';
 import { getStoreSetup } from './store-setup.js';
 import { getServingsPerBreakfast, getServingsPerMainSlot, getServingsPerSnack } from './meal-structure.js';
 import { getPortionQuantities } from './nutrition.js';
@@ -105,17 +105,31 @@ function buildLine(product, neededQuantity, stockQuantity) {
   };
 }
 
-function groupLinesByAisle(lines, aisleOrder) {
+// Ligne d'un article ajouté à la main : prix connu seulement pour un produit du catalogue.
+function buildExtraLine(extraItem) {
+  const product = extraItem.productId ? PRODUCTS_BY_ID.get(extraItem.productId) ?? null : null;
+  return {
+    extra: extraItem,
+    product,
+    aisle: product?.aisle ?? AISLES.OTHER,
+    packageCount: extraItem.packageCount,
+    cost: product ? roundToCents(extraItem.packageCount * product.price) : 0,
+  };
+}
+
+function groupLinesByAisle(lines, extraLines, aisleOrder) {
   return aisleOrder.map((aisle) => {
     const aisleLines = lines
       .filter((line) => line.product.aisle === aisle)
       .sort((firstLine, secondLine) => firstLine.product.name.localeCompare(secondLine.product.name, 'fr'));
+    const aisleExtraLines = extraLines.filter((line) => line.aisle === aisle);
     return {
       aisle,
       lines: aisleLines,
-      subtotal: roundToCents(aisleLines.reduce((total, line) => total + line.cost, 0)),
+      extraLines: aisleExtraLines,
+      subtotal: roundToCents([...aisleLines, ...aisleExtraLines].reduce((total, line) => total + line.cost, 0)),
     };
-  }).filter((group) => group.lines.length > 0);
+  }).filter((group) => group.lines.length > 0 || group.extraLines.length > 0);
 }
 
 export function buildShoppingList(plan, settings) {
@@ -131,7 +145,9 @@ export function buildShoppingList(plan, settings) {
   const stockLines = ownedLines.filter((line) => line.packageCount === 0);
   const pantryLines = allLines.filter((line) => isAlreadyOwned(line.product, settings));
 
-  const totalToPay = roundToCents(purchasedLines.reduce((total, line) => total + line.cost, 0));
+  const extraLines = (settings.extraItems ?? []).map(buildExtraLine);
+  const recipesTotal = roundToCents(purchasedLines.reduce((total, line) => total + line.cost, 0));
+  const totalToPay = roundToCents(recipesTotal + extraLines.reduce((total, line) => total + line.cost, 0));
   const consumedValue = roundToCents(purchasedLines.reduce((total, line) => total + line.consumedValue, 0));
   const longLastingLeftoverValue = roundToCents(purchasedLines
     .filter((line) => LONG_LASTING_AISLES.includes(line.product.aisle))
@@ -139,14 +155,15 @@ export function buildShoppingList(plan, settings) {
   const portionCount = cookedServings.reduce((total, { servingCount }) => total + servingCount, 0);
 
   return {
-    aisleGroups: groupLinesByAisle(purchasedLines, getStoreSetup(settings).aisleOrder),
+    aisleGroups: groupLinesByAisle(purchasedLines, extraLines, getStoreSetup(settings).aisleOrder),
     stockLines,
     pantryLines,
-    articleCount: purchasedLines.reduce((total, line) => total + line.packageCount, 0),
+    articleCount: [...purchasedLines, ...extraLines].reduce((total, line) => total + line.packageCount, 0),
     totalToPay,
     consumedValue,
     longLastingLeftoverValue,
     portionCount,
-    costPerPortion: portionCount > 0 ? roundToCents(totalToPay / portionCount) : 0,
+    // Le coût par repas ne compte que les recettes : la lessive ajoutée à la main n'est pas un repas.
+    costPerPortion: portionCount > 0 ? roundToCents(recipesTotal / portionCount) : 0,
   };
 }

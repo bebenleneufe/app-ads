@@ -8,9 +8,15 @@ const MINUTES_PATTERN = /(\d+)\s*min/;
 const SECONDS_PER_MINUTE = 60;
 const MILLISECONDS_PER_SECOND = 1000;
 const TIMER_TICK_MILLISECONDS = 500;
-const ALERT_FREQUENCY_HERTZ = 880;
-const ALERT_DURATION_SECONDS = 0.6;
-const ALERT_VIBRATION_PATTERN = [200, 100, 200];
+// Alarme de fin : trois bips forts, répétés jusqu'à ce qu'on appuie sur « OK »,
+// pour l'entendre depuis une autre pièce. Elle s'arrête seule au bout de 3 minutes.
+const ALARM_REPEAT_MILLISECONDS = 1500;
+const ALARM_MAX_DURATION_MILLISECONDS = 3 * 60 * 1000;
+const ALARM_BEEP_FREQUENCIES_HERTZ = [880, 1175, 880];
+const ALARM_BEEP_SECONDS = 0.18;
+const ALARM_BEEP_GAP_SECONDS = 0.08;
+const ALARM_VOLUME = 0.6;
+const ALARM_VIBRATION_PATTERN = [400, 150, 400, 150, 400];
 
 export function findStepMinutes(stepText) {
   const match = MINUTES_PATTERN.exec(stepText);
@@ -106,6 +112,9 @@ export class CookMode {
   #timerStepIndex = null;
   #isTimerFinished = false;
   #openController = null;
+  #lastOpenArguments = null;
+  #alarmIntervalId = null;
+  #alarmStopTimeoutId = null;
   #audioContext = null;
   #wakeLock = createScreenWakeLock();
 
@@ -127,6 +136,7 @@ export class CookMode {
   }
 
   open(recipe, servingCount, settings) {
+    this.#lastOpenArguments = [recipe, servingCount, settings];
     this.#openController?.abort();
     this.#openController = new AbortController();
     const { signal } = this.#openController;
@@ -163,12 +173,17 @@ export class CookMode {
     this.close();
     this.#handleClose();
     this.#clearTimer();
+    this.#lastOpenArguments = null;
     this.#audioContext?.close().catch((closeError) => console.info('Son déjà fermé.', closeError));
     this.#audioContext = null;
   }
 
   // Fermer la fenêtre ne coupe pas un minuteur lancé : il sonnera quand même.
+  // Fermer pendant que l'alarme sonne, en revanche, vaut « OK ».
   #handleClose() {
+    if (this.#isTimerFinished) {
+      this.#clearTimer();
+    }
     this.#openController?.abort();
     this.#openController = null;
     this.#wakeLock.disable();
@@ -228,10 +243,29 @@ export class CookMode {
     this.#renderTimer();
   }
 
+  // La fenêtre se rouvre si elle était fermée : le bouton « OK » qui coupe l'alarme est sous la main.
   #finishTimer() {
     this.#isTimerFinished = true;
+    if (!this.#dialog.open && this.#lastOpenArguments) {
+      this.open(...this.#lastOpenArguments);
+    }
     this.#renderTimer();
-    this.#playAlert();
+    this.#startAlarm();
+  }
+
+  #startAlarm() {
+    this.#stopAlarm();
+    this.#playAlarmBurst();
+    this.#alarmIntervalId = setInterval(() => this.#playAlarmBurst(), ALARM_REPEAT_MILLISECONDS);
+    this.#alarmStopTimeoutId = setTimeout(() => this.#stopAlarm(), ALARM_MAX_DURATION_MILLISECONDS);
+  }
+
+  #stopAlarm() {
+    clearInterval(this.#alarmIntervalId);
+    clearTimeout(this.#alarmStopTimeoutId);
+    this.#alarmIntervalId = null;
+    this.#alarmStopTimeoutId = null;
+    navigator.vibrate?.(0);
   }
 
   #dismissTimer() {
@@ -240,6 +274,7 @@ export class CookMode {
   }
 
   #clearTimer() {
+    this.#stopAlarm();
     this.#timer?.stop();
     this.#timer = null;
     this.#timerStepIndex = null;
@@ -264,7 +299,9 @@ export class CookMode {
     timerButton.hidden = this.#isTimerFinished;
     timerButton.textContent = this.#describeTimerButton();
     timerStopButton.hidden = !hasTimer;
-    timerStopButton.textContent = this.#isTimerFinished ? 'OK' : 'Arrêter';
+    timerStopButton.textContent = this.#isTimerFinished ? 'OK, arrêter l’alarme' : 'Arrêter';
+    timerStopButton.className = this.#isTimerFinished ? 'primary-button' : 'quiet-button';
+    timer.classList.toggle('is-ringing', this.#isTimerFinished);
   }
 
   #describeTimerButton() {
@@ -283,8 +320,8 @@ export class CookMode {
     }
   }
 
-  async #playAlert() {
-    navigator.vibrate?.(ALERT_VIBRATION_PATTERN);
+  async #playAlarmBurst() {
+    navigator.vibrate?.(ALARM_VIBRATION_PATTERN);
     if (!this.#audioContext) {
       return;
     }
@@ -293,11 +330,20 @@ export class CookMode {
       if (this.#audioContext.state === 'suspended') {
         await this.#audioContext.resume();
       }
-      const oscillator = this.#audioContext.createOscillator();
-      oscillator.frequency.value = ALERT_FREQUENCY_HERTZ;
-      oscillator.connect(this.#audioContext.destination);
-      oscillator.start();
-      oscillator.stop(this.#audioContext.currentTime + ALERT_DURATION_SECONDS);
+      const volume = this.#audioContext.createGain();
+      volume.gain.value = ALARM_VOLUME;
+      volume.connect(this.#audioContext.destination);
+      const burstStart = this.#audioContext.currentTime;
+      ALARM_BEEP_FREQUENCIES_HERTZ.forEach((frequency, beepIndex) => {
+        const oscillator = this.#audioContext.createOscillator();
+        // Un son carré porte bien plus loin qu'un son pur à volume égal.
+        oscillator.type = 'square';
+        oscillator.frequency.value = frequency;
+        oscillator.connect(volume);
+        const beepStart = burstStart + beepIndex * (ALARM_BEEP_SECONDS + ALARM_BEEP_GAP_SECONDS);
+        oscillator.start(beepStart);
+        oscillator.stop(beepStart + ALARM_BEEP_SECONDS);
+      });
     } catch (audioError) {
       console.info('Alerte sonore indisponible.', audioError);
     }

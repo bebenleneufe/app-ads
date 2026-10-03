@@ -1,6 +1,7 @@
-import { PRODUCTS_BY_ID } from './catalog.js';
+import { PRODUCTS, PRODUCTS_BY_ID } from './catalog.js';
 import { CookMode } from './cook-mode.js';
-import { debounce } from './dom.js';
+import { createElement, debounce, replaceChildrenWithFragment } from './dom.js';
+import { addExtraItem, keepUnboughtExtraItems, normalizeExtraItems, removeExtraItem } from './extra-items.js';
 import { setUpInstallButton } from './install-prompt.js';
 import { buildShoppingListText } from './list-text.js';
 import { generatePlan, PLAN_KINDS, reconcilePlan, restorePlan, swapMeal } from './planner.js';
@@ -73,6 +74,7 @@ class WeeklyPlannerApp {
   #removeInstallButton = () => {};
   #checkedProductIds = new Set();
   #storeSetup = normalizeStoreSetup(null);
+  #extraItems = [];
   // Le mode magasin est retenu : si le téléphone ferme l'appli au milieu des rayons, on y revient.
   #isStoreMode = false;
   #hidesCheckedItems = false;
@@ -112,6 +114,9 @@ class WeeklyPlannerApp {
       storeSummary: rootDocument.getElementById('store-summary'),
       clearMissingButton: rootDocument.getElementById('clear-missing-button'),
       resetAislesButton: rootDocument.getElementById('reset-aisles-button'),
+      addItemForm: rootDocument.getElementById('add-item-form'),
+      addItemInput: rootDocument.getElementById('add-item-input'),
+      catalogProductList: rootDocument.getElementById('catalog-products'),
       undoToast: rootDocument.getElementById('undo-toast'),
       undoMessage: rootDocument.getElementById('undo-message'),
       undoButton: rootDocument.getElementById('undo-button'),
@@ -129,6 +134,7 @@ class WeeklyPlannerApp {
       apkLink: this.#elements.apkLink,
     });
     writeSettingsToForm(this.#elements.settingsForm, this.#settings);
+    this.#fillCatalogSuggestions();
     this.#attachListeners();
     this.#renderAll();
     this.#applyHideChecked();
@@ -146,6 +152,7 @@ class WeeklyPlannerApp {
     this.#weightLog = normalizeWeightLog(savedState?.weightLog);
     this.#pantryStock = normalizeStock(savedState?.pantryStock);
     this.#storeSetup = normalizeStoreSetup(savedState?.storeSetup);
+    this.#extraItems = normalizeExtraItems(savedState?.extraItems);
     this.#isStoreMode = savedState?.interface?.isStoreMode === true;
     this.#hidesCheckedItems = savedState?.interface?.hidesCheckedItems === true;
     this.#checkedProductIds = new Set(Array.isArray(savedState?.checkedProductIds) ? savedState.checkedProductIds : []);
@@ -203,6 +210,7 @@ class WeeklyPlannerApp {
     receipt.addEventListener('click', (clickEvent) => this.#handleReceiptClick(clickEvent), { signal });
     this.#elements.hideCheckedButton.addEventListener('click', () => this.#toggleHideChecked(), { signal });
     this.#elements.undoButton.addEventListener('click', () => this.#undoLastAction(), { signal });
+    this.#elements.addItemForm.addEventListener('submit', (submitEvent) => this.#handleAddItem(submitEvent), { signal });
     this.#elements.clearMissingButton.addEventListener('click', () => this.#updateStoreSetup(clearMissingProducts(this.#storeSetup)), { signal });
     this.#elements.resetAislesButton.addEventListener('click', () => this.#updateStoreSetup(resetAisleOrder(this.#storeSetup)), { signal });
     copyButton.addEventListener('click', () => this.#copyShoppingList(), { signal });
@@ -305,6 +313,7 @@ class WeeklyPlannerApp {
     }
     this.#preferences = rememberWeek(this.#preferences, this.#plan.mainRecipeIds);
     this.#swapHistoryBySlot.clear();
+    this.#extraItems = keepUnboughtExtraItems(this.#extraItems, this.#checkedProductIds);
     this.#checkedProductIds.clear();
     // Toujours la semaine qui commence au prochain lundi (ou aujourd'hui si on est lundi) :
     // préparée le samedi, elle ne doit pas garder la date de la semaine en cours,
@@ -354,10 +363,36 @@ class WeeklyPlannerApp {
       this.#focusAisleButton(aisleButton.dataset.aisle, direction);
       return;
     }
+    const removeButton = clickEvent.target.closest('.remove-extra-button');
+    if (removeButton) {
+      this.#extraItems = removeExtraItem(this.#extraItems, removeButton.dataset.extraId);
+      this.#checkedProductIds.delete(removeButton.dataset.extraId);
+      this.#renderAll();
+      return;
+    }
     const missingButton = clickEvent.target.closest('.missing-button');
     if (missingButton) {
       this.#toggleMissing(missingButton.closest('.receipt-line'), missingButton.dataset.missingProductId);
     }
+  }
+
+  // Les suggestions du champ d'ajout : les produits du catalogue, rangés et chiffrés automatiquement.
+  #fillCatalogSuggestions() {
+    const productNames = [...new Set(PRODUCTS.map((product) => product.name))].sort((first, second) => first.localeCompare(second, 'fr'));
+    replaceChildrenWithFragment(this.#elements.catalogProductList, productNames.map((productName) => createElement('option', { attributes: { value: productName } })));
+  }
+
+  #handleAddItem(submitEvent) {
+    submitEvent.preventDefault();
+    const { addItemInput } = this.#elements;
+    const nextExtraItems = addExtraItem(this.#extraItems, addItemInput.value);
+    addItemInput.value = '';
+    addItemInput.focus();
+    if (nextExtraItems === this.#extraItems) {
+      return;
+    }
+    this.#extraItems = nextExtraItems;
+    this.#renderAll();
   }
 
   // Seule la ligne touchée change dans le ticket : le reconstruire ferait sauter la liste
@@ -559,7 +594,8 @@ class WeeklyPlannerApp {
   }
 
   #renderAll() {
-    this.#shoppingList = buildShoppingList(this.#plan, this.#planningSettings());
+    // Les ajouts à la main vont sur la liste mais restent hors du choix des menus et du budget.
+    this.#shoppingList = buildShoppingList(this.#plan, { ...this.#planningSettings(), extraItems: this.#extraItems });
     this.#renderPlanning();
     this.#renderReceipt();
     this.#persist();
@@ -594,7 +630,10 @@ class WeeklyPlannerApp {
   }
 
   #updateProgress() {
-    const listedProductIds = this.#shoppingList.aisleGroups.flatMap((group) => group.lines.map((line) => line.product.id));
+    const listedProductIds = this.#shoppingList.aisleGroups.flatMap((group) => [
+      ...group.lines.map((line) => line.product.id),
+      ...group.extraLines.map((line) => line.extra.id),
+    ]);
     const checkedCount = listedProductIds.filter((productId) => isLineDone(productId, this.#checkedProductIds, this.#storeSetup)).length;
     updateReceiptProgress(this.#elements.receipt, checkedCount, listedProductIds.length);
   }
@@ -609,6 +648,7 @@ class WeeklyPlannerApp {
       pantryStock: this.#pantryStock,
       checkedProductIds: [...this.#checkedProductIds],
       storeSetup: this.#storeSetup,
+      extraItems: this.#extraItems,
       interface: { isStoreMode: this.#isStoreMode, hidesCheckedItems: this.#hidesCheckedItems },
     });
   }

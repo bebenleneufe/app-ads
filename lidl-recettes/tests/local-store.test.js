@@ -4,6 +4,8 @@ import { describe, it } from 'node:test';
 import { AISLE_ORDER, AISLES } from '../js/catalog.js';
 import { DIETS, generatePlan, PLAN_KINDS, reconcilePlan, restorePlan, swapMeal } from '../js/planner.js';
 import { EMPTY_PREFERENCES, markDisliked } from '../js/preferences.js';
+import { addExtraItem, keepUnboughtExtraItems, normalizeExtraItems, removeExtraItem } from '../js/extra-items.js';
+import { buildShoppingListText } from '../js/list-text.js';
 import { RECIPES_BY_ID } from '../js/recipes.js';
 import { DEFAULT_SETTINGS, normalizeSettings } from '../js/settings.js';
 import { buildShoppingList } from '../js/shopping-list.js';
@@ -128,5 +130,46 @@ describe('peu de recettes compatibles', () => {
     const reconciledPlan = reconcilePlan(plan, settings, createSeededRandom(701));
     assert.equal(reconciledPlan.mainRecipeIds.includes(dislikedId), false);
     assert.equal(reconciledPlan.mainRecipeIds.filter(Boolean).length, plan.mainRecipeIds.length);
+  });
+});
+
+describe('articles ajoutés à la main', () => {
+  it('range un produit du catalogue dans son rayon avec son prix, un texte libre dans « Autres articles »', () => {
+    const extraItems = addExtraItem(addExtraItem([], '  oignons jaunes '), 'Lessive');
+    const plan = generatePlan(defaultSettings, createSeededRandom(800));
+    const withoutExtras = buildShoppingList(plan, defaultSettings);
+    const withExtras = buildShoppingList(plan, { ...defaultSettings, extraItems });
+    const extraLines = withExtras.aisleGroups.flatMap((group) => group.extraLines.map((line) => ({ aisle: group.aisle, line })));
+    const onionLine = extraLines.find(({ line }) => line.product?.id === 'oignon');
+    const detergentLine = extraLines.find(({ line }) => line.extra.label === 'Lessive');
+    assert.equal(onionLine.aisle, AISLES.PRODUCE);
+    assert.equal(onionLine.line.extra.label, 'Oignons jaunes');
+    assert.equal(detergentLine.aisle, AISLES.OTHER);
+    assert.equal(detergentLine.line.cost, 0);
+    assert.equal(withExtras.totalToPay, Math.round((withoutExtras.totalToPay + onionLine.line.cost) * 100) / 100);
+    assert.equal(withExtras.costPerPortion, withoutExtras.costPerPortion);
+    assert.equal(withExtras.aisleGroups.at(-1).aisle === AISLES.OTHER, !withExtras.aisleGroups.some((group) => group.aisle === AISLES.FROZEN));
+    const listText = buildShoppingListText(withExtras, defaultSettings, new Date(2026, 9, 5));
+    assert.ok(listText.includes('Lessive') && listText.includes('Oignons jaunes'));
+  });
+
+  it('augmente la quantité au lieu de doubler la ligne, et ignore un texte vide', () => {
+    const twice = addExtraItem(addExtraItem([], 'Lessive'), 'lessive');
+    assert.equal(twice.length, 1);
+    assert.equal(twice[0].packageCount, 2);
+    assert.equal(addExtraItem(twice, '   '), twice);
+    assert.deepEqual(removeExtraItem(twice, twice[0].id), []);
+  });
+
+  it('garde pour la semaine suivante les articles ajoutés pas encore achetés', () => {
+    const extraItems = addExtraItem(addExtraItem([], 'Lessive'), 'Éponges');
+    const kept = keepUnboughtExtraItems(extraItems, new Set([extraItems[0].id]));
+    assert.deepEqual(kept.map((item) => item.label), ['Éponges']);
+  });
+
+  it('répare des ajouts enregistrés abîmés', () => {
+    const repaired = normalizeExtraItems([{ id: 'extra-a', label: ' Lessive ', packageCount: 99 }, { id: 'x', label: 'Pirate' }, null, { id: 'extra-b', label: '' }]);
+    assert.deepEqual(repaired, [{ id: 'extra-a', label: 'Lessive', productId: null, packageCount: 20 }]);
+    assert.deepEqual(normalizeExtraItems('abîmé'), []);
   });
 });
