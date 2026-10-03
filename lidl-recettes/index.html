@@ -194,10 +194,13 @@
       </section>
     </form>
 
-    <section class="plan" aria-labelledby="plan-title">
+    <section class="plan" id="plan-section" aria-labelledby="plan-title">
       <div class="section-head">
         <h2 id="plan-title" class="section-title">Menus</h2>
-        <button id="regenerate-button" class="primary-button" type="button">Nouvelle semaine</button>
+        <div class="plan-actions">
+          <button id="show-cooked-button" class="quiet-button" type="button" aria-pressed="false" hidden>Afficher les plats cuisinés</button>
+          <button id="regenerate-button" class="primary-button" type="button">Nouvelle semaine</button>
+        </div>
       </div>
       <ol class="days" id="plan-list"></ol>
     </section>
