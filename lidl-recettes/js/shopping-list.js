@@ -1,7 +1,7 @@
 import { AISLES, LONG_LASTING_AISLES, PRODUCTS_BY_ID } from './catalog.js';
 import { getStoreSetup } from './store-setup.js';
 import { getServingsPerBreakfast, getServingsPerMainSlot, getServingsPerSnack } from './meal-structure.js';
-import { getPortionQuantities } from './nutrition.js';
+import { computeCookedQuantity, getPortionQuantities } from './nutrition.js';
 
 // Évite qu'une imprécision flottante (ex. 3 × 0.1) fasse acheter un paquet de trop.
 const PACKAGE_ROUNDING_TOLERANCE = 1e-6;
@@ -52,7 +52,7 @@ export function createPurchaseTracker(settings) {
     addRecipe(recipeId, servingCount) {
       for (const [productId, quantityPerServing] of getPortionQuantities(recipeId, settings)) {
         const previousQuantity = neededByProductId.get(productId) ?? 0;
-        neededByProductId.set(productId, previousQuantity + quantityPerServing * servingCount);
+        neededByProductId.set(productId, previousQuantity + computeCookedQuantity(productId, quantityPerServing, servingCount));
       }
     },
     computeMarginalCost(recipeId, servingCount) {
@@ -62,7 +62,7 @@ export function createPurchaseTracker(settings) {
           return extraCost;
         }
         const quantityBefore = neededByProductId.get(productId) ?? 0;
-        const quantityAfter = quantityBefore + quantityPerServing * servingCount;
+        const quantityAfter = quantityBefore + computeCookedQuantity(productId, quantityPerServing, servingCount);
         return extraCost + computePackagesCost(product, quantityAfter) - computePackagesCost(product, quantityBefore);
       }, 0);
     },
@@ -82,7 +82,7 @@ function sumNeededQuantities(cookedServings, settings) {
   for (const { recipeId, servingCount } of cookedServings) {
     for (const [productId, quantityPerServing] of getPortionQuantities(recipeId, settings)) {
       const previousQuantity = neededByProductId.get(productId) ?? 0;
-      neededByProductId.set(productId, previousQuantity + quantityPerServing * servingCount);
+      neededByProductId.set(productId, previousQuantity + computeCookedQuantity(productId, quantityPerServing, servingCount));
     }
   }
   return neededByProductId;

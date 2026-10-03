@@ -32,6 +32,16 @@ function roundForKitchen(quantity) {
   return Math.round(quantity / KITCHEN_ROUNDING_STEP) * KITCHEN_ROUNDING_STEP;
 }
 
+// « ½ », « 1 ½ » plutôt que « 0,5 » : c'est ainsi qu'on parle d'un poivron ou d'une laitue.
+function formatPieceCount(quantity) {
+  const wholeCount = Math.floor(quantity + 0.01);
+  const remainder = quantity - wholeCount;
+  if (Math.abs(remainder - 0.5) < 0.01) {
+    return wholeCount === 0 ? '½' : `${wholeCount} ½`;
+  }
+  return Math.abs(remainder) < 0.01 ? String(wholeCount) : formatDecimal(quantity);
+}
+
 export function formatQuantity(quantity, unit) {
   if (unit === UNITS.GRAM) {
     return quantity >= 1000 ? `${formatDecimal(quantity / 1000)} kg` : `${roundForKitchen(quantity)} g`;
@@ -39,13 +49,13 @@ export function formatQuantity(quantity, unit) {
   if (unit === UNITS.MILLILITER) {
     return quantity >= 1000 ? `${formatDecimal(quantity / 1000)} L` : `${roundForKitchen(quantity)} ml`;
   }
-  return `${formatDecimal(quantity)} pc`;
+  return `${formatPieceCount(quantity)} pc`;
 }
 
 export function formatProductQuantity(product, quantity) {
   if (product.unit === UNITS.PIECE) {
     const [singularName, pluralName] = product.pieceNames;
-    return `${formatDecimal(quantity)} ${quantity > 1 ? pluralName : singularName}`;
+    return `${formatPieceCount(quantity)} ${quantity > 1 ? pluralName : singularName}`;
   }
   return `${formatQuantity(quantity, product.unit)} ${product.shortName}`;
 }

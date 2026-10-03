@@ -19,15 +19,22 @@ export function normalizeStock(savedStock) {
 
 // Les restes ne sont reportés que pour les produits cochés : sans case cochée, rien ne prouve
 // que les courses ont été faites, et générer plusieurs semaines ne doit pas inventer de stock.
-export function computeNextStock({ stock, shoppingList, checkedProductIds }) {
+function listAllLines(shoppingList) {
+  return [...shoppingList.aisleGroups.flatMap((group) => group.lines), ...shoppingList.stockLines];
+}
+
+// eatenShoppingList : la liste des seuls plats cuisinés. Un plat jamais cuisiné laisse ses
+// ingrédients (pâtes, conserves, surgelés) en stock pour la semaine suivante.
+export function computeNextStock({ stock, shoppingList, checkedProductIds, eatenShoppingList = shoppingList }) {
   const nextStock = { ...stock };
-  const lines = [...shoppingList.aisleGroups.flatMap((group) => group.lines), ...shoppingList.stockLines];
-  for (const line of lines) {
+  const eatenQuantityByProductId = new Map(listAllLines(eatenShoppingList).map((line) => [line.product.id, line.neededQuantity]));
+  for (const line of listAllLines(shoppingList)) {
     if (!canBeStocked(line.product)) {
       continue;
     }
     const boughtQuantity = checkedProductIds.has(line.product.id) ? line.packageCount * line.product.packageSize : 0;
-    const remainingQuantity = (stock[line.product.id] ?? 0) + boughtQuantity - line.neededQuantity;
+    const eatenQuantity = eatenQuantityByProductId.get(line.product.id) ?? 0;
+    const remainingQuantity = (stock[line.product.id] ?? 0) + boughtQuantity - eatenQuantity;
     if (remainingQuantity > LEFTOVER_TOLERANCE) {
       nextStock[line.product.id] = Math.round(remainingQuantity * 10) / 10;
     } else {

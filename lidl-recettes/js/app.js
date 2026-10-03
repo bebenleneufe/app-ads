@@ -1,5 +1,6 @@
 import { PRODUCTS, PRODUCTS_BY_ID } from './catalog.js';
 import { CookMode } from './cook-mode.js';
+import { buildEatenPlan, isMealCooked, listCookedSlotIndexes, normalizeCookedMeals, setMealCooked } from './cooked-meals.js';
 import { createElement, debounce, replaceChildrenWithFragment } from './dom.js';
 import { addExtraItem, keepUnboughtExtraItems, normalizeExtraItems, removeExtraItem } from './extra-items.js';
 import { setUpInstallButton } from './install-prompt.js';
@@ -75,6 +76,8 @@ class WeeklyPlannerApp {
   #checkedProductIds = new Set();
   #storeSetup = normalizeStoreSetup(null);
   #extraItems = [];
+  // Recette cuisinée pour chaque créneau de plat de la semaine en cours.
+  #cookedMeals = {};
   // Le mode magasin est retenu : si le téléphone ferme l'appli au milieu des rayons, on y revient.
   #isStoreMode = false;
   #hidesCheckedItems = false;
@@ -153,6 +156,7 @@ class WeeklyPlannerApp {
     this.#pantryStock = normalizeStock(savedState?.pantryStock);
     this.#storeSetup = normalizeStoreSetup(savedState?.storeSetup);
     this.#extraItems = normalizeExtraItems(savedState?.extraItems);
+    this.#cookedMeals = normalizeCookedMeals(savedState?.cookedMeals);
     this.#isStoreMode = savedState?.interface?.isStoreMode === true;
     this.#hidesCheckedItems = savedState?.interface?.hidesCheckedItems === true;
     this.#checkedProductIds = new Set(Array.isArray(savedState?.checkedProductIds) ? savedState.checkedProductIds : []);
@@ -308,9 +312,17 @@ class WeeklyPlannerApp {
   // et, si des courses ont été cochées, ce qu'il reste en stock pour la semaine suivante.
   #startNextWeek() {
     if (hasShoppingEvidence(this.#checkedProductIds)) {
-      const shoppingList = buildShoppingList(this.#plan, this.#planningSettings());
-      this.#pantryStock = computeNextStock({ stock: this.#pantryStock, shoppingList, checkedProductIds: this.#checkedProductIds });
+      const planningSettings = this.#planningSettings();
+      const shoppingList = buildShoppingList(this.#plan, planningSettings);
+      const eatenShoppingList = buildShoppingList(buildEatenPlan(this.#plan, this.#cookedMeals), planningSettings);
+      this.#pantryStock = computeNextStock({
+        stock: this.#pantryStock,
+        shoppingList,
+        checkedProductIds: this.#checkedProductIds,
+        eatenShoppingList,
+      });
     }
+    this.#cookedMeals = {};
     this.#preferences = rememberWeek(this.#preferences, this.#plan.mainRecipeIds);
     this.#swapHistoryBySlot.clear();
     this.#extraItems = keepUnboughtExtraItems(this.#extraItems, this.#checkedProductIds);
@@ -446,8 +458,17 @@ class WeeklyPlannerApp {
       const recipe = RECIPES_BY_ID.get(recipeId);
       const getServings = SERVINGS_BY_PLAN_KIND[planKind];
       if (recipe && getServings) {
-        this.#cookMode.open(recipe, getServings(this.#settings), this.#planningSettings());
+        const onFinish = planKind === PLAN_KINDS.MAIN ? () => this.#markCookedAfterCooking(slotNumber, recipeId) : null;
+        this.#cookMode.open(recipe, getServings(this.#settings), this.#planningSettings(), { onFinish });
       }
+      return;
+    }
+    if (action === 'cooked') {
+      const isCooked = isMealCooked(this.#cookedMeals, this.#plan, slotNumber);
+      this.#cookedMeals = setMealCooked(this.#cookedMeals, this.#plan, slotNumber, !isCooked);
+      this.#renderPlanning();
+      this.#persist();
+      this.#elements.planList.querySelector(`[data-action="cooked"][data-slot-index="${slotIndex}"]`)?.focus();
       return;
     }
     if (action === 'like') {
@@ -486,6 +507,16 @@ class WeeklyPlannerApp {
     const avoidedRecipeIds = [currentRecipeId, ...(this.#swapHistoryBySlot.get(slotKey) ?? [])].slice(0, SWAP_HISTORY_LENGTH);
     this.#swapHistoryBySlot.set(slotKey, avoidedRecipeIds);
     this.#plan = swapMeal(this.#plan, planKind, slotNumber, this.#planningSettings(), Math.random, { avoidedRecipeIds });
+  }
+
+  // Le créneau a pu changer de plat pendant la cuisine : on ne coche que s'il s'agit du même.
+  #markCookedAfterCooking(slotNumber, recipeId) {
+    if (this.#plan.mainRecipeIds[slotNumber] !== recipeId) {
+      return;
+    }
+    this.#cookedMeals = setMealCooked(this.#cookedMeals, this.#plan, slotNumber, true);
+    this.#renderPlanning();
+    this.#persist();
   }
 
   // Le plat est retiré de tous les jours où il apparaît. Un appui raté se rattrape avec « Annuler ».
@@ -606,8 +637,9 @@ class WeeklyPlannerApp {
     const planningSettings = this.#planningSettings();
     this.#elements.profileFields.hidden = !hasWeightLossGoal(this.#settings);
     renderGoalHint(this.#elements.goalHint, this.#settings);
-    renderSummary(this.#elements.summary, this.#shoppingList, this.#settings);
-    renderPlan(this.#elements.planList, this.#plan, planningSettings, this.#weekStartDate);
+    const cookedSlotIndexes = new Set(listCookedSlotIndexes(this.#cookedMeals, this.#plan));
+    renderSummary(this.#elements.summary, this.#shoppingList, this.#settings, cookedSlotIndexes.size);
+    renderPlan(this.#elements.planList, this.#plan, planningSettings, this.#weekStartDate, cookedSlotIndexes);
     renderPreferencesSummary(this.#elements.preferencesSummary, this.#elements.resetDislikesButton, this.#preferences);
     renderStockSummary(this.#elements.stockSummary, this.#elements.clearStockButton, describeStock(this.#pantryStock));
     renderStoreSummary({
@@ -649,6 +681,7 @@ class WeeklyPlannerApp {
       checkedProductIds: [...this.#checkedProductIds],
       storeSetup: this.#storeSetup,
       extraItems: this.#extraItems,
+      cookedMeals: this.#cookedMeals,
       interface: { isStoreMode: this.#isStoreMode, hidesCheckedItems: this.#hidesCheckedItems },
     });
   }
