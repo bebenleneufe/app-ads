@@ -8,7 +8,7 @@ import { generatePlan, isRecipeAllowed, PLAN_KINDS, reconcilePlan, swapMeal } fr
 import { MEAL_TYPES, RECIPES } from '../js/recipes.js';
 import { DEFAULT_SETTINGS, normalizeSettings } from '../js/settings.js';
 import { buildShoppingList, computePortionCost } from '../js/shopping-list.js';
-import { resolveWeekStart, toIsoDate } from '../js/week.js';
+import { isWeekOver, resolveWeekStart, toIsoDate } from '../js/week.js';
 
 function createSeededRandom(seed) {
   let state = seed;
@@ -122,9 +122,12 @@ describe('date de la semaine', () => {
     assert.equal(toIsoDate(resolveWeekStart('2026-09-28', wednesday)), '2026-09-28');
   });
 
-  it('passe à la semaine suivante une fois la semaine enregistrée terminée', () => {
+  it('garde une semaine terminée telle quelle et la signale terminée', () => {
     const nextTuesday = new Date(2026, 9, 6);
-    assert.equal(toIsoDate(resolveWeekStart('2026-09-28', nextTuesday)), '2026-10-12');
+    const weekStart = resolveWeekStart('2026-09-28', nextTuesday);
+    assert.equal(toIsoDate(weekStart), '2026-09-28');
+    assert.equal(isWeekOver(weekStart, nextTuesday), true);
+    assert.equal(isWeekOver(weekStart, new Date(2026, 9, 4, 22)), false);
   });
 
   it('ignore une date invalide', () => {

@@ -990,6 +990,41 @@ body.is-store-mode .next-recipe {
   color: var(--accent-ink);
 }
 
+.week-tools {
+  display: grid;
+  gap: 10px;
+}
+
+.week-tools:not(:has(> :not([hidden]))) {
+  display: none;
+}
+
+.week-over {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+}
+
+.week-over[hidden] {
+  display: none;
+}
+
+.week-over p {
+  margin: 0;
+  font-weight: 600;
+}
+
+#restore-week-button {
+  justify-self: start;
+  min-block-size: 40px;
+}
+
 .plan-actions {
   display: flex;
   flex-wrap: wrap;
