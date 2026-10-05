@@ -9,6 +9,7 @@ import { generatePlan } from '../js/planner.js';
 import { DEFAULT_SETTINGS, normalizeSettings } from '../js/settings.js';
 import { buildShoppingList } from '../js/shopping-list.js';
 import { computeNextStock } from '../js/stock.js';
+import { createWeekSnapshot, normalizeWeekSnapshot, recoverSnapshotFromHistory } from '../js/week-history.js';
 
 function createSeededRandom(seed) {
   let state = seed;
@@ -83,5 +84,24 @@ describe('plats cuisinés', () => {
     const partlyEatenStock = computeNextStock({ stock: {}, shoppingList, checkedProductIds, eatenShoppingList });
     const totalStock = (stock) => Object.values(stock).reduce((total, quantity) => total + quantity, 0);
     assert.ok(totalStock(partlyEatenStock) > totalStock(allEatenStock));
+  });
+});
+
+describe('semaine précédente', () => {
+  it('retrouve les plats de la semaine remplacée en tête de l’historique, dans l’ordre', () => {
+    const preferences = { liked: [], disliked: [], recent: ['dahl-lentilles', 'chili-con-carne', 'wok-tofu', 'plus-ancien'] };
+    const currentPlan = { mainRecipeIds: ['a', 'b', 'c'], mainSlotsPerDay: 1, breakfastRecipeIds: ['porridge-banane'], snackRecipeIds: [] };
+    const snapshot = recoverSnapshotFromHistory({ preferences, currentPlan, previousWeekStart: '2026-09-28', slotCount: 3 });
+    assert.deepEqual(snapshot.plan.mainRecipeIds, ['dahl-lentilles', 'chili-con-carne', 'wok-tofu']);
+    assert.equal(snapshot.weekStart, '2026-09-28');
+    assert.equal(recoverSnapshotFromHistory({ preferences: { ...preferences, recent: [] }, currentPlan, previousWeekStart: '2026-09-28', slotCount: 3 }), null);
+  });
+
+  it('écarte une copie enregistrée abîmée', () => {
+    assert.equal(normalizeWeekSnapshot({ plan: { mainRecipeIds: 'x' }, weekStart: '2026-09-28' }), null);
+    assert.equal(normalizeWeekSnapshot({ plan: { mainRecipeIds: [] }, weekStart: 'hier' }), null);
+    assert.ok(normalizeWeekSnapshot(createWeekSnapshot({
+      plan: { mainRecipeIds: [] }, weekStart: '2026-09-28', cookedMeals: {}, checkedProductIds: new Set(), extraItems: [], pantryStock: {}, preferences: null,
+    })));
   });
 });

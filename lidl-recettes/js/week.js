@@ -29,14 +29,20 @@ function parseIsoDate(isoDate) {
   return date.getMonth() === month - 1 ? date : null;
 }
 
-// Une semaine enregistrée garde sa date tant qu'elle n'est pas terminée ;
-// une fois passée, les menus sont conservés mais datés de la semaine qui vient.
+// Une semaine enregistrée garde toujours sa date, même terminée : c'est à la personne de décider
+// quand passer à la suivante (on finit souvent les plats après le dimanche).
 export function resolveWeekStart(savedIsoDate, today = new Date()) {
-  const savedWeekStart = parseIsoDate(savedIsoDate);
-  if (!savedWeekStart) {
-    return getUpcomingMonday(today);
-  }
-  const savedWeekEnd = new Date(savedWeekStart);
-  savedWeekEnd.setDate(savedWeekEnd.getDate() + DAYS_PER_WEEK - 1);
-  return startOfDay(today) > savedWeekEnd ? getUpcomingMonday(today) : savedWeekStart;
+  return parseIsoDate(savedIsoDate) ?? getUpcomingMonday(today);
+}
+
+export function isWeekOver(weekStartDate, today = new Date()) {
+  const weekEnd = new Date(weekStartDate);
+  weekEnd.setDate(weekEnd.getDate() + DAYS_PER_WEEK - 1);
+  return startOfDay(today) > weekEnd;
+}
+
+export function shiftWeek(weekStartDate, weekCount) {
+  const shiftedDate = new Date(weekStartDate);
+  shiftedDate.setDate(shiftedDate.getDate() + weekCount * DAYS_PER_WEEK);
+  return shiftedDate;
 }

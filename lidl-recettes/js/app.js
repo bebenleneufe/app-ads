@@ -46,7 +46,9 @@ import {
 } from './store-setup.js';
 import { createScreenWakeLock } from './wake-lock.js';
 import { addWeightEntry, analyzeWeightTrend, isValidWeight, normalizeWeightLog } from './weight-log.js';
-import { getUpcomingMonday, resolveWeekStart, toIsoDate } from './week.js';
+import { formatFullDate } from './format.js';
+import { createWeekSnapshot, normalizeWeekSnapshot, recoverSnapshotFromHistory } from './week-history.js';
+import { getUpcomingMonday, isWeekOver, resolveWeekStart, shiftWeek, toIsoDate } from './week.js';
 
 const SETTINGS_DEBOUNCE_MILLISECONDS = 300;
 const COPY_STATUS_DURATION_MILLISECONDS = 4000;
@@ -81,6 +83,9 @@ class WeeklyPlannerApp {
   #extraItems = [];
   // Recette cuisinée pour chaque créneau de plat de la semaine en cours.
   #cookedMeals = {};
+  // Copie de la semaine remplacée par « Nouvelle semaine », pour pouvoir y revenir.
+  #previousWeek = null;
+  #isHistoryRecoveryDone = false;
   // Le mode magasin est retenu : si le téléphone ferme l'appli au milieu des rayons, on y revient.
   #isStoreMode = false;
   #hidesCheckedItems = false;
@@ -126,6 +131,10 @@ class WeeklyPlannerApp {
       nextRecipeCard: rootDocument.getElementById('next-recipe-card'),
       nextRecipeProgress: rootDocument.getElementById('next-recipe-progress'),
       showCookedButton: rootDocument.getElementById('show-cooked-button'),
+      weekOver: rootDocument.getElementById('week-over'),
+      weekOverText: rootDocument.getElementById('week-over-text'),
+      weekOverButton: rootDocument.getElementById('week-over-button'),
+      restoreWeekButton: rootDocument.getElementById('restore-week-button'),
       storeSummary: rootDocument.getElementById('store-summary'),
       clearMissingButton: rootDocument.getElementById('clear-missing-button'),
       resetAislesButton: rootDocument.getElementById('reset-aisles-button'),
@@ -174,20 +183,36 @@ class WeeklyPlannerApp {
     this.#showsCookedMeals = savedState?.interface?.showsCookedMeals === true;
     this.#checkedProductIds = new Set(Array.isArray(savedState?.checkedProductIds) ? savedState.checkedProductIds : []);
     this.#weekStartDate = resolveWeekStart(savedState?.weekStart);
+    this.#previousWeek = normalizeWeekSnapshot(savedState?.previousWeek);
+    this.#isHistoryRecoveryDone = savedState?.isHistoryRecoveryDone === true;
+    // Une semaine terminée reste affichée (bandeau « Semaine terminée ») : plus de passage automatique.
     try {
       this.#plan = savedState?.plan && typeof savedState.plan === 'object'
         ? restorePlan(savedState.plan, this.#planningSettings())
         : generatePlan(this.#planningSettings());
-      // La semaine enregistrée est terminée : on passe à la suivante comme avec « Nouvelle semaine ».
-      if (typeof savedState?.weekStart === 'string' && savedState.weekStart !== toIsoDate(this.#weekStartDate)) {
-        this.#startNextWeek();
-      }
+      this.#recoverPreviousWeekOnce(savedState);
     } catch (restoreError) {
       console.warn('Semaine enregistrée illisible, nouvelle semaine générée.', restoreError);
       this.#checkedProductIds = new Set();
       this.#weekStartDate = getUpcomingMonday();
       this.#plan = generatePlan(this.#planningSettings());
     }
+  }
+
+  // Avant cette version, une semaine terminée était remplacée d'office sans copie : ses plats
+  // restent en tête de l'historique, d'où on la reconstitue une seule fois.
+  #recoverPreviousWeekOnce(savedState) {
+    if (!savedState || this.#isHistoryRecoveryDone || this.#previousWeek) {
+      this.#isHistoryRecoveryDone = true;
+      return;
+    }
+    this.#isHistoryRecoveryDone = true;
+    this.#previousWeek = recoverSnapshotFromHistory({
+      preferences: this.#preferences,
+      currentPlan: this.#plan,
+      previousWeekStart: toIsoDate(shiftWeek(this.#weekStartDate, -1)),
+      slotCount: this.#plan.mainRecipeIds.length,
+    });
   }
 
   // Les préférences voyagent avec les réglages jusqu'au générateur, sans être des champs du formulaire.
@@ -220,6 +245,8 @@ class WeeklyPlannerApp {
     settingsForm.addEventListener('input', (inputEvent) => this.#handleSettingsInput(inputEvent), { signal });
     settingsForm.addEventListener('change', (changeEvent) => this.#handleSettingsCommit(changeEvent), { signal });
     regenerateButton.addEventListener('click', () => this.#regenerateWeek(), { signal });
+    this.#elements.weekOverButton.addEventListener('click', () => this.#regenerateWeek(), { signal });
+    this.#elements.restoreWeekButton.addEventListener('click', () => this.#restorePreviousWeek(), { signal });
     planList.addEventListener('click', (clickEvent) => this.#handlePlanClick(clickEvent), { signal });
     // L'événement « error » d'une image ne remonte pas : on l'écoute en phase de capture.
     planList.addEventListener('error', (errorEvent) => this.#hideMissingPhoto(errorEvent), { signal, capture: true });
@@ -323,11 +350,56 @@ class WeeklyPlannerApp {
     }
     this.#startNextWeek();
     this.#renderAll();
+    this.#offerUndo('Nouvelle semaine préparée.', () => this.#restorePreviousWeek());
+  }
+
+  // Revient à la semaine remplacée, telle qu'elle était : menus, plats cuisinés, cases cochées.
+  #restorePreviousWeek() {
+    const snapshot = this.#previousWeek;
+    if (!snapshot) {
+      return;
+    }
+    if (snapshot.preferences) {
+      this.#preferences = normalizePreferences(snapshot.preferences, RECIPES_BY_ID);
+    }
+    if (snapshot.pantryStock) {
+      this.#pantryStock = normalizeStock(snapshot.pantryStock);
+    }
+    if (snapshot.extraItems) {
+      this.#extraItems = normalizeExtraItems(snapshot.extraItems);
+    }
+    this.#weekStartDate = resolveWeekStart(snapshot.weekStart);
+    this.#plan = restorePlan(snapshot.plan, this.#planningSettings());
+    this.#cookedMeals = normalizeCookedMeals(snapshot.cookedMeals);
+    this.#checkedProductIds = new Set(snapshot.checkedProductIds);
+    this.#swapHistoryBySlot.clear();
+    this.#previousWeek = null;
+    this.#renderAll();
+  }
+
+  #renderWeekTools() {
+    const { weekOver, weekOverText, restoreWeekButton } = this.#elements;
+    const weekIsOver = isWeekOver(this.#weekStartDate);
+    weekOver.hidden = !weekIsOver;
+    weekOverText.textContent = weekIsOver ? `Semaine du ${formatFullDate(this.#weekStartDate)} terminée.` : '';
+    restoreWeekButton.hidden = this.#previousWeek === null;
+    if (this.#previousWeek) {
+      restoreWeekButton.textContent = `Reprendre la semaine du ${formatFullDate(resolveWeekStart(this.#previousWeek.weekStart))}`;
+    }
   }
 
   // Passer à une nouvelle semaine : on retient ses plats (pour ne pas les resservir tout de suite)
   // et, si des courses ont été cochées, ce qu'il reste en stock pour la semaine suivante.
   #startNextWeek() {
+    this.#previousWeek = createWeekSnapshot({
+      plan: this.#plan,
+      weekStart: toIsoDate(this.#weekStartDate),
+      cookedMeals: this.#cookedMeals,
+      checkedProductIds: this.#checkedProductIds,
+      extraItems: this.#extraItems,
+      pantryStock: this.#pantryStock,
+      preferences: this.#preferences,
+    });
     if (hasShoppingEvidence(this.#checkedProductIds)) {
       const planningSettings = this.#planningSettings();
       const shoppingList = buildShoppingList(this.#plan, planningSettings);
@@ -706,6 +778,7 @@ class WeeklyPlannerApp {
     }, this.#settings);
     const cookedSlotIndexes = new Set(listCookedSlotIndexes(this.#cookedMeals, this.#plan));
     renderPlan(this.#elements.planList, this.#plan, planningSettings, this.#weekStartDate, cookedSlotIndexes);
+    this.#renderWeekTools();
     this.#renderCookedProgress();
     this.#renderNextRecipe();
     renderPreferencesSummary(this.#elements.preferencesSummary, this.#elements.resetDislikesButton, this.#preferences);
@@ -750,6 +823,8 @@ class WeeklyPlannerApp {
       storeSetup: this.#storeSetup,
       extraItems: this.#extraItems,
       cookedMeals: this.#cookedMeals,
+      previousWeek: this.#previousWeek,
+      isHistoryRecoveryDone: this.#isHistoryRecoveryDone,
       interface: {
         isStoreMode: this.#isStoreMode,
         hidesCheckedItems: this.#hidesCheckedItems,
