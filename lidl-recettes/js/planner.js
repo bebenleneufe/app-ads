@@ -251,14 +251,16 @@ function createTrackerForPlan(plan, settings, { skippedKind = null, skippedMainS
 
 function fillMainSlots({ keptRecipeIds, settings, random, purchaseTracker }) {
   const allowedRecipes = listAllowedRecipes(PLAN_KINDS.MAIN, settings);
+  const slotCount = getSlotCount(PLAN_KINDS.MAIN, settings);
+  // Sans aucune recette autorisée, les plats déjà prévus restent : seules les cases vides le restent aussi.
   if (allowedRecipes.length === 0) {
-    return [];
+    return Array.from({ length: slotCount }, (_unused, slotIndex) => keptRecipeIds[slotIndex] ?? null);
   }
   const servingCount = getServingCount(PLAN_KINDS.MAIN, settings);
   const chosenRecipes = keptRecipeIds.filter(Boolean).map((recipeId) => RECIPES_BY_ID.get(recipeId));
   chosenRecipes.forEach((recipe) => purchaseTracker.addRecipe(recipe.id, servingCount));
   const filledRecipeIds = [];
-  for (let slotIndex = 0; slotIndex < getSlotCount(PLAN_KINDS.MAIN, settings); slotIndex += 1) {
+  for (let slotIndex = 0; slotIndex < slotCount; slotIndex += 1) {
     const keptRecipeId = keptRecipeIds[slotIndex];
     if (keptRecipeId) {
       filledRecipeIds.push(keptRecipeId);
@@ -308,48 +310,55 @@ function fillWeeklyRecipe({ kind, keptRecipeId, settings, random, purchaseTracke
   return Array.from({ length: slotCount }, () => weeklyRecipe.id);
 }
 
-// Seuls les plats sont remplacés : ce sont eux qui pèsent sur le ticket, le petit-déjeuner coûte peu.
+function replaceMainRecipe(plan, slotIndex, recipeId) {
+  return {
+    ...plan,
+    mainRecipeIds: plan.mainRecipeIds.map((currentRecipeId, index) => (index === slotIndex ? recipeId : currentRecipeId)),
+  };
+}
+
 // Le total d'un candidat se déduit du ticket sans ce créneau plus son surcoût réel (paquets en plus),
 // ce qui évite de reconstruire toute la liste de courses pour chaque recette essayée.
-export function fitPlanToBudget(plan, settings) {
+function findCheaperRecipe({ plan, slotIndex, settings, allowedRecipes, currentTotal }) {
+  const servingCount = getServingCount(PLAN_KINDS.MAIN, settings);
+  const totalWithoutSlot = buildShoppingList(replaceMainRecipe(plan, slotIndex, null), settings).totalToPay;
+  const purchaseTracker = createTrackerForPlan(plan, settings, { skippedMainSlotIndex: slotIndex });
+  let bestRecipeId = null;
+  let bestTotal = currentTotal;
+  for (const candidate of allowedRecipes) {
+    if (plan.mainRecipeIds.includes(candidate.id)) {
+      continue;
+    }
+    const candidateTotal = totalWithoutSlot + purchaseTracker.computeMarginalCost(candidate.id, servingCount);
+    if (candidateTotal < bestTotal - 0.005) {
+      bestRecipeId = candidate.id;
+      bestTotal = candidateTotal;
+    }
+  }
+  return bestRecipeId;
+}
+
+// Seuls les plats sont remplacés : ce sont eux qui pèsent sur le ticket, le petit-déjeuner coûte peu.
+// Un plat déjà cuisiné n'est jamais remplacé : il a été mangé, et ses courses sont faites.
+export function fitPlanToBudget(plan, settings, { lockedSlotIndexes = new Set() } = {}) {
   if (!hasBudget(settings)) {
     return plan;
   }
   const allowedRecipes = listAllowedRecipes(PLAN_KINDS.MAIN, settings);
-  const servingCount = getServingCount(PLAN_KINDS.MAIN, settings);
   let adjustedPlan = plan;
   let currentTotal = buildShoppingList(adjustedPlan, settings).totalToPay;
   const slotsByCostDescending = plan.mainRecipeIds
     .map((recipeId, slotIndex) => ({ slotIndex, portionCost: computePortionCost(recipeId, settings) }))
+    .filter(({ slotIndex }) => !lockedSlotIndexes.has(slotIndex))
     .sort((firstSlot, secondSlot) => secondSlot.portionCost - firstSlot.portionCost);
 
   for (const { slotIndex } of slotsByCostDescending) {
     if (currentTotal <= settings.weeklyBudget) {
       break;
     }
-    const planWithoutSlot = {
-      ...adjustedPlan,
-      mainRecipeIds: adjustedPlan.mainRecipeIds.map((recipeId, index) => (index === slotIndex ? null : recipeId)),
-    };
-    const totalWithoutSlot = buildShoppingList(planWithoutSlot, settings).totalToPay;
-    const purchaseTracker = createTrackerForPlan(adjustedPlan, settings, { skippedMainSlotIndex: slotIndex });
-    let bestRecipeId = null;
-    let bestTotal = currentTotal;
-    for (const candidate of allowedRecipes) {
-      if (adjustedPlan.mainRecipeIds.includes(candidate.id)) {
-        continue;
-      }
-      const candidateTotal = totalWithoutSlot + purchaseTracker.computeMarginalCost(candidate.id, servingCount);
-      if (candidateTotal < bestTotal - 0.005) {
-        bestRecipeId = candidate.id;
-        bestTotal = candidateTotal;
-      }
-    }
-    if (bestRecipeId) {
-      adjustedPlan = {
-        ...adjustedPlan,
-        mainRecipeIds: adjustedPlan.mainRecipeIds.map((recipeId, index) => (index === slotIndex ? bestRecipeId : recipeId)),
-      };
+    const cheaperRecipeId = findCheaperRecipe({ plan: adjustedPlan, slotIndex, settings, allowedRecipes, currentTotal });
+    if (cheaperRecipeId) {
+      adjustedPlan = replaceMainRecipe(adjustedPlan, slotIndex, cheaperRecipeId);
       currentTotal = buildShoppingList(adjustedPlan, settings).totalToPay;
     }
   }
@@ -384,32 +393,58 @@ export function generatePlan(settings, random = Math.random) {
   return fillPlan({ mainRecipeIds: [] }, settings, random);
 }
 
+function readSlotsPerDay(plan, settings) {
+  return Number.isInteger(plan?.mainSlotsPerDay) && plan.mainSlotsPerDay > 0
+    ? plan.mainSlotsPerDay
+    : getMainSlotsPerDay(settings);
+}
+
 // Les créneaux sont rangés jour par jour : quand le nombre de plats par jour change,
 // chaque plat reste sur son jour au lieu de glisser vers le jour suivant.
-function remapMainSlotsByDay(recipeIds, previousSlotsPerDay, settings) {
+function remapMainSlotIndex(slotIndex, previousSlotsPerDay, settings) {
+  const dayIndex = Math.floor(slotIndex / previousSlotsPerDay);
+  const mealIndex = slotIndex % previousSlotsPerDay;
   const nextSlotsPerDay = getMainSlotsPerDay(settings);
-  const remappedRecipeIds = [];
-  for (let dayIndex = 0; dayIndex < settings.dayCount; dayIndex += 1) {
-    const dayRecipeIds = recipeIds.slice(dayIndex * previousSlotsPerDay, (dayIndex + 1) * previousSlotsPerDay);
-    for (let mealIndex = 0; mealIndex < nextSlotsPerDay; mealIndex += 1) {
-      remappedRecipeIds.push(dayRecipeIds[mealIndex] ?? null);
+  return dayIndex < settings.dayCount && mealIndex < nextSlotsPerDay ? dayIndex * nextSlotsPerDay + mealIndex : null;
+}
+
+function remapMainSlotsByDay(recipeIds, previousSlotsPerDay, settings) {
+  const remappedRecipeIds = Array.from({ length: settings.dayCount * getMainSlotsPerDay(settings) }, () => null);
+  recipeIds.forEach((recipeId, slotIndex) => {
+    const nextSlotIndex = remapMainSlotIndex(slotIndex, previousSlotsPerDay, settings);
+    if (nextSlotIndex !== null) {
+      remappedRecipeIds[nextSlotIndex] = recipeId ?? null;
     }
-  }
+  });
   return remappedRecipeIds;
+}
+
+// Donne, pour un créneau du plan (rangé peut-être autrement), son numéro avec les réglages actuels.
+export function createMainSlotMapper(plan, settings) {
+  const previousSlotsPerDay = readSlotsPerDay(plan, settings);
+  return (slotIndex) => remapMainSlotIndex(slotIndex, previousSlotsPerDay, settings);
+}
+
+function remapMainSlotIndexes(slotIndexes, plan, settings) {
+  const mapSlotIndex = createMainSlotMapper(plan, settings);
+  return new Set([...slotIndexes].map(mapSlotIndex).filter((slotIndex) => slotIndex !== null));
 }
 
 function keepExistingMainRecipeIds(currentPlan, settings) {
   return keepAllowedMainRecipeIds(currentPlan, settings, () => true);
 }
 
-function keepAllowedMainRecipeIds(currentPlan, settings, isKept = (recipe) => isRecipeCompatible(recipe, settings)) {
+function keepAllowedMainRecipeIds(
+  currentPlan,
+  settings,
+  isKept = (recipe) => isRecipeCompatible(recipe, settings),
+  lockedSlotIndexes = new Set(),
+) {
   const recipeIds = Array.isArray(currentPlan?.mainRecipeIds) ? currentPlan.mainRecipeIds : [];
-  const previousSlotsPerDay = Number.isInteger(currentPlan?.mainSlotsPerDay) && currentPlan.mainSlotsPerDay > 0
-    ? currentPlan.mainSlotsPerDay
-    : getMainSlotsPerDay(settings);
-  return remapMainSlotsByDay(recipeIds, previousSlotsPerDay, settings).map((recipeId) => {
+  return remapMainSlotsByDay(recipeIds, readSlotsPerDay(currentPlan, settings), settings).map((recipeId, slotIndex) => {
     const recipe = RECIPES_BY_ID.get(recipeId);
-    return recipe && recipe.mealType === MEAL_TYPES.MAIN && isKept(recipe) ? recipeId : null;
+    const isMainRecipe = recipe && recipe.mealType === MEAL_TYPES.MAIN;
+    return isMainRecipe && (lockedSlotIndexes.has(slotIndex) || isKept(recipe)) ? recipeId : null;
   });
 }
 
@@ -430,16 +465,20 @@ export function restorePlan(savedPlan, settings, random = Math.random) {
 }
 
 // Après un changement de réglage : les plats devenus incompatibles sont remplacés, les autres restent.
+// Les plats déjà cuisinés (lockedSlotIndexes, numérotés comme dans currentPlan) ne bougent jamais.
 // Le budget n'est réappliqué que s'il vient de changer, ou si le réglage a renchéri la semaine
-// (plus de personnes, de jours…) : un réglage sans effet sur le prix (pesée, huile au placard)
+// (plus de personnes, de jours…) : un réglage sans effet sur le prix (huile au placard)
 // ne doit jamais remplacer des plats peut-être déjà achetés.
 export function reconcilePlan(
   currentPlan,
   settings,
   random = Math.random,
-  { previousTotalToPay = Number.POSITIVE_INFINITY, budgetChanged = false } = {},
+  { previousTotalToPay = Number.POSITIVE_INFINITY, budgetChanged = false, lockedSlotIndexes = [] } = {},
 ) {
-  const keptPlan = { mainRecipeIds: keepAllowedMainRecipeIds(currentPlan, settings) };
+  const remappedLockedSlotIndexes = remapMainSlotIndexes(lockedSlotIndexes, currentPlan, settings);
+  const keptPlan = {
+    mainRecipeIds: keepAllowedMainRecipeIds(currentPlan, settings, undefined, remappedLockedSlotIndexes),
+  };
   for (const kind of WEEKLY_KINDS) {
     keptPlan[PLAN_KEY_BY_KIND[kind]] = [keepAllowedWeeklyId(currentPlan, kind, settings)];
   }
@@ -448,7 +487,9 @@ export function reconcilePlan(
     return filledPlan;
   }
   const isCostlier = buildShoppingList(filledPlan, settings).totalToPay > previousTotalToPay;
-  return budgetChanged || isCostlier ? fitPlanToBudget(filledPlan, settings) : filledPlan;
+  return budgetChanged || isCostlier
+    ? fitPlanToBudget(filledPlan, settings, { lockedSlotIndexes: remappedLockedSlotIndexes })
+    : filledPlan;
 }
 
 function swapWeeklyRecipe(currentPlan, kind, settings, random, avoidedRecipeIds) {

@@ -42,3 +42,17 @@ export function buildEatenPlan(plan, cookedMeals) {
     mainRecipeIds: plan.mainRecipeIds.map((recipeId, slotIndex) => (cookedSlotIndexes.has(slotIndex) ? recipeId : null)),
   };
 }
+
+// Quand le nombre de plats par jour change, les créneaux sont renumérotés : les marques
+// « cuisiné » suivent leur plat (mapSlotIndex donne le nouveau numéro, ou null s'il disparaît).
+export function remapCookedMeals(cookedMeals, previousPlan, nextPlan, mapSlotIndex) {
+  const remappedCookedMeals = {};
+  for (const slotIndex of listCookedSlotIndexes(cookedMeals, previousPlan)) {
+    const nextSlotIndex = mapSlotIndex(slotIndex);
+    const recipeId = previousPlan.mainRecipeIds[slotIndex];
+    if (nextSlotIndex !== null && nextPlan.mainRecipeIds[nextSlotIndex] === recipeId) {
+      remappedCookedMeals[nextSlotIndex] = recipeId;
+    }
+  }
+  return remappedCookedMeals;
+}

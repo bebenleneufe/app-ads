@@ -157,8 +157,8 @@ function buildPreferenceButtons(recipe, kind, slotIndex, settings) {
   ];
 }
 
-// Les actions de tous les jours d'abord ; les goûts ensuite, ou dans le dépliant d'une carte compacte.
-function buildMealActions({ recipe, kind, slotIndex, settings, isCooked, isCompact }) {
+// Les actions de tous les jours sur une rangée fixe ; les goûts sur la suivante (dépliant d'une carte compacte).
+function buildMealActions({ recipe, kind, slotIndex, isCooked }) {
   // Le petit-déjeuner et la collation reviennent chaque jour : seuls les plats se cochent.
   const cookedButton = kind === PLAN_KINDS.MAIN
     ? buildActionButton({
@@ -170,7 +170,7 @@ function buildMealActions({ recipe, kind, slotIndex, settings, isCooked, isCompa
       action: 'cook', text: 'Cuisiner', kind, slotIndex, recipe, className: 'chip-button cook-button',
     }),
     cookedButton,
-    ...(isCompact ? [buildSwapButton(recipe, kind, slotIndex)] : buildPreferenceButtons(recipe, kind, slotIndex, settings)),
+    buildSwapButton(recipe, kind, slotIndex),
   ]);
 }
 
@@ -188,27 +188,20 @@ function buildMealCard({ recipe, kind, slotIndex, slotLabel, servingCount, setti
   // « is-settled » : déjà cuisiné à l'affichage, donc masqué sans animation quand les plats cuisinés sont cachés.
   const cardClasses = ['meal', isBreakfast ? 'is-breakfast' : '', isCompact ? 'is-compact' : '', isCooked ? 'is-cooked is-settled' : '']
     .filter(Boolean).join(' ');
-  const preferenceRow = isCompact
-    ? createElement('div', { className: 'meal-preferences' }, buildPreferenceButtons(recipe, kind, slotIndex, settings))
-    : null;
+  const preferenceRow = createElement('div', { className: 'meal-preferences' }, buildPreferenceButtons(recipe, kind, slotIndex, settings));
   return createElement('article', {
     className: cardClasses,
     attributes: { 'data-category': recipe.category },
   }, [
     buildMealPhoto(recipe),
-    // Carte compacte : « Changer » rejoint les autres actions, l'en-tête ne garde que le repas.
-    isCompact
-      ? (slotLabel ? createElement('p', { className: 'meal-slot', text: slotLabel }) : null)
-      : createElement('div', { className: 'meal-head' }, [
-        createElement('p', { className: 'meal-slot', text: slotLabel }),
-        buildSwapButton(recipe, kind, slotIndex),
-      ]),
+    slotLabel ? createElement('p', { className: 'meal-slot', text: slotLabel }) : null,
     createElement('h4', { className: 'meal-name', text: recipe.name }),
     createElement('p', { className: 'meal-tag', text: CATEGORY_LABELS[recipe.category] }),
     buildMissingWarning(recipe, settings),
     isCompact ? buildMealFactsLine(recipe, settings) : buildMealFacts(recipe, settings),
-    buildMealActions({ recipe, kind, slotIndex, settings, isCooked, isCompact }),
-    buildRecipeDetails(recipe, servingCount, settings, preferenceRow),
+    buildMealActions({ recipe, kind, slotIndex, isCooked }),
+    isCompact ? null : preferenceRow,
+    buildRecipeDetails(recipe, servingCount, settings, isCompact ? preferenceRow : null),
   ]);
 }
 
@@ -324,7 +317,7 @@ export function renderPlan(planListElement, plan, settings, weekStartDate, cooke
   replaceChildrenWithFragment(planListElement, dayItems);
 }
 
-// Le premier plat de la semaine pas encore cuisiné, quel que soit le jour où il était prévu.
+// Le premier plat pas encore cuisiné, quel que soit son jour : on ne cuisine pas forcément à la date prévue.
 export function renderNextRecipe({ cardContainer, progressElement }, plan, settings, cookedSlotIndexes) {
   const plannedSlotIndexes = plan.mainRecipeIds
     .map((recipeId, slotIndex) => (RECIPES_BY_ID.has(recipeId) ? slotIndex : null))
@@ -434,7 +427,6 @@ function buildReceiptLine(line, { isChecked, isMissing }) {
   if (line.leftoverQuantity > 0) {
     detailParts.push(`reste ${formatQuantity(line.leftoverQuantity, product.unit)}`);
   }
-  const brandSuffix = product.brand ? ` ${product.brand}` : '';
   // « is-settled » : déjà réglé à l'affichage, donc masqué sans animation en mode « Masquer les cochés ».
   const stateClasses = [
     isChecked ? 'is-checked' : '',
@@ -446,7 +438,11 @@ function buildReceiptLine(line, { isChecked, isMissing }) {
       attributes: { type: 'checkbox', id: checkboxId, 'data-product-id': product.id, ...(isChecked ? { checked: '' } : {}) },
     }),
     createElement('label', { className: 'line-label', attributes: { for: checkboxId } }, [
-      createElement('span', { className: 'line-name', text: `${line.packageCount} × ${product.name}${brandSuffix}` }),
+      // La marque est à part : en magasin, le nom seul suffit et laisse la ligne courte.
+      createElement('span', { className: 'line-name' }, [
+        `${line.packageCount} × ${product.name}`,
+        product.brand ? createElement('span', { className: 'line-brand', text: ` ${product.brand}` }) : null,
+      ]),
       createElement('span', { className: 'line-price', text: formatEuros(line.cost) }),
       createElement('span', { className: 'line-detail', text: detailParts.join(' · ') }),
     ]),

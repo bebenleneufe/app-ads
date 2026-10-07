@@ -19,3 +19,8 @@ export function saveState(state) {
     console.warn('Impossible d’enregistrer la semaine.', storageError);
   }
 }
+
+// L'événement « storage » n'arrive que dans les autres fenêtres de l'appli ; une clé nulle veut dire stockage vidé.
+export function isSavedStateChange(storageEvent) {
+  return storageEvent.key === STORAGE_KEY || storageEvent.key === null;
+}

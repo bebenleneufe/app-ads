@@ -43,7 +43,7 @@ export const RECIPES = Object.freeze([
     name: 'Spaghetti bolognaise',
     category: CATEGORIES.MEAT,
     prepMinutes: 35,
-    ingredients: { spaghetti: 100, 'boeuf-hache': 100, 'tomates-concassees': 150, oignon: 40, carotte: 40, ail: 3, 'huile-olive': 5, herbes: 1 },
+    ingredients: { spaghetti: 100, 'boeuf-hache': 100, 'tomates-concassees': 150, oignon: 40, carotte: 40, ail: 3, 'huile-olive': 3, herbes: 1 },
     steps: [
       "Faire revenir l'oignon, l'ail et la carotte hachés dans l'huile.",
       'Ajouter le bœuf, le faire dorer puis verser les tomates et les herbes. Laisser mijoter 20 min.',
@@ -55,9 +55,9 @@ export const RECIPES = Object.freeze([
     name: 'Poulet au curry et lait de coco, riz basmati',
     category: CATEGORIES.MEAT,
     prepMinutes: 30,
-    ingredients: { 'poulet-filet': 125, 'lait-coco': 100, riz: 75, oignon: 40, poivron: 0.5, curry: 2, 'huile-olive': 5 },
+    ingredients: { 'poulet-filet': 125, 'lait-coco': 60, riz: 65, oignon: 40, poivron: 0.5, curry: 2, 'huile-olive': 5 },
     steps: [
-      "Émincer l'oignon et le poivron, les faire revenir avec le curry.",
+      "Émincer l'oignon et le poivron, les faire revenir dans l'huile avec le curry.",
       'Ajouter le poulet en dés, dorer 5 min puis verser le lait de coco. Mijoter 15 min.',
       'Servir avec le riz cuit.',
     ],
@@ -69,7 +69,7 @@ export const RECIPES = Object.freeze([
     prepMinutes: 40,
     ingredients: { 'boeuf-hache': 100, 'haricots-rouges': 80, 'tomates-concassees': 150, oignon: 40, poivron: 0.33, cumin: 1, paprika: 1, riz: 70, 'huile-olive': 5 },
     steps: [
-      "Faire revenir l'oignon et le poivron, ajouter le bœuf et les épices.",
+      "Faire revenir l'oignon et le poivron dans l'huile, ajouter le bœuf et les épices.",
       'Verser les tomates et les haricots rincés, mijoter 25 min.',
       'Servir avec le riz.',
     ],
@@ -80,7 +80,7 @@ export const RECIPES = Object.freeze([
     category: CATEGORIES.MEAT,
     containsPork: true,
     prepMinutes: 45,
-    ingredients: { 'pate-brisee': 0.25, lardons: 50, oeuf: 1, 'creme-epaisse': 40, lait: 50, emmental: 25, salade: 0.25 },
+    ingredients: { 'pate-brisee': 0.25, lardons: 40, oeuf: 1, 'creme-epaisse': 30, lait: 50, emmental: 20, salade: 0.25 },
     steps: [
       'Préchauffer le four à 200 °C et foncer un moule avec la pâte.',
       "Faire griller les lardons à sec, les répartir sur la pâte avec l'emmental.",
@@ -89,15 +89,15 @@ export const RECIPES = Object.freeze([
   }),
   defineRecipe({
     id: 'carbonara',
-    name: 'Spaghetti carbonara',
+    name: 'Spaghetti carbonara aux courgettes',
     category: CATEGORIES.MEAT,
     containsPork: true,
     prepMinutes: 20,
-    ingredients: { spaghetti: 100, lardons: 60, oeuf: 1, parmesan: 20, poivre: 0.5 },
+    ingredients: { spaghetti: 80, lardons: 40, oeuf: 1, parmesan: 15, courgette: 150, poivre: 0.5 },
     steps: [
-      'Cuire les spaghetti. Pendant ce temps, dorer les lardons à sec.',
+      'Cuire les spaghetti. Pendant ce temps, dorer les lardons à sec, puis ajouter les courgettes râpées 5 min.',
       'Battre les œufs avec le fromage râpé et beaucoup de poivre.',
-      'Hors du feu, mélanger pâtes, lardons et œufs avec une louche d’eau de cuisson.',
+      'Hors du feu, mélanger pâtes, lardons, courgettes et œufs avec une louche d’eau de cuisson.',
     ],
   }),
   defineRecipe({
@@ -105,9 +105,9 @@ export const RECIPES = Object.freeze([
     name: 'Fajitas de poulet aux poivrons',
     category: CATEGORIES.MEAT,
     prepMinutes: 25,
-    ingredients: { tortilla: 2, 'poulet-filet': 110, poivron: 0.5, oignon: 40, paprika: 1, 'creme-epaisse': 30, salade: 0.15, 'huile-olive': 5 },
+    ingredients: { tortilla: 2, 'poulet-filet': 110, poivron: 0.5, oignon: 30, paprika: 1, 'creme-epaisse': 15, salade: 0.15, 'huile-olive': 3 },
     steps: [
-      'Émincer poulet, poivron et oignon. Saisir le tout avec le paprika 10 min.',
+      "Émincer poulet, poivron et oignon. Saisir le tout dans l'huile avec le paprika 10 min.",
       'Réchauffer les tortillas à la poêle.',
       'Garnir de poulet, salade et une cuillère de crème.',
     ],
@@ -118,7 +118,7 @@ export const RECIPES = Object.freeze([
     category: CATEGORIES.MEAT,
     containsPork: true,
     prepMinutes: 35,
-    ingredients: { saucisse: 150, 'pomme-de-terre': 250, lait: 60, beurre: 10, 'haricots-verts': 150 },
+    ingredients: { saucisse: 110, 'pomme-de-terre': 200, lait: 50, beurre: 5, 'haricots-verts': 150 },
     steps: [
       'Cuire les pommes de terre épluchées 20 min dans l’eau salée.',
       'Dorer les saucisses à la poêle 15 min en les retournant.',
@@ -130,11 +130,12 @@ export const RECIPES = Object.freeze([
     name: 'Hachis parmentier',
     category: CATEGORIES.MEAT,
     prepMinutes: 50,
-    ingredients: { 'boeuf-hache': 100, 'pomme-de-terre': 250, lait: 60, beurre: 10, oignon: 40, emmental: 25, 'huile-olive': 5 },
+    ingredients: { 'boeuf-hache': 100, 'pomme-de-terre': 220, lait: 50, beurre: 5, oignon: 40, emmental: 20, 'haricots-verts': 150, 'huile-olive': 5 },
     steps: [
       "Cuire les pommes de terre et préparer une purée avec le lait et le beurre.",
-      "Faire revenir l'oignon puis le bœuf haché.",
+      "Faire revenir l'oignon dans l'huile puis le bœuf haché.",
       'Monter en couches dans un plat, parsemer d’emmental et gratiner 20 min à 200 °C.',
+      'Pendant ce temps, cuire les haricots verts 8 min et les servir avec le hachis.',
     ],
   }),
   defineRecipe({
@@ -155,7 +156,7 @@ export const RECIPES = Object.freeze([
     name: 'Cuisses de poulet rôties, patates douces au four',
     category: CATEGORIES.MEAT,
     prepMinutes: 55,
-    ingredients: { 'cuisse-poulet': 250, 'patate-douce': 200, herbes: 1, 'huile-olive': 10, salade: 0.25 },
+    ingredients: { 'cuisse-poulet': 230, 'patate-douce': 200, herbes: 1, 'huile-olive': 5, salade: 0.25 },
     steps: [
       'Préchauffer le four à 210 °C. Couper les patates douces en quartiers.',
       "Disposer poulet et patates dans un plat, arroser d'huile et d'herbes.",
@@ -164,15 +165,16 @@ export const RECIPES = Object.freeze([
   }),
   defineRecipe({
     id: 'poelee-chorizo',
-    name: 'Poêlée de pommes de terre, chorizo et poivrons',
+    name: 'Poêlée de pommes de terre, chorizo, poivrons et œuf',
     category: CATEGORIES.MEAT,
     containsPork: true,
     prepMinutes: 30,
-    ingredients: { chorizo: 50, 'pomme-de-terre': 250, poivron: 0.5, oignon: 40, paprika: 1, 'huile-olive': 10 },
+    ingredients: { chorizo: 50, 'pomme-de-terre': 220, poivron: 0.5, oignon: 40, paprika: 1, oeuf: 1, 'huile-olive': 5 },
     steps: [
       'Couper les pommes de terre en dés et les faire dorer 15 min dans l’huile.',
       "Ajouter l'oignon, le poivron et le chorizo en rondelles.",
       'Assaisonner au paprika et poursuivre 10 min à feu moyen.',
+      'Creuser un puits par personne, y casser un œuf et couvrir 4 min.',
     ],
   }),
 
@@ -181,10 +183,10 @@ export const RECIPES = Object.freeze([
     name: 'Saumon au citron, riz et brocoli',
     category: CATEGORIES.FISH,
     prepMinutes: 25,
-    ingredients: { saumon: 125, riz: 75, brocoli: 0.4, citron: 0.25, 'huile-olive': 5 },
+    ingredients: { saumon: 125, riz: 60, brocoli: 0.4, citron: 0.25, 'huile-olive': 5 },
     steps: [
       'Cuire le riz. Cuire le brocoli en fleurettes 6 min à la vapeur.',
-      'Saisir le saumon 4 min côté peau puis 2 min de l’autre côté.',
+      'Saisir le saumon dans l’huile 4 min côté peau puis 2 min de l’autre côté.',
       'Arroser de jus de citron au moment de servir.',
     ],
   }),
@@ -208,7 +210,7 @@ export const RECIPES = Object.freeze([
     ingredients: { nouilles: 80, crevettes: 70, carotte: 60, poivron: 0.33, oeuf: 0.5, 'sauce-soja': 15, 'huile-olive': 5, ail: 2 },
     steps: [
       'Cuire les nouilles 4 min, égoutter.',
-      "Faire sauter l'ail, la carotte en julienne et le poivron 5 min à feu vif.",
+      "Faire sauter l'ail, la carotte en julienne et le poivron dans l'huile 5 min à feu vif.",
       'Ajouter les crevettes, l’œuf battu, les nouilles et la sauce soja. Mélanger 2 min.',
     ],
   }),
@@ -219,7 +221,7 @@ export const RECIPES = Object.freeze([
     prepMinutes: 20,
     ingredients: { spaghetti: 100, thon: 60, coulis: 125, oignon: 30, herbes: 1, 'huile-olive': 5 },
     steps: [
-      "Faire revenir l'oignon, ajouter le coulis et les herbes, mijoter 10 min.",
+      "Faire revenir l'oignon dans l'huile, ajouter le coulis et les herbes, mijoter 10 min.",
       'Ajouter le thon émietté hors du feu.',
       'Mélanger avec les spaghetti cuits.',
     ],
@@ -230,9 +232,9 @@ export const RECIPES = Object.freeze([
     name: 'Dahl de lentilles corail',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 30,
-    ingredients: { 'lentilles-corail': 80, 'lait-coco': 80, 'tomates-concassees': 100, oignon: 40, ail: 3, curry: 2, riz: 60, citron: 0.25 },
+    ingredients: { 'lentilles-corail': 70, 'lait-coco': 40, 'tomates-concassees': 100, oignon: 40, ail: 3, curry: 2, riz: 40, citron: 0.25, 'huile-olive': 5 },
     steps: [
-      "Faire revenir l'oignon, l'ail et le curry.",
+      "Faire revenir l'oignon, l'ail et le curry dans l'huile.",
       'Ajouter lentilles rincées, tomates, lait de coco et 150 ml d’eau par personne. Cuire 20 min.',
       'Servir sur le riz avec un filet de citron.',
     ],
@@ -244,7 +246,7 @@ export const RECIPES = Object.freeze([
     prepMinutes: 35,
     ingredients: { 'haricots-rouges': 120, mais: 60, 'tomates-concassees': 150, poivron: 0.5, oignon: 40, cumin: 1, paprika: 1, riz: 70, 'huile-olive': 5 },
     steps: [
-      "Faire revenir l'oignon et le poivron avec les épices.",
+      "Faire revenir l'oignon et le poivron dans l'huile avec les épices.",
       'Ajouter tomates, haricots et maïs égouttés. Mijoter 20 min.',
       'Servir avec le riz.',
     ],
@@ -266,9 +268,9 @@ export const RECIPES = Object.freeze([
     name: 'Penne au pesto, courgettes et mozzarella',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 20,
-    ingredients: { penne: 100, pesto: 40, courgette: 150, mozzarella: 60, parmesan: 10, 'huile-olive': 5 },
+    ingredients: { penne: 75, pesto: 20, courgette: 200, mozzarella: 50, parmesan: 5, 'huile-olive': 3 },
     steps: [
-      'Faire sauter les courgettes en demi-rondelles 8 min.',
+      'Faire sauter les courgettes en demi-rondelles 8 min dans l’huile.',
       'Cuire les penne, les mélanger au pesto et aux courgettes.',
       'Ajouter la mozzarella en morceaux et le fromage râpé.',
     ],
@@ -292,7 +294,7 @@ export const RECIPES = Object.freeze([
     prepMinutes: 40,
     ingredients: { semoule: 80, 'pois-chiches': 100, carotte: 80, courgette: 100, oignon: 40, 'tomates-concassees': 80, cumin: 1, bouillon: 0.5, 'huile-olive': 5 },
     steps: [
-      "Faire revenir l'oignon, ajouter carottes et courgettes en tronçons, tomates, cumin et bouillon.",
+      "Faire revenir l'oignon dans l'huile, ajouter carottes et courgettes en tronçons, tomates, cumin et bouillon.",
       'Couvrir d’eau et mijoter 25 min, ajouter les pois chiches les 5 dernières minutes.',
       'Gonfler la semoule dans son volume d’eau bouillante et servir.',
     ],
@@ -302,7 +304,7 @@ export const RECIPES = Object.freeze([
     name: 'Wok de tofu, brocoli et nouilles',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 25,
-    ingredients: { tofu: 100, nouilles: 80, brocoli: 0.3, carotte: 60, 'sauce-soja': 15, ail: 2, 'huile-olive': 10 },
+    ingredients: { tofu: 100, nouilles: 80, brocoli: 0.3, carotte: 60, 'sauce-soja': 15, ail: 2, 'huile-olive': 5 },
     steps: [
       'Dorer le tofu en cubes dans l’huile, réserver.',
       "Faire sauter l'ail, le brocoli et la carotte 6 min.",
@@ -314,9 +316,9 @@ export const RECIPES = Object.freeze([
     name: 'Velouté de lentilles vertes et carottes',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 40,
-    ingredients: { 'lentilles-vertes': 70, carotte: 100, oignon: 40, bouillon: 0.5, 'creme-epaisse': 20, cumin: 1, 'huile-olive': 5 },
+    ingredients: { 'lentilles-vertes': 80, carotte: 100, oignon: 40, bouillon: 0.5, 'creme-epaisse': 20, cumin: 1, 'huile-olive': 5 },
     steps: [
-      "Faire revenir l'oignon et les carottes en rondelles.",
+      "Faire revenir l'oignon et les carottes en rondelles dans l'huile.",
       'Ajouter lentilles, cumin, bouillon et 350 ml d’eau par personne. Cuire 30 min.',
       'Mixer et servir avec une cuillère de crème.',
     ],
@@ -330,7 +332,7 @@ export const RECIPES = Object.freeze([
     steps: [
       'Faire fondre les épinards et bien les égoutter.',
       "Mélanger avec la feta émiettée et l'œuf battu.",
-      'Garnir la pâte, replier en chausson et cuire 25 min à 200 °C.',
+      'Garnir la pâte, replier en chausson et cuire 25 min à 200 °C. Servir avec la salade.',
     ],
   }),
   defineRecipe({
@@ -338,23 +340,23 @@ export const RECIPES = Object.freeze([
     name: 'Curry de pois chiches aux épinards',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 25,
-    ingredients: { 'pois-chiches': 130, epinards: 100, 'lait-coco': 80, 'tomates-concassees': 80, curry: 2, oignon: 40, riz: 70 },
+    ingredients: { 'pois-chiches': 150, epinards: 150, 'lait-coco': 50, 'tomates-concassees': 80, curry: 2, oignon: 40, riz: 50, 'huile-olive': 5 },
     steps: [
-      "Faire revenir l'oignon avec le curry.",
+      "Faire revenir l'oignon dans l'huile avec le curry.",
       'Ajouter tomates, lait de coco, pois chiches et épinards. Mijoter 15 min.',
       'Servir avec le riz.',
     ],
   }),
   defineRecipe({
     id: 'ratatouille-oeuf',
-    name: 'Ratatouille, semoule et œuf au plat',
+    name: 'Ratatouille, semoule et œufs au plat',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 45,
-    ingredients: { courgette: 120, aubergine: 0.4, poivron: 0.4, tomate: 120, oignon: 40, ail: 3, herbes: 1, oeuf: 1, semoule: 60, 'huile-olive': 10 },
+    ingredients: { courgette: 120, aubergine: 0.4, poivron: 0.4, tomate: 120, oignon: 40, ail: 3, herbes: 1, oeuf: 2, semoule: 60, 'huile-olive': 10 },
     steps: [
       "Couper tous les légumes en dés et les faire revenir dans l'huile avec l'ail.",
       'Ajouter les herbes, couvrir et mijoter 30 min.',
-      'Servir avec la semoule et un œuf au plat.',
+      'Servir avec la semoule et deux œufs au plat.',
     ],
   }),
   defineRecipe({
@@ -391,7 +393,7 @@ export const RECIPES = Object.freeze([
     ingredients: { 'boeuf-hache': 120, courgette: 200, semoule: 50, 'tomates-concassees': 100, oignon: 30, cumin: 1, 'huile-olive': 5 },
     steps: [
       'Mélanger le bœuf avec le cumin et la moitié de l’oignon haché, former des boulettes.',
-      'Les dorer, ajouter le reste de l’oignon, les courgettes en dés et les tomates. Mijoter 15 min.',
+      'Les dorer dans l’huile, ajouter le reste de l’oignon, les courgettes en dés et les tomates. Mijoter 15 min.',
       'Servir avec la semoule gonflée à l’eau bouillante.',
     ],
   }),
@@ -415,7 +417,7 @@ export const RECIPES = Object.freeze([
     ingredients: { crevettes: 120, courgette: 200, riz: 50, ail: 3, citron: 0.25, 'huile-olive': 5 },
     steps: [
       'Cuire le riz.',
-      "Faire sauter les courgettes en demi-rondelles 6 min avec l'ail.",
+      "Faire sauter les courgettes en demi-rondelles 6 min dans l'huile avec l'ail.",
       'Ajouter les crevettes 2 min et le jus de citron.',
     ],
   }),
@@ -426,7 +428,7 @@ export const RECIPES = Object.freeze([
     prepMinutes: 15,
     ingredients: { oeuf: 3, champignon: 100, epinards: 100, emmental: 15, salade: 0.25, 'huile-olive': 5 },
     steps: [
-      'Faire sauter les champignons émincés puis les épinards jusqu’à évaporation.',
+      'Faire sauter dans l’huile les champignons émincés puis les épinards jusqu’à évaporation.',
       'Verser les œufs battus, parsemer d’emmental.',
       'Cuire à feu doux 4 min, plier et servir avec la salade.',
     ],
@@ -436,11 +438,11 @@ export const RECIPES = Object.freeze([
     name: 'Soupe poireaux-carottes et œufs mollets',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 35,
-    ingredients: { poireau: 150, carotte: 100, 'pomme-de-terre': 100, bouillon: 0.5, oeuf: 2 },
+    ingredients: { poireau: 150, carotte: 100, 'pomme-de-terre': 100, bouillon: 0.5, oeuf: 2, 'pain-complet': 50 },
     steps: [
       'Couper les légumes, les couvrir d’eau avec le bouillon, cuire 25 min puis mixer.',
       'Cuire les œufs 6 min dans l’eau bouillante, les écaler.',
-      'Servir la soupe avec les œufs mollets.',
+      'Servir la soupe avec les œufs mollets et le pain grillé.',
     ],
   }),
   defineRecipe({
@@ -451,7 +453,7 @@ export const RECIPES = Object.freeze([
     ingredients: { tofu: 150, brocoli: 0.4, riz: 50, 'sauce-soja': 15, ail: 2, 'huile-olive': 5 },
     steps: [
       'Cuire le riz. Cuire le brocoli en fleurettes 5 min à la vapeur.',
-      "Dorer le tofu en cubes avec l'ail.",
+      "Dorer le tofu en cubes dans l'huile avec l'ail.",
       'Ajouter le brocoli et la sauce soja, mélanger 2 min.',
     ],
   }),
@@ -464,7 +466,7 @@ export const RECIPES = Object.freeze([
     ingredients: { 'pois-chiches': 130, epinards: 150, oeuf: 1, semoule: 40, ail: 2, cumin: 1, 'huile-olive': 5 },
     steps: [
       'Gonfler la semoule dans son volume d’eau bouillante.',
-      "Faire revenir l'ail, les pois chiches égouttés et le cumin 3 min, ajouter les épinards jusqu’à ce qu’ils fondent.",
+      "Faire revenir dans l'huile l'ail, les pois chiches égouttés et le cumin 3 min, ajouter les épinards jusqu’à ce qu’ils fondent.",
       'Casser l’œuf au milieu, couvrir 4 min et servir sur la semoule.',
     ],
   }),
@@ -476,7 +478,7 @@ export const RECIPES = Object.freeze([
     ingredients: { riz: 60, oeuf: 2, carotte: 60, poivron: 0.33, 'sauce-soja': 10, 'huile-olive': 5 },
     steps: [
       'Cuire le riz (ou utiliser un reste de riz froid).',
-      'Faire sauter la carotte râpée et le poivron en dés 4 min.',
+      'Faire sauter la carotte râpée et le poivron en dés 4 min dans l’huile.',
       'Ajouter le riz, pousser sur le côté, brouiller les œufs puis mélanger avec la sauce soja.',
     ],
   }),
@@ -490,7 +492,7 @@ export const RECIPES = Object.freeze([
     ingredients: { penne: 80, courgette: 150, oeuf: 1, parmesan: 15, ail: 2, 'huile-olive': 5 },
     steps: [
       'Cuire les penne.',
-      "Faire sauter les courgettes râpées et l'ail 5 min.",
+      "Faire sauter les courgettes râpées et l'ail 5 min dans l'huile.",
       'Hors du feu, mélanger pâtes, courgettes, œuf battu et fromage.',
     ],
   }),
@@ -499,11 +501,11 @@ export const RECIPES = Object.freeze([
     name: 'Soupe de lentilles corail, carotte et coco',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 20,
-    ingredients: { 'lentilles-corail': 60, 'lait-coco': 50, carotte: 100, oignon: 30, curry: 1, bouillon: 0.5 },
+    ingredients: { 'lentilles-corail': 70, 'lait-coco': 50, carotte: 100, oignon: 30, curry: 1, bouillon: 0.5, 'pain-complet': 40, 'huile-olive': 5 },
     steps: [
-      "Faire revenir l'oignon et la carotte en rondelles 2 min avec le curry.",
+      "Faire revenir l'oignon et la carotte en rondelles 2 min dans l'huile avec le curry.",
       'Ajouter les lentilles, le bouillon et 350 ml d’eau. Cuire 15 min.',
-      'Ajouter le lait de coco et mixer.',
+      'Ajouter le lait de coco et mixer. Servir avec le pain grillé.',
     ],
   }),
   defineRecipe({
@@ -514,7 +516,7 @@ export const RECIPES = Object.freeze([
     ingredients: { 'poulet-filet': 110, champignon: 120, riz: 60, 'creme-epaisse': 20, 'huile-olive': 5 },
     steps: [
       'Cuire le riz.',
-      'Dorer le poulet en lanières 5 min, ajouter les champignons émincés 5 min.',
+      'Dorer le poulet en lanières 5 min dans l’huile, ajouter les champignons émincés 5 min.',
       'Ajouter la crème, laisser réduire 2 min.',
     ],
   }),
@@ -526,7 +528,7 @@ export const RECIPES = Object.freeze([
     ingredients: { 'boeuf-hache': 110, courgette: 150, riz: 60, oignon: 30, 'sauce-soja': 10, 'huile-olive': 5 },
     steps: [
       'Cuire le riz.',
-      "Faire revenir l'oignon et le bœuf 5 min, ajouter les courgettes en dés 7 min.",
+      "Faire revenir l'oignon et le bœuf 5 min dans l'huile, ajouter les courgettes en dés 7 min.",
       'Assaisonner à la sauce soja et servir sur le riz.',
     ],
   }),
@@ -549,7 +551,7 @@ export const RECIPES = Object.freeze([
     prepMinutes: 20,
     ingredients: { 'tomates-concassees': 200, oeuf: 2, oignon: 40, poivron: 0.33, 'pain-complet': 50, cumin: 1, 'huile-olive': 5 },
     steps: [
-      "Faire revenir l'oignon et le poivron émincés 5 min avec le cumin.",
+      "Faire revenir l'oignon et le poivron émincés 5 min dans l'huile avec le cumin.",
       'Ajouter les tomates, mijoter 5 min.',
       'Creuser deux puits, y casser les œufs, couvrir 6 min. Servir avec le pain.',
     ],
@@ -562,7 +564,7 @@ export const RECIPES = Object.freeze([
     ingredients: { nouilles: 70, 'poulet-filet': 100, carotte: 80, oignon: 30, 'sauce-soja': 15, 'huile-olive': 5 },
     steps: [
       'Cuire les nouilles 4 min, égoutter.',
-      'Saisir le poulet en lanières, ajouter oignon et carotte râpée 5 min.',
+      'Saisir le poulet en lanières dans l’huile, ajouter oignon et carotte râpée 5 min.',
       'Ajouter les nouilles et la sauce soja, mélanger 2 min.',
     ],
   }),
@@ -574,7 +576,7 @@ export const RECIPES = Object.freeze([
     ingredients: { colin: 150, riz: 60, 'haricots-verts': 150, citron: 0.25, 'huile-olive': 5 },
     steps: [
       'Cuire le riz et les haricots verts.',
-      'Poêler le colin encore surgelé 6 min par face à couvert.',
+      'Poêler dans l’huile le colin encore surgelé 6 min par face à couvert.',
       'Arroser de jus de citron.',
     ],
   }),
@@ -585,7 +587,7 @@ export const RECIPES = Object.freeze([
     prepMinutes: 20,
     ingredients: { spaghetti: 80, 'lentilles-corail': 40, 'tomates-concassees': 150, oignon: 30, herbes: 1, 'huile-olive': 5 },
     steps: [
-      "Faire revenir l'oignon, ajouter tomates, lentilles, herbes et 100 ml d’eau. Cuire 15 min.",
+      "Faire revenir l'oignon dans l'huile, ajouter tomates, lentilles, herbes et 100 ml d’eau. Cuire 15 min.",
       'Pendant ce temps, cuire les spaghetti.',
       'Mélanger et servir.',
     ],
@@ -598,7 +600,7 @@ export const RECIPES = Object.freeze([
     ingredients: { 'poulet-filet': 110, courgette: 150, 'lait-coco': 50, riz: 60, curry: 2, 'huile-olive': 5 },
     steps: [
       'Cuire le riz.',
-      'Dorer le poulet en dés avec le curry, ajouter les courgettes 5 min.',
+      'Dorer le poulet en dés dans l’huile avec le curry, ajouter les courgettes 5 min.',
       'Verser le lait de coco et laisser frémir 5 min.',
     ],
   }),
@@ -607,7 +609,7 @@ export const RECIPES = Object.freeze([
     name: 'Gnocchi poêlés aux épinards et mozzarella',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 15,
-    ingredients: { gnocchi: 180, epinards: 150, mozzarella: 40, ail: 2, 'huile-olive': 5 },
+    ingredients: { gnocchi: 180, epinards: 150, mozzarella: 60, ail: 2, 'huile-olive': 5 },
     steps: [
       'Dorer les gnocchi 6 min dans l’huile.',
       "Ajouter l'ail et les épinards jusqu’à ce qu’ils fondent.",
@@ -622,7 +624,7 @@ export const RECIPES = Object.freeze([
     ingredients: { 'boeuf-hache': 110, brocoli: 0.4, riz: 60, ail: 2, 'sauce-soja': 15, 'huile-olive': 5 },
     steps: [
       'Cuire le riz et les fleurettes de brocoli 5 min à la vapeur.',
-      "Saisir le bœuf avec l'ail 5 min.",
+      "Saisir le bœuf dans l'huile avec l'ail 5 min.",
       'Ajouter le brocoli et la sauce soja, mélanger 2 min.',
     ],
   }),
@@ -635,7 +637,7 @@ export const RECIPES = Object.freeze([
     ingredients: { oeuf: 3, jambon: 40, emmental: 15, salade: 0.25, 'pain-complet': 40, 'huile-olive': 5 },
     steps: [
       'Battre les œufs, ajouter le jambon en dés.',
-      'Cuire 4 min à feu moyen, parsemer d’emmental et plier.',
+      'Cuire dans l’huile 4 min à feu moyen, parsemer d’emmental et plier.',
       'Servir avec la salade et le pain.',
     ],
   }),
@@ -647,7 +649,7 @@ export const RECIPES = Object.freeze([
     ingredients: { 'poulet-filet': 120, 'haricots-verts': 150, riz: 60, paprika: 1, 'huile-olive': 5 },
     steps: [
       'Cuire le riz et les haricots verts.',
-      'Saisir le poulet saupoudré de paprika, 6 min par face.',
+      'Saisir dans l’huile le poulet saupoudré de paprika, 6 min par face.',
       'Servir ensemble.',
     ],
   }),
@@ -656,10 +658,10 @@ export const RECIPES = Object.freeze([
     name: 'Velouté de courgettes et fromage, pain complet',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 20,
-    ingredients: { courgette: 250, 'pomme-de-terre': 100, bouillon: 0.5, emmental: 25, 'pain-complet': 60 },
+    ingredients: { courgette: 250, 'pomme-de-terre': 100, 'haricots-blancs': 80, bouillon: 0.5, emmental: 25, 'pain-complet': 60 },
     steps: [
       'Couper courgettes et pomme de terre, couvrir d’eau avec le bouillon, cuire 15 min.',
-      'Mixer avec l’emmental.',
+      'Ajouter les haricots blancs rincés et mixer avec l’emmental : ils rendent le velouté crémeux.',
       'Servir avec le pain grillé.',
     ],
   }),
@@ -674,7 +676,7 @@ export const RECIPES = Object.freeze([
     ingredients: { 'poulet-filet': 120, 'brocoli-surgele': 150, riz: 60, 'sauce-soja': 15, ail: 2, 'huile-olive': 5 },
     steps: [
       'Cuire le riz. Cuire le brocoli 5 min à l’eau bouillante.',
-      "Saisir le poulet en lanières avec l'ail 6 min.",
+      "Saisir le poulet en lanières dans l'huile avec l'ail 6 min.",
       'Ajouter le brocoli et la sauce soja, mélanger 2 min.',
     ],
   }),
@@ -686,7 +688,7 @@ export const RECIPES = Object.freeze([
     ingredients: { dinde: 120, champignon: 100, penne: 70, 'creme-epaisse': 20, 'huile-olive': 5 },
     steps: [
       'Cuire les penne.',
-      'Dorer la dinde en dés 5 min, ajouter les champignons émincés 5 min.',
+      'Dorer la dinde en dés 5 min dans l’huile, ajouter les champignons émincés 5 min.',
       'Ajouter la crème et les pâtes, mélanger.',
     ],
   }),
@@ -698,7 +700,7 @@ export const RECIPES = Object.freeze([
     ingredients: { dinde: 120, 'petits-pois': 100, riz: 60, 'lait-coco': 40, curry: 2, 'huile-olive': 5 },
     steps: [
       'Cuire le riz.',
-      'Dorer la dinde en dés avec le curry, ajouter les petits pois encore surgelés.',
+      'Dorer la dinde en dés dans l’huile avec le curry, ajouter les petits pois encore surgelés.',
       'Verser le lait de coco, laisser frémir 6 min.',
     ],
   }),
@@ -709,7 +711,7 @@ export const RECIPES = Object.freeze([
     prepMinutes: 20,
     ingredients: { spaghetti: 80, 'boeuf-hache': 100, coulis: 120, herbes: 1, 'huile-olive': 5 },
     steps: [
-      'Former de petites boulettes avec le bœuf et les herbes, les dorer 5 min.',
+      'Former de petites boulettes avec le bœuf et les herbes, les dorer 5 min dans l’huile.',
       'Ajouter le coulis, couvrir et mijoter 10 min.',
       'Servir sur les spaghetti cuits.',
     ],
@@ -735,7 +737,7 @@ export const RECIPES = Object.freeze([
     steps: [
       'Cuire le boulgour 10 min à l’eau bouillante.',
       'Faire sauter la poêlée de légumes 8 min.',
-      'Saisir la dinde aux herbes 4 min par face.',
+      'Saisir la dinde aux herbes dans l’huile 4 min par face.',
     ],
   }),
   defineRecipe({
@@ -772,7 +774,7 @@ export const RECIPES = Object.freeze([
     ingredients: { 'poulet-filet': 110, quinoa: 60, poivron: 0.5, courgette: 100, paprika: 1, 'huile-olive': 5 },
     steps: [
       'Cuire le quinoa 12 min.',
-      'Faire sauter le poivron et la courgette en dés 6 min.',
+      'Faire sauter le poivron et la courgette en dés 6 min dans l’huile.',
       'Ajouter le poulet en dés et le paprika, cuire 6 min.',
     ],
   }),
@@ -784,7 +786,7 @@ export const RECIPES = Object.freeze([
     ingredients: { 'poulet-filet': 120, 'fromage-blanc': 50, 'tomates-concassees': 100, riz: 60, curry: 2, 'huile-olive': 5 },
     steps: [
       'Cuire le riz.',
-      'Dorer le poulet en dés avec le curry, ajouter les tomates 8 min.',
+      'Dorer le poulet en dés dans l’huile avec le curry, ajouter les tomates 8 min.',
       'Hors du feu, ajouter le fromage blanc.',
     ],
   }),
@@ -796,21 +798,21 @@ export const RECIPES = Object.freeze([
     ingredients: { nouilles: 70, 'boeuf-hache': 100, poivron: 0.5, oignon: 30, 'sauce-soja': 15, 'huile-olive': 5 },
     steps: [
       'Cuire les nouilles 4 min.',
-      "Saisir le bœuf avec l'oignon et le poivron émincés 6 min.",
+      "Saisir le bœuf dans l'huile avec l'oignon et le poivron émincés 6 min.",
       'Ajouter les nouilles et la sauce soja.',
     ],
   }),
   defineRecipe({
     id: 'gnocchi-chorizo-tomate',
-    name: 'Gnocchi poêlés au chorizo et à la tomate',
+    name: 'Gnocchi poêlés au chorizo, tomate et œuf',
     category: CATEGORIES.MEAT,
     containsPork: true,
     prepMinutes: 15,
-    ingredients: { gnocchi: 180, chorizo: 25, 'tomates-concassees': 120, salade: 0.2 },
+    ingredients: { gnocchi: 180, chorizo: 25, 'tomates-concassees': 120, oeuf: 1, salade: 0.2 },
     steps: [
       'Dorer le chorizo en dés à sec 2 min, ajouter les gnocchi 5 min.',
-      'Verser les tomates, laisser réduire 5 min.',
-      'Servir avec la salade.',
+      'Verser les tomates, laisser réduire 2 min.',
+      'Casser un œuf par personne dans la sauce, couvrir 4 min. Servir avec la salade.',
     ],
   }),
   defineRecipe({
@@ -821,7 +823,7 @@ export const RECIPES = Object.freeze([
     ingredients: { dinde: 130, 'creme-epaisse': 20, 'haricots-verts': 150, riz: 60, moutarde: 10, 'huile-olive': 5 },
     steps: [
       'Cuire le riz et les haricots verts.',
-      'Saisir la dinde 4 min par face.',
+      'Saisir la dinde dans l’huile 4 min par face.',
       'Déglacer avec la crème et la moutarde, laisser épaissir 1 min.',
     ],
   }),
@@ -834,7 +836,7 @@ export const RECIPES = Object.freeze([
     ingredients: { saumon: 110, quinoa: 60, epinards: 150, citron: 0.25, 'huile-olive': 5 },
     steps: [
       'Cuire le quinoa 12 min.',
-      'Saisir le saumon 4 min côté peau puis 2 min.',
+      'Saisir le saumon dans l’huile 4 min côté peau puis 2 min.',
       'Faire fondre les épinards, arroser le tout de citron.',
     ],
   }),
@@ -847,7 +849,7 @@ export const RECIPES = Object.freeze([
     steps: [
       'Cuire les pommes de terre en morceaux 15 min.',
       'Réchauffer doucement le maquereau dans sa sauce.',
-      'Servir avec la salade assaisonnée.',
+      'Servir avec la salade assaisonnée d’huile et de vinaigre.',
     ],
   }),
   defineRecipe({
@@ -858,7 +860,7 @@ export const RECIPES = Object.freeze([
     ingredients: { colin: 150, 'petits-pois': 120, semoule: 50, citron: 0.25, 'huile-olive': 5 },
     steps: [
       'Gonfler la semoule. Cuire les petits pois 5 min.',
-      'Poêler le colin encore surgelé 6 min par face à couvert.',
+      'Poêler dans l’huile le colin encore surgelé 6 min par face à couvert.',
       'Arroser de jus de citron.',
     ],
   }),
@@ -870,7 +872,7 @@ export const RECIPES = Object.freeze([
     ingredients: { crevettes: 110, 'lait-coco': 60, poivron: 0.5, riz: 60, curry: 2, 'huile-olive': 5 },
     steps: [
       'Cuire le riz.',
-      'Faire revenir le poivron émincé avec le curry 5 min.',
+      'Faire revenir le poivron émincé dans l’huile avec le curry 5 min.',
       'Ajouter le lait de coco et les crevettes, chauffer 3 min.',
     ],
   }),
@@ -891,10 +893,10 @@ export const RECIPES = Object.freeze([
     name: 'Riz cantonais aux crevettes',
     category: CATEGORIES.FISH,
     prepMinutes: 20,
-    ingredients: { riz: 60, crevettes: 80, oeuf: 1, 'petits-pois': 60, 'sauce-soja': 10, 'huile-olive': 5 },
+    ingredients: { riz: 60, crevettes: 80, oeuf: 1, 'petits-pois': 100, carotte: 60, 'sauce-soja': 10, 'huile-olive': 5 },
     steps: [
       'Cuire le riz (ou utiliser un reste froid).',
-      'Brouiller l’œuf, réserver. Faire sauter les petits pois et les crevettes 3 min.',
+      'Brouiller l’œuf dans l’huile, réserver. Faire sauter la carotte en petits dés 3 min, puis les petits pois et les crevettes 3 min.',
       'Ajouter le riz, l’œuf et la sauce soja, mélanger 3 min.',
     ],
   }),
@@ -929,7 +931,7 @@ export const RECIPES = Object.freeze([
     prepMinutes: 10,
     ingredients: { oeuf: 3, thon: 50, tomate: 100, salade: 0.2, 'pain-complet': 40, 'huile-olive': 5 },
     steps: [
-      'Faire revenir la tomate en dés 2 min.',
+      'Faire revenir la tomate en dés 2 min dans l’huile.',
       'Verser les œufs battus et le thon émietté, cuire 4 min.',
       'Servir avec la salade et le pain.',
     ],
@@ -940,10 +942,10 @@ export const RECIPES = Object.freeze([
     name: 'Quinoa aux légumes du soleil et feta',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 20,
-    ingredients: { quinoa: 60, 'poelee-legumes': 200, feta: 40, herbes: 1, 'huile-olive': 5 },
+    ingredients: { quinoa: 60, 'poelee-legumes': 200, 'pois-chiches': 80, feta: 40, herbes: 1, 'huile-olive': 5 },
     steps: [
       'Cuire le quinoa 12 min.',
-      'Faire sauter la poêlée de légumes 8 min avec les herbes.',
+      'Faire sauter la poêlée de légumes 8 min dans l’huile avec les herbes, ajouter les pois chiches égouttés.',
       'Mélanger et émietter la feta dessus.',
     ],
   }),
@@ -967,7 +969,7 @@ export const RECIPES = Object.freeze([
     ingredients: { oeuf: 3, 'petits-pois': 100, feta: 30, salade: 0.25, 'huile-olive': 5 },
     steps: [
       'Cuire les petits pois 4 min, les égoutter.',
-      'Verser les œufs battus sur les petits pois, émietter la feta.',
+      'Remettre les petits pois dans la poêle avec l’huile, verser les œufs battus et émietter la feta.',
       'Cuire 5 min à feu doux, servir avec la salade.',
     ],
   }),
@@ -1003,7 +1005,7 @@ export const RECIPES = Object.freeze([
     ingredients: { nouilles: 70, 'poelee-legumes': 200, oeuf: 2, 'sauce-soja': 15, 'huile-olive': 5 },
     steps: [
       'Cuire les nouilles 4 min.',
-      'Faire sauter les légumes 6 min, pousser sur le côté et brouiller les œufs.',
+      'Faire sauter les légumes 6 min dans l’huile, pousser sur le côté et brouiller les œufs.',
       'Ajouter nouilles et sauce soja, mélanger.',
     ],
   }),
@@ -1024,35 +1026,35 @@ export const RECIPES = Object.freeze([
     name: 'Wraps œufs brouillés et épinards',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 10,
-    ingredients: { tortilla: 2, oeuf: 2, epinards: 100, emmental: 20, 'huile-olive': 5 },
+    ingredients: { tortilla: 1, oeuf: 2, epinards: 150, emmental: 20, 'huile-olive': 5 },
     steps: [
       'Faire fondre les épinards et bien les égoutter.',
-      'Brouiller les œufs avec les épinards et l’emmental.',
-      'Garnir les tortillas et rouler.',
+      'Brouiller les œufs dans l’huile avec les épinards et l’emmental.',
+      'Garnir les tortillas, une par personne, et rouler.',
     ],
   }),
   defineRecipe({
     id: 'semoule-legumes-pois-chiches',
-    name: 'Semoule aux légumes et pois chiches',
+    name: 'Semoule aux légumes, pois chiches et feta',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 15,
-    ingredients: { semoule: 60, 'poelee-legumes': 200, 'pois-chiches': 100, cumin: 1, 'huile-olive': 5 },
+    ingredients: { semoule: 60, 'poelee-legumes': 200, 'pois-chiches': 100, feta: 30, cumin: 1, 'huile-olive': 5 },
     steps: [
       'Gonfler la semoule dans son volume d’eau bouillante.',
-      'Faire sauter les légumes avec le cumin 8 min, ajouter les pois chiches.',
-      'Servir sur la semoule.',
+      'Faire sauter les légumes dans l’huile avec le cumin 8 min, ajouter les pois chiches.',
+      'Servir sur la semoule et émietter la feta dessus.',
     ],
   }),
   defineRecipe({
     id: 'bowl-houmous-boulgour',
-    name: 'Bol boulgour, houmous, crudités et œuf',
+    name: 'Bol boulgour, houmous, crudités et œufs',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 20,
-    ingredients: { houmous: 50, boulgour: 60, carotte: 80, concombre: 0.3, oeuf: 1 },
+    ingredients: { houmous: 40, boulgour: 60, carotte: 80, concombre: 0.3, oeuf: 2 },
     steps: [
-      'Cuire le boulgour 10 min et l’œuf 9 min.',
+      'Cuire le boulgour 10 min et les œufs 9 min.',
       'Râper la carotte, couper le concombre.',
-      'Dresser en bol avec le houmous et l’œuf coupé.',
+      'Dresser en bol avec le houmous et les œufs coupés.',
     ],
   }),
   defineRecipe({
@@ -1072,11 +1074,11 @@ export const RECIPES = Object.freeze([
     name: 'Riz crémeux aux champignons et petits pois',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 20,
-    ingredients: { riz: 60, champignon: 100, 'petits-pois': 80, 'creme-epaisse': 25, bouillon: 0.5 },
+    ingredients: { riz: 60, champignon: 100, 'petits-pois': 120, 'creme-epaisse': 25, parmesan: 20, bouillon: 0.5 },
     steps: [
       'Cuire le riz dans l’eau avec le bouillon.',
       'Faire sauter les champignons 5 min, ajouter les petits pois 4 min.',
-      'Mélanger avec le riz et la crème.',
+      'Mélanger avec le riz, la crème et le parmesan râpé.',
     ],
   }),
   defineRecipe({
@@ -1084,9 +1086,9 @@ export const RECIPES = Object.freeze([
     name: 'Soupe de haricots blancs à la tomate',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 20,
-    ingredients: { 'haricots-blancs': 150, 'tomates-concassees': 200, carotte: 60, oignon: 30, 'pain-complet': 40, herbes: 1 },
+    ingredients: { 'haricots-blancs': 200, 'tomates-concassees': 200, carotte: 60, oignon: 30, 'pain-complet': 40, herbes: 1, 'huile-olive': 5 },
     steps: [
-      "Faire revenir l'oignon et la carotte en dés 3 min.",
+      "Faire revenir l'oignon et la carotte en dés 3 min dans l'huile.",
       'Ajouter tomates, haricots, herbes et 200 ml d’eau, cuire 12 min.',
       'Servir avec le pain grillé.',
     ],
@@ -1096,9 +1098,9 @@ export const RECIPES = Object.freeze([
     name: 'Poêlée de patate douce, pois chiches et feta',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 20,
-    ingredients: { 'patate-douce': 200, 'pois-chiches': 100, epinards: 100, feta: 20, cumin: 1, 'huile-olive': 8 },
+    ingredients: { 'patate-douce': 200, 'pois-chiches': 120, epinards: 100, feta: 40, cumin: 1, 'huile-olive': 8 },
     steps: [
-      'Couper la patate douce en petits dés, la poêler à couvert 12 min.',
+      'Couper la patate douce en petits dés, la poêler dans l’huile à couvert 12 min.',
       'Ajouter pois chiches, cumin et épinards 4 min.',
       'Émietter la feta dessus.',
     ],
@@ -1122,10 +1124,10 @@ export const RECIPES = Object.freeze([
     category: CATEGORIES.VEGETARIAN,
     mealType: MEAL_TYPES.BREAKFAST,
     prepMinutes: 5,
-    ingredients: { 'flocons-avoine': 50, lait: 200, banane: 100 },
+    ingredients: { 'flocons-avoine': 50, lait: 200, banane: 100, 'fromage-blanc': 100 },
     steps: [
       'Chauffer les flocons dans le lait 3 min en remuant (ou 2 min au micro-ondes).',
-      'Ajouter la banane en rondelles.',
+      'Hors du feu, incorporer le fromage blanc et ajouter la banane en rondelles.',
     ],
   }),
   defineRecipe({
@@ -1146,7 +1148,7 @@ export const RECIPES = Object.freeze([
     category: CATEGORIES.VEGETARIAN,
     mealType: MEAL_TYPES.BREAKFAST,
     prepMinutes: 8,
-    ingredients: { oeuf: 2, 'pain-complet': 60, beurre: 5 },
+    ingredients: { oeuf: 2, 'pain-complet': 70, beurre: 5 },
     steps: [
       'Battre les œufs et les cuire à feu doux avec le beurre en remuant sans cesse.',
       'Servir avec le pain grillé.',
@@ -1159,7 +1161,7 @@ export const RECIPES = Object.freeze([
     mealType: MEAL_TYPES.BREAKFAST,
     containsPork: true,
     prepMinutes: 5,
-    ingredients: { 'pain-complet': 70, jambon: 40, beurre: 5, pomme: 150 },
+    ingredients: { 'pain-complet': 70, jambon: 70, beurre: 5, pomme: 150 },
     steps: [
       'Faire griller le pain et le beurrer légèrement.',
       'Garnir de jambon. Croquer la pomme à côté.',
@@ -1181,17 +1183,17 @@ export const RECIPES = Object.freeze([
     category: CATEGORIES.VEGETARIAN,
     mealType: MEAL_TYPES.BREAKFAST,
     prepMinutes: 5,
-    ingredients: { 'flocons-avoine': 50, lait: 200, pomme: 120 },
-    steps: ['Chauffer les flocons dans le lait 3 min.', 'Ajouter la pomme râpée.'],
+    ingredients: { 'flocons-avoine': 50, lait: 200, pomme: 120, 'fromage-blanc': 100 },
+    steps: ['Chauffer les flocons dans le lait 3 min.', 'Hors du feu, incorporer le fromage blanc et ajouter la pomme râpée.'],
   }),
   defineRecipe({
     id: 'tartines-oeuf-banane',
-    name: 'Tartines, œuf dur et banane',
+    name: 'Tartines, œufs durs et banane',
     category: CATEGORIES.VEGETARIAN,
     mealType: MEAL_TYPES.BREAKFAST,
     prepMinutes: 10,
-    ingredients: { oeuf: 1, 'pain-complet': 60, beurre: 5, banane: 100 },
-    steps: ['Cuire l’œuf 9 min (ou la veille).', 'Griller le pain, servir avec la banane.'],
+    ingredients: { oeuf: 2, 'pain-complet': 60, beurre: 5, banane: 80 },
+    steps: ['Cuire les œufs 9 min (ou la veille).', 'Griller le pain, le beurrer et servir avec les œufs écalés et la banane.'],
   }),
 
   defineRecipe({
@@ -1255,7 +1257,7 @@ export const RECIPES = Object.freeze([
     name: 'Quenelles à la sauce tomate, haricots verts',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 20,
-    ingredients: { quenelles: 160, coulis: 120, emmental: 15, 'haricots-verts': 150, herbes: 1 },
+    ingredients: { quenelles: 160, coulis: 120, emmental: 20, 'haricots-verts': 150, herbes: 1 },
     steps: [
       'Faire chauffer le coulis avec les herbes, y déposer les quenelles et couvrir 12 min à feu doux : elles gonflent.',
       'Pendant ce temps, cuire les haricots verts 10 min à la poêle avec un fond d’eau.',
@@ -1267,23 +1269,24 @@ export const RECIPES = Object.freeze([
     name: 'Quenelles à la crème et aux champignons',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 20,
-    ingredients: { quenelles: 160, 'champignons-boite': 115, 'creme-epaisse': 25, epinards: 150, poivre: 1 },
+    ingredients: { quenelles: 160, 'champignons-boite': 115, 'creme-epaisse': 25, emmental: 15, epinards: 150, poivre: 1 },
     steps: [
-      'Faire revenir les champignons égouttés 3 min, ajouter la crème et un fond d’eau.',
-      'Y poser les quenelles et couvrir 12 min à feu doux.',
+      'Faire revenir les champignons égouttés 3 min, ajouter la crème et un fond d’eau, poivrer.',
+      'Y poser les quenelles et couvrir 12 min à feu doux. Parsemer d’emmental et laisser fondre 1 min sous le couvercle.',
       'Cuire les épinards à part 5 min et servir à côté.',
     ],
   }),
   defineRecipe({
     id: 'ravioles-gratinees-epinards',
-    name: 'Ravioles à la crème et aux épinards',
+    name: 'Ravioles gratinées à la crème et aux épinards',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 15,
-    ingredients: { ravioles: 150, epinards: 150, 'creme-epaisse': 20, ail: 3, poivre: 1 },
+    ingredients: { ravioles: 150, epinards: 150, 'creme-epaisse': 20, emmental: 15, ail: 3, poivre: 1 },
     steps: [
-      'Faire fondre les épinards avec l’ail haché 5 min, ajouter la crème.',
+      'Faire fondre les épinards avec l’ail haché 5 min, ajouter la crème et poivrer.',
       'Plonger les ravioles 1 à 2 min dans l’eau frémissante, égoutter.',
-      'Mélanger délicatement aux épinards et servir aussitôt.',
+      'Mélanger délicatement aux épinards dans la poêle.',
+      'Parsemer d’emmental, couvrir et laisser gratiner 2 min à feu doux avant de servir.',
     ],
   }),
   defineRecipe({
@@ -1291,9 +1294,9 @@ export const RECIPES = Object.freeze([
     name: 'Ravioles poêlées et salade de mâche',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 10,
-    ingredients: { ravioles: 180, mache: 60, 'huile-olive': 5, vinaigre: 5, moutarde: 3 },
+    ingredients: { ravioles: 180, mache: 100, 'huile-olive': 5, vinaigre: 5, moutarde: 3 },
     steps: [
-      'Faire dorer les ravioles encore surgelées 3 min par face dans une poêle bien chaude avec un filet d’huile.',
+      'Faire dorer les ravioles fraîches, sans les cuire à l’eau, 3 min par face dans une poêle bien chaude avec un filet d’huile.',
       'Assaisonner la mâche avec la moutarde, le vinaigre et le reste d’huile.',
       'Servir les ravioles croustillantes sur la salade.',
     ],
@@ -1303,11 +1306,11 @@ export const RECIPES = Object.freeze([
     name: 'Bouillon de ravioles aux légumes',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 15,
-    ingredients: { ravioles: 150, carotte: 60, poireau: 80, bouillon: 1, persil: 0.2 },
+    ingredients: { ravioles: 150, carotte: 60, poireau: 80, bouillon: 1, persil: 0.2, parmesan: 10 },
     steps: [
       'Couper la carotte et le poireau en fines rondelles, les cuire 10 min dans 400 ml d’eau avec le bouillon.',
       'Ajouter les ravioles 2 min.',
-      'Servir en bol avec le persil ciselé.',
+      'Servir en bol avec le persil ciselé et le parmesan râpé.',
     ],
   }),
   defineRecipe({
@@ -1355,7 +1358,7 @@ export const RECIPES = Object.freeze([
     steps: [
       'Faire dorer les pommes rissolées 15 min à la poêle.',
       'Cuire les haricots verts 10 min avec un fond d’eau.',
-      'Former un steak avec la viande et le cuire 2 à 3 min par face.',
+      'Former un steak avec la viande et le cuire dans l’huile 2 à 3 min par face. Poivrer.',
     ],
   }),
   defineRecipe({
@@ -1367,7 +1370,7 @@ export const RECIPES = Object.freeze([
     steps: [
       'Faire dorer les pommes rissolées 15 min à la poêle.',
       'Cuire les haricots verts 10 min avec un fond d’eau.',
-      'Cuire le saumon 4 min côté peau puis 2 min de l’autre côté, arroser de citron.',
+      'Cuire le saumon 4 min côté peau puis 2 min de l’autre côté, arroser de citron et poivrer.',
     ],
   }),
   defineRecipe({
@@ -1388,7 +1391,7 @@ export const RECIPES = Object.freeze([
     category: CATEGORIES.MEAT,
     containsPork: true,
     prepMinutes: 20,
-    ingredients: { saucisse: 80, 'pommes-rissolees': 150, 'haricots-verts': 150, moutarde: 5 },
+    ingredients: { saucisse: 100, 'pommes-rissolees': 150, 'haricots-verts': 150, moutarde: 5 },
     steps: [
       'Faire dorer les saucisses 12 min à la poêle à feu moyen en les retournant.',
       'Dans une autre poêle, faire dorer les pommes rissolées 15 min.',
@@ -1397,14 +1400,14 @@ export const RECIPES = Object.freeze([
   }),
   defineRecipe({
     id: 'poelee-rissolees-lardons-oeuf',
-    name: 'Poêlée de rissolées, lardons et œuf au plat',
+    name: 'Poêlée de rissolées, lardons et œufs au plat',
     category: CATEGORIES.MEAT,
     containsPork: true,
     prepMinutes: 20,
-    ingredients: { 'pommes-rissolees': 180, lardons: 40, oeuf: 1, oignon: 40, salade: 0.2, vinaigre: 5 },
+    ingredients: { 'pommes-rissolees': 180, lardons: 40, oeuf: 2, oignon: 40, salade: 0.2, vinaigre: 5 },
     steps: [
       'Faire dorer les pommes rissolées 10 min, ajouter l’oignon émincé et les lardons, poursuivre 5 min.',
-      'Cuire l’œuf au plat dans un coin de la poêle.',
+      'Cuire les œufs au plat dans un coin de la poêle.',
       'Servir avec la salade arrosée de vinaigre.',
     ],
   }),
@@ -1461,7 +1464,7 @@ export const RECIPES = Object.freeze([
     name: 'Quesadillas poulet et maïs',
     category: CATEGORIES.MEAT,
     prepMinutes: 15,
-    ingredients: { tortilla: 2, 'blanc-poulet': 60, mais: 50, emmental: 25, poivron: 0.33, salade: 0.15 },
+    ingredients: { tortilla: 2, 'blanc-poulet': 60, mais: 50, emmental: 20, poivron: 0.33, salade: 0.15 },
     steps: [
       'Garnir une moitié de chaque tortilla de poulet, maïs, poivron en dés et emmental, puis replier.',
       'Dorer 2 à 3 min par face dans une poêle sans matière grasse.',
@@ -1539,7 +1542,7 @@ export const RECIPES = Object.freeze([
     steps: [
       'Cuire la patate douce en morceaux 15 min à l’eau avec les haricots verts.',
       'Écraser la patate douce avec le beurre.',
-      'Cuire le steak 2 à 3 min par face.',
+      'Cuire le steak 2 à 3 min par face et poivrer.',
     ],
   }),
   defineRecipe({
@@ -1608,7 +1611,7 @@ export const RECIPES = Object.freeze([
     prepMinutes: 20,
     ingredients: { 'pomme-de-terre': 220, thon: 70, oeuf: 1, 'haricots-verts': 120, 'huile-olive': 6, vinaigre: 5, moutarde: 3 },
     steps: [
-      'Cuire les pommes de terre en morceaux 15 min avec l’œuf, ajouter les haricots verts les 10 dernières minutes.',
+      'Cuire les pommes de terre en morceaux 15 min, ajouter les haricots verts les 10 dernières minutes et l’œuf les 9 dernières.',
       'Mélanger la moutarde, le vinaigre et l’huile.',
       'Assembler avec le thon émietté et l’œuf écalé coupé en quatre.',
     ],
@@ -1618,10 +1621,10 @@ export const RECIPES = Object.freeze([
     name: 'Colin au curry et lait de coco, riz',
     category: CATEGORIES.FISH,
     prepMinutes: 20,
-    ingredients: { colin: 140, 'lait-coco': 70, riz: 65, epinards: 100, oignon: 30, curry: 2 },
+    ingredients: { colin: 140, 'lait-coco': 70, riz: 65, epinards: 100, oignon: 30, curry: 2, 'huile-olive': 5 },
     steps: [
       'Cuire le riz 11 min.',
-      'Faire revenir l’oignon avec le curry, verser le lait de coco et ajouter les épinards.',
+      'Faire revenir l’oignon dans l’huile avec le curry, verser le lait de coco et ajouter les épinards.',
       'Poser le colin en morceaux dans la sauce et couvrir 6 min.',
     ],
   }),
@@ -1642,7 +1645,7 @@ export const RECIPES = Object.freeze([
     name: 'Gnocchi poêlés au pesto et petits pois',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 12,
-    ingredients: { gnocchi: 200, pesto: 20, 'petits-pois': 100, parmesan: 8 },
+    ingredients: { gnocchi: 180, pesto: 20, 'petits-pois': 150, parmesan: 15 },
     steps: [
       'Cuire les petits pois 5 min dans l’eau bouillante, égoutter.',
       'Faire dorer les gnocchi 6 min à la poêle.',
@@ -1651,15 +1654,15 @@ export const RECIPES = Object.freeze([
   }),
   defineRecipe({
     id: 'gnocchi-lardons-haricots',
-    name: 'Gnocchi poêlés aux lardons et haricots verts',
+    name: 'Gnocchi poêlés aux lardons, haricots verts et œuf',
     category: CATEGORIES.MEAT,
     containsPork: true,
     prepMinutes: 15,
-    ingredients: { gnocchi: 200, lardons: 35, 'haricots-verts': 150, oignon: 30 },
+    ingredients: { gnocchi: 200, lardons: 35, 'haricots-verts': 150, oignon: 30, oeuf: 1 },
     steps: [
       'Cuire les haricots verts 10 min avec un fond d’eau.',
       'Faire dorer les lardons et l’oignon 3 min, ajouter les gnocchi et dorer 6 min.',
-      'Ajouter les haricots verts et mélanger.',
+      'Ajouter les haricots verts, casser un œuf par personne dans la poêle et couvrir 4 min.',
     ],
   }),
   defineRecipe({
@@ -1667,7 +1670,7 @@ export const RECIPES = Object.freeze([
     name: 'Penne aux champignons et à la crème',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 15,
-    ingredients: { penne: 85, champignon: 150, 'creme-epaisse': 30, oignon: 30, parmesan: 8, persil: 0.2 },
+    ingredients: { penne: 85, champignon: 150, 'creme-epaisse': 30, oignon: 30, parmesan: 15, persil: 0.2 },
     steps: [
       'Cuire les penne 11 min.',
       'Faire revenir l’oignon et les champignons émincés 6 min, ajouter la crème.',
@@ -1679,11 +1682,11 @@ export const RECIPES = Object.freeze([
     name: 'Penne au fromage ail et fines herbes, épinards',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 15,
-    ingredients: { penne: 85, 'champignons-boite': 115, 'fromage-frais': 30, epinards: 120 },
+    ingredients: { penne: 85, 'champignons-boite': 115, 'fromage-frais': 30, epinards: 120, parmesan: 10 },
     steps: [
       'Cuire les penne 11 min.',
       'Faire revenir les champignons égouttés et les épinards 5 min.',
-      'Ajouter le fromage frais avec un peu d’eau de cuisson, mélanger avec les pâtes.',
+      'Ajouter le fromage frais avec un peu d’eau de cuisson, mélanger avec les pâtes et parsemer de parmesan.',
     ],
   }),
   defineRecipe({
@@ -1703,23 +1706,23 @@ export const RECIPES = Object.freeze([
     name: 'Pita aux falafels et houmous',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 10,
-    ingredients: { 'pain-pita': 1, falafels: 80, houmous: 30, concombre: 0.25, carotte: 50, salade: 0.1 },
+    ingredients: { 'pain-pita': 1, falafels: 100, houmous: 30, concombre: 0.25, carotte: 50, 'fromage-blanc': 60 },
     steps: [
       'Réchauffer les falafels 5 min à la poêle et le pain pita 1 min.',
       'Tartiner la pita de houmous.',
-      'Garnir de salade, de concombre, de carotte râpée et des falafels.',
+      'Garnir de concombre, de carotte râpée et des falafels, napper de fromage blanc poivré.',
     ],
   }),
   defineRecipe({
     id: 'bowl-falafels-boulgour',
-    name: 'Bol de boulgour, falafels et sauce yaourt',
+    name: 'Bol de boulgour, falafels et sauce au fromage blanc',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 15,
-    ingredients: { boulgour: 55, falafels: 80, concombre: 0.3, carotte: 60, 'yaourt-grec': 40, citron: 0.25, cumin: 1 },
+    ingredients: { boulgour: 55, falafels: 100, concombre: 0.3, carotte: 60, 'fromage-blanc': 80, citron: 0.25, cumin: 1 },
     steps: [
       'Cuire le boulgour 10 min, égoutter.',
       'Réchauffer les falafels 5 min à la poêle.',
-      'Mélanger le yaourt avec le citron et le cumin, servir sur le boulgour avec le concombre et la carotte râpée.',
+      'Mélanger le fromage blanc avec le citron et le cumin, servir sur le boulgour avec le concombre et la carotte râpée.',
     ],
   }),
   defineRecipe({
@@ -1763,11 +1766,11 @@ export const RECIPES = Object.freeze([
     name: 'Bol mexicain riz, haricots rouges et maïs',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 15,
-    ingredients: { riz: 60, 'haricots-rouges': 100, mais: 60, avocat: 0.25, poivron: 0.5, 'yaourt-grec': 30, cumin: 1 },
+    ingredients: { riz: 60, 'haricots-rouges': 100, mais: 60, avocat: 0.25, poivron: 0.5, 'fromage-blanc': 60, cumin: 1 },
     steps: [
       'Cuire le riz 11 min.',
       'Réchauffer les haricots rincés et le maïs avec le poivron en dés et le cumin 4 min.',
-      'Servir sur le riz avec l’avocat en tranches et une cuillère de yaourt.',
+      'Servir sur le riz avec l’avocat en tranches et deux cuillères de fromage blanc.',
     ],
   }),
   defineRecipe({
@@ -1776,7 +1779,7 @@ export const RECIPES = Object.freeze([
     category: CATEGORIES.MEAT,
     containsPork: true,
     prepMinutes: 12,
-    ingredients: { 'pain-complet': 100, jambon: 40, emmental: 30, beurre: 5, salade: 0.2, vinaigre: 5 },
+    ingredients: { 'pain-complet': 100, jambon: 40, emmental: 30, beurre: 5, salade: 0.4, vinaigre: 5 },
     steps: [
       'Garnir deux tranches de pain de jambon et d’emmental, refermer et beurrer l’extérieur.',
       'Dorer 3 min par face à la poêle, couvercle posé pour faire fondre le fromage.',
@@ -1791,7 +1794,7 @@ export const RECIPES = Object.freeze([
     ingredients: { 'poulet-filet': 120, artichauts: 120, semoule: 65, citron: 0.5, oignon: 30, 'huile-olive': 3, herbes: 1 },
     steps: [
       'Verser l’eau bouillante sur la semoule, couvrir 5 min.',
-      'Saisir le poulet en dés et l’oignon 6 min, ajouter les artichauts égouttés et les herbes 3 min.',
+      'Saisir le poulet en dés et l’oignon dans l’huile 6 min, ajouter les artichauts égouttés et les herbes 3 min.',
       'Arroser de jus de citron et servir sur la semoule.',
     ],
   }),
@@ -1816,7 +1819,7 @@ export const RECIPES = Object.freeze([
     steps: [
       'Rincer et égoutter les lentilles.',
       'Couper les betteraves en dés et émietter la feta.',
-      'Mélanger avec la mâche et la vinaigrette moutardée.',
+      'Mélanger avec la mâche et une vinaigrette faite de l’huile, du vinaigre et de la moutarde.',
     ],
   }),
   defineRecipe({
@@ -1824,7 +1827,7 @@ export const RECIPES = Object.freeze([
     name: 'Salade de quinoa, betteraves et chèvre',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 15,
-    ingredients: { quinoa: 65, betteraves: 120, chevre: 40, mache: 50, 'huile-olive': 5, vinaigre: 5 },
+    ingredients: { quinoa: 65, betteraves: 120, chevre: 50, mache: 50, 'huile-olive': 5, vinaigre: 5 },
     steps: [
       'Cuire le quinoa 12 min, égoutter.',
       'Couper les betteraves en dés et le chèvre en morceaux.',
@@ -1836,7 +1839,7 @@ export const RECIPES = Object.freeze([
     name: 'Salade d’endives, chèvre chaud et pomme',
     category: CATEGORIES.VEGETARIAN,
     prepMinutes: 10,
-    ingredients: { endives: 200, chevre: 50, pomme: 100, 'pain-complet': 70, miel: 5, 'huile-olive': 5, vinaigre: 5 },
+    ingredients: { endives: 200, chevre: 70, pomme: 100, 'pain-complet': 70, miel: 5, 'huile-olive': 5, vinaigre: 5 },
     steps: [
       'Poser le chèvre sur le pain, arroser de miel et passer 4 min sous le gril du four.',
       'Émincer les endives et la pomme, assaisonner d’huile et de vinaigre.',
@@ -1852,7 +1855,7 @@ export const RECIPES = Object.freeze([
     steps: [
       'Cuire l’œuf 9 min, le rafraîchir.',
       'Couper les betteraves en dés et le poulet en lanières.',
-      'Mélanger avec la mâche, le maïs et la vinaigrette, servir avec l’œuf et le pain.',
+      'Mélanger avec la mâche, le maïs, l’huile et le vinaigre, servir avec l’œuf et le pain.',
     ],
   }),
   defineRecipe({
@@ -1863,7 +1866,7 @@ export const RECIPES = Object.freeze([
     prepMinutes: 20,
     ingredients: { 'pomme-de-terre': 220, 'haricots-verts': 150, lardons: 40, oeuf: 1, vinaigre: 8, moutarde: 3 },
     steps: [
-      'Cuire les pommes de terre en morceaux 15 min avec l’œuf, ajouter les haricots verts les 10 dernières minutes.',
+      'Cuire les pommes de terre en morceaux 15 min, ajouter les haricots verts les 10 dernières minutes et l’œuf les 9 dernières.',
       'Faire dorer les lardons 4 min à sec.',
       'Mélanger le tout avec le vinaigre et la moutarde, l’œuf écalé coupé en quatre.',
     ],
@@ -1871,12 +1874,12 @@ export const RECIPES = Object.freeze([
 
   defineRecipe({
     id: 'bol-yaourt-grec-avoine-banane',
-    name: 'Yaourt grec, flocons d’avoine et banane',
+    name: 'Fromage blanc, flocons d’avoine et banane',
     category: CATEGORIES.VEGETARIAN,
     mealType: MEAL_TYPES.BREAKFAST,
     prepMinutes: 3,
-    ingredients: { 'yaourt-grec': 150, 'flocons-avoine': 30, banane: 100 },
-    steps: ['Verser le yaourt, ajouter les flocons et la banane en rondelles.'],
+    ingredients: { 'fromage-blanc': 200, 'flocons-avoine': 30, banane: 100 },
+    steps: ['Verser le fromage blanc, ajouter les flocons et la banane en rondelles.'],
   }),
   defineRecipe({
     id: 'tartines-cacahuete-banane',
@@ -1884,8 +1887,8 @@ export const RECIPES = Object.freeze([
     category: CATEGORIES.VEGETARIAN,
     mealType: MEAL_TYPES.BREAKFAST,
     prepMinutes: 5,
-    ingredients: { 'pain-complet': 70, 'beurre-cacahuete': 20, banane: 100 },
-    steps: ['Griller le pain, le tartiner de beurre de cacahuète.', 'Couvrir de rondelles de banane.'],
+    ingredients: { 'pain-complet': 70, 'beurre-cacahuete': 20, banane: 100, 'fromage-blanc': 100 },
+    steps: ['Griller le pain, le tartiner de beurre de cacahuète.', 'Couvrir de rondelles de banane. Servir avec un bol de fromage blanc.'],
   }),
   defineRecipe({
     id: 'oeufs-jambon-pain',
@@ -1903,17 +1906,17 @@ export const RECIPES = Object.freeze([
     category: CATEGORIES.VEGETARIAN,
     mealType: MEAL_TYPES.BREAKFAST,
     prepMinutes: 5,
-    ingredients: { 'flocons-avoine': 50, lait: 200, 'beurre-cacahuete': 15 },
-    steps: ['Chauffer les flocons dans le lait 3 min en remuant.', 'Ajouter le beurre de cacahuète et mélanger.'],
+    ingredients: { 'flocons-avoine': 50, lait: 200, 'beurre-cacahuete': 15, 'fromage-blanc': 60 },
+    steps: ['Chauffer les flocons dans le lait 3 min en remuant.', 'Hors du feu, ajouter le beurre de cacahuète et le fromage blanc, mélanger.'],
   }),
   defineRecipe({
     id: 'bifidus-avoine-pomme',
-    name: 'Bifidus, flocons d’avoine, pomme et miel',
+    name: 'Bifidus et fromage blanc, flocons d’avoine, pomme et miel',
     category: CATEGORIES.VEGETARIAN,
     mealType: MEAL_TYPES.BREAKFAST,
     prepMinutes: 3,
-    ingredients: { bifidus: 200, 'flocons-avoine': 40, pomme: 120, miel: 5 },
-    steps: ['Verser le bifidus, ajouter les flocons et la pomme en dés.', 'Napper de miel.'],
+    ingredients: { bifidus: 125, 'fromage-blanc': 125, 'flocons-avoine': 40, pomme: 120, miel: 5 },
+    steps: ['Mélanger le bifidus et le fromage blanc, ajouter les flocons et la pomme en dés.', 'Napper de miel.'],
   }),
   defineRecipe({
     id: 'galettes-fromage-blanc-miel',
@@ -1921,17 +1924,17 @@ export const RECIPES = Object.freeze([
     category: CATEGORIES.VEGETARIAN,
     mealType: MEAL_TYPES.BREAKFAST,
     prepMinutes: 3,
-    ingredients: { 'galettes-mais': 30, 'fromage-blanc': 150, miel: 10, banane: 100 },
+    ingredients: { 'galettes-mais': 30, 'fromage-blanc': 220, miel: 10, banane: 100 },
     steps: ['Mélanger le fromage blanc et le miel.', 'Servir avec les galettes et la banane.'],
   }),
   defineRecipe({
     id: 'tartines-fromage-frais-oeuf',
-    name: 'Tartines au fromage frais, œuf dur et concombre',
+    name: 'Tartines au fromage frais, œufs durs et concombre',
     category: CATEGORIES.VEGETARIAN,
     mealType: MEAL_TYPES.BREAKFAST,
     prepMinutes: 10,
-    ingredients: { 'pain-complet': 70, 'fromage-frais': 25, oeuf: 1, concombre: 0.25 },
-    steps: ['Cuire l’œuf 9 min (ou la veille).', 'Tartiner le pain de fromage frais, garnir de concombre et d’œuf en tranches.'],
+    ingredients: { 'pain-complet': 70, 'fromage-frais': 25, oeuf: 2, concombre: 0.25 },
+    steps: ['Cuire les œufs 9 min (ou la veille).', 'Tartiner le pain de fromage frais, garnir de concombre et d’œufs en tranches.'],
   }),
   defineRecipe({
     id: 'pancakes-banane-avoine',
@@ -1951,9 +1954,9 @@ export const RECIPES = Object.freeze([
     category: CATEGORIES.VEGETARIAN,
     mealType: MEAL_TYPES.BREAKFAST,
     prepMinutes: 10,
-    ingredients: { 'pain-complet': 70, oeuf: 1, lait: 80, beurre: 5, miel: 10 },
+    ingredients: { 'pain-complet': 70, oeuf: 2, lait: 60, beurre: 5, miel: 5 },
     steps: [
-      'Battre l’œuf avec le lait, y tremper les tranches de pain.',
+      'Battre les œufs avec le lait, y tremper les tranches de pain.',
       'Dorer 2 min par face dans le beurre et napper de miel.',
     ],
   }),

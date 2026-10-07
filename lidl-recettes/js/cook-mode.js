@@ -110,9 +110,12 @@ export class CookMode {
   #stepIndex = 0;
   #timer = null;
   #timerStepIndex = null;
+  // Recette à laquelle appartient le minuteur : il continue même si on ouvre une autre recette,
+  // et c'est elle qui se rouvre quand il sonne.
+  #timerRecipe = null;
   #isTimerFinished = false;
   #openController = null;
-  #lastOpenArguments = null;
+  #openArguments = null;
   #onFinish = null;
   #alarmIntervalId = null;
   #alarmStopTimeoutId = null;
@@ -138,14 +141,17 @@ export class CookMode {
 
   // onFinish : appelé quand on termine la dernière étape (le plat est alors marqué cuisiné).
   open(recipe, servingCount, settings, { onFinish = null } = {}) {
-    this.#lastOpenArguments = [recipe, servingCount, settings, { onFinish }];
+    this.#openArguments = [recipe, servingCount, settings, { onFinish }];
     this.#onFinish = onFinish;
     this.#openController?.abort();
     this.#openController = new AbortController();
     const { signal } = this.#openController;
-    // Rouvrir la même recette retrouve son minuteur ; une autre recette repart de zéro.
+    // Rouvrir la même recette retrouve son étape ; une autre recette repart des ingrédients.
+    // Seule une alarme qui sonne déjà s'arrête : un minuteur en cours continue de compter.
     if (recipe.id !== this.#recipeId) {
-      this.#clearTimer();
+      if (this.#isTimerFinished) {
+        this.#clearTimer();
+      }
       this.#stepIndex = 0;
     }
     this.#recipeId = recipe.id;
@@ -176,7 +182,7 @@ export class CookMode {
     this.close();
     this.#handleClose();
     this.#clearTimer();
-    this.#lastOpenArguments = null;
+    this.#openArguments = null;
     this.#onFinish = null;
     this.#audioContext?.close().catch((closeError) => console.info('Son déjà fermé.', closeError));
     this.#audioContext = null;
@@ -241,6 +247,7 @@ export class CookMode {
         onFinish: () => this.#finishTimer(),
       });
       this.#timerStepIndex = this.#stepIndex;
+      this.#timerRecipe = { id: this.#recipeId, name: this.#elements.title.textContent, openArguments: this.#openArguments };
       this.#isTimerFinished = false;
     }
     this.#prepareSound();
@@ -248,12 +255,16 @@ export class CookMode {
     this.#renderTimer();
   }
 
-  // La fenêtre se rouvre si elle était fermée : le bouton « OK » qui coupe l'alarme est sous la main.
+  // La fenêtre se rouvre sur la recette du minuteur, à son étape : le bouton « OK » qui coupe
+  // l'alarme est sous la main, et on voit tout de suite ce qui est prêt.
   #finishTimer() {
-    this.#isTimerFinished = true;
-    if (!this.#dialog.open && this.#lastOpenArguments) {
-      this.open(...this.#lastOpenArguments);
+    const isShowingTimerRecipe = this.#dialog.open && this.#recipeId === this.#timerRecipe?.id;
+    // Rouvert avant d'être marqué « fini » : changer de recette efface un minuteur qui a déjà sonné.
+    if (!isShowingTimerRecipe && this.#timerRecipe?.openArguments) {
+      this.open(...this.#timerRecipe.openArguments);
+      this.#goToStep(this.#timerStepIndex);
     }
+    this.#isTimerFinished = true;
     this.#renderTimer();
     this.#startAlarm();
   }
@@ -283,6 +294,7 @@ export class CookMode {
     this.#timer?.stop();
     this.#timer = null;
     this.#timerStepIndex = null;
+    this.#timerRecipe = null;
     this.#isTimerFinished = false;
   }
 
@@ -294,8 +306,7 @@ export class CookMode {
     if (timer.hidden) {
       return;
     }
-    const isOtherStep = hasTimer && this.#timerStepIndex !== this.#stepIndex;
-    timerLabel.textContent = isOtherStep ? `Minuteur de l’étape ${this.#timerStepIndex}` : '';
+    timerLabel.textContent = this.#describeTimerOwner();
     if (this.#isTimerFinished) {
       clock.textContent = 'C’est prêt';
     } else {
@@ -307,6 +318,16 @@ export class CookMode {
     timerStopButton.textContent = this.#isTimerFinished ? 'OK, arrêter l’alarme' : 'Arrêter';
     timerStopButton.className = this.#isTimerFinished ? 'primary-button' : 'quiet-button';
     timer.classList.toggle('is-ringing', this.#isTimerFinished);
+  }
+
+  #describeTimerOwner() {
+    if (!this.#timer) {
+      return '';
+    }
+    if (this.#timerRecipe && this.#timerRecipe.id !== this.#recipeId) {
+      return `Minuteur : ${this.#timerRecipe.name}, étape ${this.#timerStepIndex}`;
+    }
+    return this.#timerStepIndex === this.#stepIndex ? '' : `Minuteur de l’étape ${this.#timerStepIndex}`;
   }
 
   #describeTimerButton() {

@@ -20,6 +20,7 @@ function updateAndroidKeepScreenOn(countChange) {
   }
 }
 
+// enable() et disable() gèrent eux-mêmes leurs erreurs : on peut les appeler sans attendre.
 export function createScreenWakeLock() {
   let wakeLockSentinel = null;
   let isWanted = false;
