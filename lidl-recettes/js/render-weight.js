@@ -29,8 +29,8 @@ function formatSignedKg(kg) {
   return `${sign}${formatDecimal(Math.abs(kg))} kg`;
 }
 
-// Une seule série : ligne fine couleur d'accent, grille discrète, dernier point mis en avant.
-// Chaque point a une zone de survol plus large que lui, avec la date et le poids.
+// Le dernier point est mis en avant : c'est la pesée qui compte pour ajuster l'objectif.
+// Chaque point a une zone de survol plus large que lui : un point de quelques pixels se rate au doigt.
 function buildWeightChart(entries) {
   const shownEntries = entries.slice(-MAX_POINTS_ON_CHART);
   const weights = shownEntries.map((entry) => entry.kg);
@@ -40,28 +40,28 @@ function buildWeightChart(entries) {
   const plotHeight = CHART_SIZE.height - CHART_SIZE.top - CHART_SIZE.bottom;
   const firstTime = parseIsoDate(shownEntries[0].date).getTime();
   const timeSpan = Math.max(1, parseIsoDate(shownEntries.at(-1).date).getTime() - firstTime);
-  const toX = (entry) => CHART_SIZE.left + ((parseIsoDate(entry.date).getTime() - firstTime) / timeSpan) * plotWidth;
-  const toY = (kg) => CHART_SIZE.top + ((highestKg - kg) / (highestKg - lowestKg)) * plotHeight;
+  const dateToChartX = (entry) => CHART_SIZE.left + ((parseIsoDate(entry.date).getTime() - firstTime) / timeSpan) * plotWidth;
+  const weightToChartY = (kg) => CHART_SIZE.top + ((highestKg - kg) / (highestKg - lowestKg)) * plotHeight;
 
   const gridLines = [highestKg, (highestKg + lowestKg) / 2, lowestKg].flatMap((kg) => [
     createSvgElement('line', {
-      class: 'chart-grid', x1: CHART_SIZE.left, x2: CHART_SIZE.width - CHART_SIZE.right, y1: toY(kg), y2: toY(kg),
+      class: 'chart-grid', x1: CHART_SIZE.left, x2: CHART_SIZE.width - CHART_SIZE.right, y1: weightToChartY(kg), y2: weightToChartY(kg),
     }),
-    createSvgElement('text', { class: 'chart-label', x: CHART_SIZE.left - 6, y: toY(kg) + 3, 'text-anchor': 'end' }, [formatDecimal(kg)]),
+    createSvgElement('text', { class: 'chart-label', x: CHART_SIZE.left - 6, y: weightToChartY(kg) + 3, 'text-anchor': 'end' }, [formatDecimal(kg)]),
   ]);
   const dateLabels = [shownEntries[0], shownEntries.at(-1)].map((entry, index) => createSvgElement('text', {
     class: 'chart-label',
-    x: toX(entry),
+    x: dateToChartX(entry),
     y: CHART_SIZE.height - 4,
     'text-anchor': index === 0 ? 'start' : 'end',
   }, [SHORT_DATE_FORMATTER.format(parseIsoDate(entry.date))]));
-  const linePath = shownEntries.map((entry, index) => `${index === 0 ? 'M' : 'L'}${toX(entry).toFixed(1)},${toY(entry.kg).toFixed(1)}`).join(' ');
+  const linePath = shownEntries.map((entry, index) => `${index === 0 ? 'M' : 'L'}${dateToChartX(entry).toFixed(1)},${weightToChartY(entry.kg).toFixed(1)}`).join(' ');
   const points = shownEntries.map((entry, index) => {
     const isLatest = index === shownEntries.length - 1;
     const tooltip = createSvgElement('title', {}, [`${SHORT_DATE_FORMATTER.format(parseIsoDate(entry.date))} : ${formatKg(entry.kg)}`]);
     return createSvgElement('g', { class: 'chart-point' }, [
-      createSvgElement('circle', { class: 'chart-hit', cx: toX(entry), cy: toY(entry.kg), r: 10 }),
-      createSvgElement('circle', { class: isLatest ? 'chart-dot is-latest' : 'chart-dot', cx: toX(entry), cy: toY(entry.kg), r: isLatest ? 4.5 : 3 }),
+      createSvgElement('circle', { class: 'chart-hit', cx: dateToChartX(entry), cy: weightToChartY(entry.kg), r: 10 }),
+      createSvgElement('circle', { class: isLatest ? 'chart-dot is-latest' : 'chart-dot', cx: dateToChartX(entry), cy: weightToChartY(entry.kg), r: isLatest ? 4.5 : 3 }),
       tooltip,
     ]);
   });

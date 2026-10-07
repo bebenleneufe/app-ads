@@ -2,10 +2,19 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { PRODUCTS_BY_ID } from '../js/catalog.js';
-import { buildEatenPlan, isMealCooked, listCookedSlotIndexes, normalizeCookedMeals, setMealCooked } from '../js/cooked-meals.js';
+import {
+  buildEatenPlan,
+  isMealCooked,
+  listCookedSlotIndexes,
+  normalizeCookedMeals,
+  remapCookedMeals,
+  setMealCooked,
+} from '../js/cooked-meals.js';
 import { formatProductQuantity, formatQuantity } from '../js/format.js';
 import { computeCookedQuantity } from '../js/nutrition.js';
-import { generatePlan } from '../js/planner.js';
+import { createMainSlotMapper, generatePlan, isRecipeAllowed, reconcilePlan, restorePlan } from '../js/planner.js';
+import { MEAL_TYPES, RECIPES } from '../js/recipes.js';
+import { markDisliked } from '../js/preferences.js';
 import { DEFAULT_SETTINGS, normalizeSettings } from '../js/settings.js';
 import { buildShoppingList } from '../js/shopping-list.js';
 import { computeNextStock } from '../js/stock.js';
@@ -103,5 +112,46 @@ describe('semaine précédente', () => {
     assert.ok(normalizeWeekSnapshot(createWeekSnapshot({
       plan: { mainRecipeIds: [] }, weekStart: '2026-09-28', cookedMeals: {}, checkedProductIds: new Set(), extraItems: [], pantryStock: {}, preferences: null,
     })));
+  });
+});
+
+describe('plats déjà cuisinés', () => {
+  it('ne remplace jamais un plat cuisiné, même refusé ensuite', () => {
+    const plan = generatePlan(defaultSettings, createSeededRandom(1200));
+    const cookedRecipeId = plan.mainRecipeIds[0];
+    const preferences = markDisliked({ liked: [], disliked: [], recent: [] }, cookedRecipeId);
+    const reconciledPlan = reconcilePlan(plan, { ...defaultSettings, preferences }, createSeededRandom(1201), { lockedSlotIndexes: [0] });
+    assert.equal(reconciledPlan.mainRecipeIds[0], cookedRecipeId);
+    const unlockedPlan = reconcilePlan(plan, { ...defaultSettings, preferences }, createSeededRandom(1201));
+    assert.notEqual(unlockedPlan.mainRecipeIds[0], cookedRecipeId);
+  });
+
+  it('garde un plat cuisiné même quand le budget impose des plats moins chers', () => {
+    for (let seed = 0; seed < 20; seed += 1) {
+      const plan = generatePlan(defaultSettings, createSeededRandom(1300 + seed));
+      const lockedSlotIndexes = [0, 1, 2];
+      const tightSettings = { ...defaultSettings, weeklyBudget: 5 };
+      const reconciledPlan = reconcilePlan(plan, tightSettings, createSeededRandom(seed), { lockedSlotIndexes, budgetChanged: true });
+      assert.deepEqual(reconciledPlan.mainRecipeIds.slice(0, 3), plan.mainRecipeIds.slice(0, 3));
+    }
+  });
+
+  it('suit son plat quand le nombre de plats par jour change', () => {
+    const differentMeals = normalizeSettings({ ...DEFAULT_SETTINGS, mainMealMode: 'midi-soir-differents' });
+    const plan = generatePlan(differentMeals, createSeededRandom(1400));
+    const cookedMeals = setMealCooked(setMealCooked({}, plan, 2, true), plan, 3, true);
+    const reconciledPlan = reconcilePlan(plan, defaultSettings, createSeededRandom(1401), { lockedSlotIndexes: [2, 3] });
+    const remapped = remapCookedMeals(cookedMeals, plan, reconciledPlan, createMainSlotMapper(plan, defaultSettings));
+    assert.deepEqual(remapped, { 1: plan.mainRecipeIds[2] });
+    assert.equal(reconciledPlan.mainRecipeIds[1], plan.mainRecipeIds[2]);
+  });
+
+  it('garde la semaine enregistrée même si plus aucune recette n’est autorisée', () => {
+    const plan = generatePlan(defaultSettings, createSeededRandom(1500));
+    const everyMainDisliked = RECIPES.filter((recipe) => recipe.mealType === MEAL_TYPES.MAIN).map((recipe) => recipe.id);
+    const restrictiveSettings = { ...defaultSettings, preferences: { liked: [], disliked: everyMainDisliked, recent: [] } };
+    assert.equal(RECIPES.some((recipe) => recipe.mealType === MEAL_TYPES.MAIN && isRecipeAllowed(recipe, restrictiveSettings)), false);
+    const restoredPlan = restorePlan(plan, restrictiveSettings, createSeededRandom(1501));
+    assert.deepEqual(restoredPlan.mainRecipeIds, plan.mainRecipeIds);
   });
 });

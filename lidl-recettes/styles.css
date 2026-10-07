@@ -899,13 +899,6 @@ body.is-store-mode .next-recipe {
   background: var(--surface-sunk);
 }
 
-.meal-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
-
 .meal-slot {
   font-size: var(--step-xs);
   font-weight: 600;
@@ -1523,7 +1516,7 @@ body.is-store-mode .settings,
 body.is-store-mode .plan,
 body.is-store-mode .quick-nav,
 body.is-store-mode .receipt-totals,
-body.is-store-mode .receipt-column > .section-title {
+body.is-store-mode .receipt-column-head {
   display: none;
 }
 
@@ -1559,15 +1552,9 @@ body.is-store-mode .page {
 }
 
 body:not(.is-store-mode) .store-only,
-body:not(.is-store-mode) .aisle-moves,
 body:not(.is-store-mode) .missing-button,
 body.is-store-mode #copy-button {
   display: none;
-}
-
-body.is-store-mode .aisle-head {
-  grid-template-columns: auto 1fr auto auto;
-  align-items: center;
 }
 
 .aisle-moves {
@@ -1760,5 +1747,155 @@ body.is-store-mode.hides-checked .is-settled:is(.receipt-line, .receipt-group) {
     max-block-size: calc(100dvh - 32px);
     overflow-y: auto;
     overscroll-behavior: contain;
+  }
+}
+
+/* Ergonomie tactile : tout ce qui se touche fait au moins 44 px, la taille d'un doigt. */
+
+.primary-button,
+.quiet-button,
+.swap-button,
+.chip-button,
+#plan-list .chip-button,
+#plan-list .meal-actions .swap-button,
+.missing-button {
+  min-block-size: 44px;
+}
+
+.text-button {
+  min-block-size: 44px;
+}
+
+.meal-details summary {
+  display: flex;
+  align-items: center;
+  min-block-size: 44px;
+}
+
+.check {
+  align-items: center;
+  min-block-size: 44px;
+}
+
+.quick-nav a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: 44px;
+}
+
+.aisle-move {
+  inline-size: 44px;
+  block-size: 44px;
+}
+
+/* Les goûts ont leur propre rangée : les boutons ne changent pas de place d'un plat à l'autre. */
+.meal-preferences {
+  margin-top: 0;
+}
+
+.next-recipe-card .meal-name {
+  min-block-size: 2.5em;
+}
+
+body.is-store-mode .summary,
+body.is-store-mode .receipt-column-head,
+body.is-store-mode .receipt-head,
+body.is-store-mode .add-item-form,
+body.is-store-mode #uncheck-button {
+  display: none;
+}
+
+/* Les flèches de rayon servent à ranger la liste avant d'y aller, pas à la remuer en marchant. */
+body.is-store-mode .aisle-moves {
+  display: none;
+}
+
+body:not(.is-store-mode) .aisle-moves {
+  display: flex;
+}
+
+body:not(.is-store-mode) .aisle-head {
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+}
+
+body.is-store-mode .aisle-head {
+  grid-template-columns: auto 1fr auto;
+}
+
+/* En magasin, une ligne par article : nom, prix et « Introuvable » côte à côte. */
+body.is-store-mode .receipt-line {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 8px;
+  padding-block: 4px;
+}
+
+body.is-store-mode .line-label {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+body.is-store-mode .line-price {
+  text-align: start;
+  font-size: var(--step-small);
+  color: var(--muted);
+}
+
+body.is-store-mode :is(.line-detail, .line-brand) {
+  display: none;
+}
+
+body.is-store-mode .missing-button {
+  grid-column: 3;
+  grid-row: 1;
+  padding-inline: 6px;
+}
+
+body.is-store-mode .receipt-actions {
+  flex-wrap: nowrap;
+}
+
+body.is-store-mode .receipt-actions button {
+  flex: 1 1 0;
+  padding-inline: 10px;
+  white-space: nowrap;
+}
+
+body.is-store-mode .undo-toast {
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Mode cuisine : la navigation reste en bas, au même endroit à chaque étape. */
+.cook-dialog {
+  block-size: min(720px, calc(100dvh - 32px));
+}
+
+/* En colonne : le contenu prend la place libre, qu'il y ait un minuteur ou non. */
+.cook-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.cook-content {
+  flex: 1 1 auto;
+  min-block-size: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (max-width: 759px) {
+  .cook-dialog {
+    inline-size: 100vw;
+    max-inline-size: 100vw;
+    block-size: 100dvh;
+    max-block-size: 100dvh;
+    margin: 0;
+    border-radius: 0;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .cook-nav button {
+    min-block-size: 56px;
   }
 }

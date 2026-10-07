@@ -1,11 +1,18 @@
 import { PRODUCTS, PRODUCTS_BY_ID } from './catalog.js';
 import { CookMode } from './cook-mode.js';
-import { buildEatenPlan, isMealCooked, listCookedSlotIndexes, normalizeCookedMeals, setMealCooked } from './cooked-meals.js';
+import {
+  buildEatenPlan,
+  isMealCooked,
+  listCookedSlotIndexes,
+  normalizeCookedMeals,
+  remapCookedMeals,
+  setMealCooked,
+} from './cooked-meals.js';
 import { createElement, debounce, replaceChildrenWithFragment } from './dom.js';
 import { addExtraItem, keepUnboughtExtraItems, normalizeExtraItems, removeExtraItem } from './extra-items.js';
 import { setUpInstallButton } from './install-prompt.js';
 import { buildShoppingListText } from './list-text.js';
-import { generatePlan, PLAN_KINDS, reconcilePlan, restorePlan, swapMeal } from './planner.js';
+import { createMainSlotMapper, generatePlan, PLAN_KINDS, reconcilePlan, restorePlan, swapMeal } from './planner.js';
 import { createEmptyPlan, getServingsPerBreakfast, getServingsPerMainSlot, getServingsPerSnack } from './meal-structure.js';
 import { hasWeightLossGoal } from './nutrition.js';
 import {
@@ -36,7 +43,7 @@ import { normalizeSettings, readSettingsFromForm, writeSettingsToForm } from './
 import { buildShoppingList } from './shopping-list.js';
 import { renderWeightTracker } from './render-weight.js';
 import { computeNextStock, describeStock, hasShoppingEvidence, normalizeStock } from './stock.js';
-import { loadSavedState, saveState } from './storage.js';
+import { isSavedStateChange, loadSavedState, saveState } from './storage.js';
 import {
   clearMissingProducts,
   moveAisle,
@@ -44,6 +51,7 @@ import {
   resetAisleOrder,
   toggleMissingProduct,
 } from './store-setup.js';
+import { UndoToast } from './undo-toast.js';
 import { createScreenWakeLock } from './wake-lock.js';
 import { addWeightEntry, analyzeWeightTrend, isValidWeight, normalizeWeightLog } from './weight-log.js';
 import { formatFullDate } from './format.js';
@@ -52,7 +60,6 @@ import { getUpcomingMonday, isWeekOver, resolveWeekStart, shiftWeek, toIsoDate }
 
 const SETTINGS_DEBOUNCE_MILLISECONDS = 300;
 const COPY_STATUS_DURATION_MILLISECONDS = 4000;
-const UNDO_DURATION_MILLISECONDS = 6000;
 // Le budget n'est appliqué qu'à la validation du champ : les valeurs intermédiaires
 // tapées (« 4 » avant « 45 ») remplaceraient des plats pour rien.
 const FIELDS_APPLIED_ON_COMMIT_ONLY = new Set(['weeklyBudget']);
@@ -95,8 +102,16 @@ class WeeklyPlannerApp {
   #listenersController = new AbortController();
   #debouncedSettingsUpdate = debounce(() => this.#applySettingsFromForm(), SETTINGS_DEBOUNCE_MILLISECONDS);
   #copyStatusTimeoutId = null;
-  #undoTimeoutId = null;
-  #undoAction = null;
+  #undoToast;
+  // Jour où le mode magasin a été ouvert : rouvrir l'appli un autre jour revient à la vue normale.
+  #storeModeDate = null;
+  #planActionHandlers = Object.freeze({
+    cook: (planAction) => this.#openCookMode(planAction),
+    cooked: (planAction) => this.#toggleCooked(planAction.slotNumber),
+    like: (planAction) => this.#toggleLike(planAction.recipeId),
+    dislike: (planAction) => this.#dislikeRecipe(planAction.recipeId),
+    swap: (planAction) => this.#swapSlot(planAction),
+  });
 
   constructor(rootDocument) {
     this.#elements = {
@@ -120,6 +135,7 @@ class WeeklyPlannerApp {
       stockSummary: rootDocument.getElementById('stock-summary'),
       clearStockButton: rootDocument.getElementById('clear-stock-button'),
       storeModeButton: rootDocument.getElementById('store-mode-button'),
+      storeModeEnterButton: rootDocument.getElementById('store-mode-enter-button'),
       installButton: rootDocument.getElementById('install-button'),
       installHelp: rootDocument.getElementById('install-help'),
       hideCheckedButton: rootDocument.getElementById('hide-checked-button'),
@@ -141,13 +157,16 @@ class WeeklyPlannerApp {
       addItemForm: rootDocument.getElementById('add-item-form'),
       addItemInput: rootDocument.getElementById('add-item-input'),
       catalogProductList: rootDocument.getElementById('catalog-products'),
-      undoToast: rootDocument.getElementById('undo-toast'),
-      undoMessage: rootDocument.getElementById('undo-message'),
-      undoButton: rootDocument.getElementById('undo-button'),
       apkLink: rootDocument.getElementById('apk-link'),
       body: rootDocument.body,
     };
+    this.#elements.numberInputs = [...this.#elements.settingsForm.querySelectorAll('input[type="number"][name]')];
     this.#cookMode = new CookMode(rootDocument.getElementById('cook-dialog'));
+    this.#undoToast = new UndoToast({
+      toast: rootDocument.getElementById('undo-toast'),
+      message: rootDocument.getElementById('undo-message'),
+      button: rootDocument.getElementById('undo-button'),
+    });
   }
 
   start() {
@@ -162,7 +181,34 @@ class WeeklyPlannerApp {
     this.#attachListeners();
     this.#renderAll();
     this.#applyHideChecked();
+    this.#leaveForgottenStoreMode();
     if (this.#isStoreMode) {
+      this.#applyStoreMode();
+    }
+  }
+
+  // Un mode magasin oublié (liste finie, ou ouvert un autre jour) ne doit pas cacher la recette suivante.
+  #leaveForgottenStoreMode() {
+    const isAnotherDay = this.#storeModeDate !== toIsoDate(new Date());
+    const { doneCount, lineCount } = this.#countReceiptLines();
+    if (this.#isStoreMode && (isAnotherDay || (lineCount > 0 && doneCount === lineCount))) {
+      this.#isStoreMode = false;
+      this.#persist();
+    }
+  }
+
+  // Une autre fenêtre (appli installée et navigateur) ou une page restaurée du cache a pu
+  // enregistrer d'autres données : on les relit, sinon la prochaine action les écraserait.
+  #reloadSavedState() {
+    const wasStoreMode = this.#isStoreMode;
+    this.#debouncedSettingsUpdate.cancel();
+    this.#undoToast.close();
+    this.#swapHistoryBySlot.clear();
+    this.#restoreSavedState();
+    writeSettingsToForm(this.#elements.settingsForm, this.#settings);
+    this.#renderWithoutSaving();
+    this.#applyHideChecked();
+    if (wasStoreMode !== this.#isStoreMode) {
       this.#applyStoreMode();
     }
   }
@@ -179,6 +225,7 @@ class WeeklyPlannerApp {
     this.#extraItems = normalizeExtraItems(savedState?.extraItems);
     this.#cookedMeals = normalizeCookedMeals(savedState?.cookedMeals);
     this.#isStoreMode = savedState?.interface?.isStoreMode === true;
+    this.#storeModeDate = typeof savedState?.interface?.storeModeDate === 'string' ? savedState.interface.storeModeDate : null;
     this.#hidesCheckedItems = savedState?.interface?.hidesCheckedItems === true;
     this.#showsCookedMeals = savedState?.interface?.showsCookedMeals === true;
     this.#checkedProductIds = new Set(Array.isArray(savedState?.checkedProductIds) ? savedState.checkedProductIds : []);
@@ -225,7 +272,7 @@ class WeeklyPlannerApp {
     this.#debouncedSettingsUpdate.flush();
     this.#listenersController.abort();
     clearTimeout(this.#copyStatusTimeoutId);
-    clearTimeout(this.#undoTimeoutId);
+    this.#undoToast.destroy();
     this.#cookMode.destroy();
     this.#storeWakeLock.disable();
     this.#removeInstallButton();
@@ -234,6 +281,18 @@ class WeeklyPlannerApp {
   #attachListeners() {
     const { signal } = this.#listenersController;
     const { settingsForm, planList, receipt, regenerateButton, copyButton, uncheckButton } = this.#elements;
+    const rootWindow = this.#elements.body.ownerDocument.defaultView;
+
+    rootWindow.addEventListener('storage', (storageEvent) => {
+      if (isSavedStateChange(storageEvent)) {
+        this.#reloadSavedState();
+      }
+    }, { signal });
+    rootWindow.addEventListener('pageshow', (pageshowEvent) => {
+      if (pageshowEvent.persisted) {
+        this.#reloadSavedState();
+      }
+    }, { signal });
 
     // Une appli mise en arrière-plan peut être tuée sans « pagehide » : la saisie en attente est enregistrée dès maintenant.
     this.#elements.body.ownerDocument.addEventListener('visibilitychange', () => {
@@ -246,7 +305,7 @@ class WeeklyPlannerApp {
     settingsForm.addEventListener('change', (changeEvent) => this.#handleSettingsCommit(changeEvent), { signal });
     regenerateButton.addEventListener('click', () => this.#regenerateWeek(), { signal });
     this.#elements.weekOverButton.addEventListener('click', () => this.#regenerateWeek(), { signal });
-    this.#elements.restoreWeekButton.addEventListener('click', () => this.#restorePreviousWeek(), { signal });
+    this.#elements.restoreWeekButton.addEventListener('click', () => this.#resumePreviousWeek(), { signal });
     planList.addEventListener('click', (clickEvent) => this.#handlePlanClick(clickEvent), { signal });
     // L'événement « error » d'une image ne remonte pas : on l'écoute en phase de capture.
     planList.addEventListener('error', (errorEvent) => this.#hideMissingPhoto(errorEvent), { signal, capture: true });
@@ -257,7 +316,6 @@ class WeeklyPlannerApp {
     receipt.addEventListener('click', (clickEvent) => this.#handleReceiptClick(clickEvent), { signal });
     this.#elements.hideCheckedButton.addEventListener('click', () => this.#toggleHideChecked(), { signal });
     this.#elements.showCookedButton.addEventListener('click', () => this.#toggleShowCooked(), { signal });
-    this.#elements.undoButton.addEventListener('click', () => this.#undoLastAction(), { signal });
     this.#elements.addItemForm.addEventListener('submit', (submitEvent) => this.#handleAddItem(submitEvent), { signal });
     this.#elements.clearMissingButton.addEventListener('click', () => this.#updateStoreSetup(clearMissingProducts(this.#storeSetup)), { signal });
     this.#elements.resetAislesButton.addEventListener('click', () => this.#updateStoreSetup(resetAisleOrder(this.#storeSetup)), { signal });
@@ -266,6 +324,7 @@ class WeeklyPlannerApp {
     this.#elements.resetDislikesButton.addEventListener('click', () => this.#resetDislikes(), { signal });
     this.#elements.clearStockButton.addEventListener('click', () => this.#clearStock(), { signal });
     this.#elements.storeModeButton.addEventListener('click', () => this.#toggleStoreMode(), { signal });
+    this.#elements.storeModeEnterButton.addEventListener('click', () => this.#toggleStoreMode(), { signal });
     this.#elements.addWeightButton.addEventListener('click', () => this.#recordWeight(), { signal });
     this.#elements.weightEntryInput.addEventListener('keydown', (keyEvent) => {
       if (keyEvent.key === 'Enter') {
@@ -313,7 +372,7 @@ class WeeklyPlannerApp {
   // même quand c'est un autre réglage qui déclenche la mise à jour.
   #readValidSettings(previousSettings) {
     const formSettings = readSettingsFromForm(this.#elements.settingsForm);
-    const invalidFieldNames = [...this.#elements.settingsForm.querySelectorAll('input[type="number"][name]')]
+    const invalidFieldNames = this.#elements.numberInputs
       .filter((numberInput) => !numberInput.checkValidity())
       .map((numberInput) => numberInput.name);
     const keptValues = Object.fromEntries(invalidFieldNames.map((fieldName) => [fieldName, previousSettings[fieldName]]));
@@ -327,11 +386,23 @@ class WeeklyPlannerApp {
       this.#rerollMenus();
       return;
     }
-    this.#plan = reconcilePlan(this.#plan, this.#planningSettings(), Math.random, {
+    this.#reconcileKeepingCooked({
       previousTotalToPay: this.#shoppingList?.totalToPay ?? Number.POSITIVE_INFINITY,
       budgetChanged: this.#settings.weeklyBudget !== previousSettings.weeklyBudget,
     });
     this.#renderAll();
+  }
+
+  // Un plat déjà cuisiné a été mangé et acheté : aucun réglage ni refus ne le remplace.
+  // Les marques « cuisiné » suivent leur plat si les créneaux sont renumérotés.
+  #reconcileKeepingCooked(reconcileOptions = {}) {
+    const previousPlan = this.#plan;
+    const planningSettings = this.#planningSettings();
+    this.#plan = reconcilePlan(previousPlan, planningSettings, Math.random, {
+      ...reconcileOptions,
+      lockedSlotIndexes: listCookedSlotIndexes(this.#cookedMeals, previousPlan),
+    });
+    this.#cookedMeals = remapCookedMeals(this.#cookedMeals, previousPlan, this.#plan, createMainSlotMapper(previousPlan, planningSettings));
   }
 
   // Refaire les menus de la même semaine : rien n'a été mangé ni acheté entre-temps,
@@ -350,15 +421,45 @@ class WeeklyPlannerApp {
     }
     this.#startNextWeek();
     this.#renderAll();
-    this.#offerUndo('Nouvelle semaine préparée.', () => this.#restorePreviousWeek());
+    this.#undoToast.offer('Nouvelle semaine préparée.', () => this.#swapWithPreviousWeek());
   }
 
-  // Revient à la semaine remplacée, telle qu'elle était : menus, plats cuisinés, cases cochées.
-  #restorePreviousWeek() {
-    const snapshot = this.#previousWeek;
-    if (!snapshot) {
+  // Les deux semaines sont échangées, jamais écrasées : un appui par erreur se rattrape
+  // avec « Annuler » ou en reprenant l'autre semaine.
+  #resumePreviousWeek() {
+    const previousWeekStart = this.#previousWeek?.weekStart;
+    if (!previousWeekStart) {
       return;
     }
+    this.#swapWithPreviousWeek();
+    this.#undoToast.offer(`Semaine du ${formatFullDate(resolveWeekStart(previousWeekStart))} reprise.`, () => this.#swapWithPreviousWeek());
+  }
+
+  #swapWithPreviousWeek() {
+    const previousWeek = this.#previousWeek;
+    if (!previousWeek) {
+      return;
+    }
+    const currentWeek = this.#createCurrentWeekSnapshot();
+    this.#applyWeekSnapshot(previousWeek);
+    this.#previousWeek = currentWeek;
+    this.#renderAll();
+  }
+
+  #createCurrentWeekSnapshot() {
+    return createWeekSnapshot({
+      plan: this.#plan,
+      weekStart: toIsoDate(this.#weekStartDate),
+      cookedMeals: this.#cookedMeals,
+      checkedProductIds: this.#checkedProductIds,
+      extraItems: this.#extraItems,
+      pantryStock: this.#pantryStock,
+      preferences: this.#preferences,
+    });
+  }
+
+  // Une semaine reconstituée depuis l'historique n'a ni préférences, ni stock, ni ajouts : on garde les actuels.
+  #applyWeekSnapshot(snapshot) {
     if (snapshot.preferences) {
       this.#preferences = normalizePreferences(snapshot.preferences, RECIPES_BY_ID);
     }
@@ -373,8 +474,6 @@ class WeeklyPlannerApp {
     this.#cookedMeals = normalizeCookedMeals(snapshot.cookedMeals);
     this.#checkedProductIds = new Set(snapshot.checkedProductIds);
     this.#swapHistoryBySlot.clear();
-    this.#previousWeek = null;
-    this.#renderAll();
   }
 
   #renderWeekTools() {
@@ -388,34 +487,16 @@ class WeeklyPlannerApp {
     }
   }
 
-  // Passer à une nouvelle semaine : on retient ses plats (pour ne pas les resservir tout de suite)
-  // et, si des courses ont été cochées, ce qu'il reste en stock pour la semaine suivante.
+  // Passer à une nouvelle semaine : on garde une copie de celle-ci pour pouvoir y revenir,
+  // ses restes en stock, et ses plats en mémoire pour ne pas les resservir tout de suite.
   #startNextWeek() {
-    this.#previousWeek = createWeekSnapshot({
-      plan: this.#plan,
-      weekStart: toIsoDate(this.#weekStartDate),
-      cookedMeals: this.#cookedMeals,
-      checkedProductIds: this.#checkedProductIds,
-      extraItems: this.#extraItems,
-      pantryStock: this.#pantryStock,
-      preferences: this.#preferences,
-    });
-    if (hasShoppingEvidence(this.#checkedProductIds)) {
-      const planningSettings = this.#planningSettings();
-      const shoppingList = buildShoppingList(this.#plan, planningSettings);
-      const eatenShoppingList = buildShoppingList(buildEatenPlan(this.#plan, this.#cookedMeals), planningSettings);
-      this.#pantryStock = computeNextStock({
-        stock: this.#pantryStock,
-        shoppingList,
-        checkedProductIds: this.#checkedProductIds,
-        eatenShoppingList,
-      });
-    }
-    this.#cookedMeals = {};
+    this.#previousWeek = this.#createCurrentWeekSnapshot();
+    this.#carryLeftoversToStock();
     this.#preferences = rememberWeek(this.#preferences, this.#plan.mainRecipeIds);
-    this.#swapHistoryBySlot.clear();
     this.#extraItems = keepUnboughtExtraItems(this.#extraItems, this.#checkedProductIds);
-    this.#checkedProductIds.clear();
+    this.#cookedMeals = {};
+    this.#checkedProductIds = new Set();
+    this.#swapHistoryBySlot.clear();
     // Toujours la semaine qui commence au prochain lundi (ou aujourd'hui si on est lundi) :
     // préparée le samedi, elle ne doit pas garder la date de la semaine en cours,
     // sinon elle serait jugée terminée et remplacée dès le lundi.
@@ -423,17 +504,30 @@ class WeeklyPlannerApp {
     this.#plan = generatePlan(this.#planningSettings());
   }
 
+  // Sans case cochée, rien ne prouve que les courses ont été faites : le stock ne change pas.
+  #carryLeftoversToStock() {
+    if (!hasShoppingEvidence(this.#checkedProductIds)) {
+      return;
+    }
+    const planningSettings = this.#planningSettings();
+    this.#pantryStock = computeNextStock({
+      stock: this.#pantryStock,
+      shoppingList: buildShoppingList(this.#plan, planningSettings),
+      checkedProductIds: this.#checkedProductIds,
+      eatenShoppingList: buildShoppingList(buildEatenPlan(this.#plan, this.#cookedMeals), planningSettings),
+    });
+  }
+
   #toggleStoreMode() {
     this.#isStoreMode = !this.#isStoreMode;
+    this.#storeModeDate = this.#isStoreMode ? toIsoDate(new Date()) : null;
     this.#applyStoreMode();
     this.#persist();
   }
 
   #applyStoreMode() {
-    const { body, storeModeButton, receipt } = this.#elements;
+    const { body, receipt } = this.#elements;
     body.classList.toggle('is-store-mode', this.#isStoreMode);
-    storeModeButton.setAttribute('aria-pressed', String(this.#isStoreMode));
-    storeModeButton.textContent = this.#isStoreMode ? 'Quitter le mode magasin' : 'Mode magasin';
     if (this.#isStoreMode) {
       this.#storeWakeLock.enable();
       receipt.scrollIntoView({ block: 'start' });
@@ -532,44 +626,46 @@ class WeeklyPlannerApp {
 
   #clearStock() {
     this.#pantryStock = {};
-    this.#plan = reconcilePlan(this.#plan, this.#planningSettings());
+    this.#reconcileKeepingCooked();
     this.#renderAll();
   }
 
+  // Semaine ou « Recette suivante » : le focus revient là où l'on a appuyé, sans faire défiler.
   #handlePlanClick(clickEvent) {
-    // Semaine ou « Recette suivante » : le focus revient là où l'on a appuyé, sans faire défiler.
-    const actionContainer = clickEvent.currentTarget;
     const actionButton = clickEvent.target.closest('[data-action]');
-    if (!actionButton) {
+    const handleAction = this.#planActionHandlers[actionButton?.dataset.action];
+    if (!handleAction) {
       return;
     }
     const { action, planKind, slotIndex, recipeId } = actionButton.dataset;
-    const slotNumber = Number.parseInt(slotIndex, 10);
-    if (action === 'cook') {
-      const recipe = RECIPES_BY_ID.get(recipeId);
-      const getServings = SERVINGS_BY_PLAN_KIND[planKind];
-      if (recipe && getServings) {
-        const onFinish = planKind === PLAN_KINDS.MAIN ? () => this.#markCookedAfterCooking(slotNumber, recipeId) : null;
-        this.#cookMode.open(recipe, getServings(this.#settings), this.#planningSettings(), { onFinish });
-      }
-      return;
+    const rendersAgain = handleAction({ planKind, recipeId, slotNumber: Number.parseInt(slotIndex, 10) });
+    if (rendersAgain) {
+      clickEvent.currentTarget
+        .querySelector(`[data-action="${action}"][data-plan-kind="${planKind}"][data-slot-index="${slotIndex}"]`)
+        ?.focus({ preventScroll: true });
     }
-    if (action === 'cooked') {
-      this.#setCooked(slotNumber, !isMealCooked(this.#cookedMeals, this.#plan, slotNumber));
-      return;
+  }
+
+  #openCookMode({ planKind, slotNumber, recipeId }) {
+    const recipe = RECIPES_BY_ID.get(recipeId);
+    const getServings = SERVINGS_BY_PLAN_KIND[planKind];
+    if (!recipe || !getServings) {
+      return false;
     }
-    if (action === 'like') {
-      this.#preferences = toggleLiked(this.#preferences, recipeId);
-    } else if (action === 'dislike') {
-      this.#dislikeRecipe(recipeId);
-      return;
-    } else if (action === 'swap') {
-      this.#swapSlot(planKind, slotNumber, recipeId);
-    } else {
-      return;
-    }
+    const onFinish = planKind === PLAN_KINDS.MAIN ? () => this.#markCookedAfterCooking(slotNumber, recipeId) : null;
+    this.#cookMode.open(recipe, getServings(this.#settings), this.#planningSettings(), { onFinish });
+    return false;
+  }
+
+  #toggleCooked(slotNumber) {
+    this.#setCooked(slotNumber, !isMealCooked(this.#cookedMeals, this.#plan, slotNumber));
+    return false;
+  }
+
+  #toggleLike(recipeId) {
+    this.#preferences = toggleLiked(this.#preferences, recipeId);
     this.#renderAll();
-    actionContainer.querySelector(`[data-action="${action}"][data-plan-kind="${planKind}"][data-slot-index="${slotIndex}"]`)?.focus({ preventScroll: true });
+    return true;
   }
 
   // Une nouvelle pesée met aussi à jour le poids du profil : l'objectif calorique suit la perte.
@@ -585,15 +681,17 @@ class WeeklyPlannerApp {
     this.#settings = normalizeSettings({ ...this.#settings, weightKg });
     writeSettingsToForm(this.#elements.settingsForm, this.#settings);
     weightEntryInput.value = '';
-    this.#plan = reconcilePlan(this.#plan, this.#planningSettings());
+    // Les portions suivent le nouvel objectif ; les plats prévus, peut-être déjà achetés, restent.
     this.#renderAll();
   }
 
-  #swapSlot(planKind, slotNumber, currentRecipeId) {
+  #swapSlot({ planKind, slotNumber, recipeId }) {
     const slotKey = `${planKind}:${slotNumber}`;
-    const avoidedRecipeIds = [currentRecipeId, ...(this.#swapHistoryBySlot.get(slotKey) ?? [])].slice(0, SWAP_HISTORY_LENGTH);
+    const avoidedRecipeIds = [recipeId, ...(this.#swapHistoryBySlot.get(slotKey) ?? [])].slice(0, SWAP_HISTORY_LENGTH);
     this.#swapHistoryBySlot.set(slotKey, avoidedRecipeIds);
     this.#plan = swapMeal(this.#plan, planKind, slotNumber, this.#planningSettings(), Math.random, { avoidedRecipeIds });
+    this.#renderAll();
+    return true;
   }
 
   // Le créneau a pu changer de plat pendant la cuisine : on ne coche que s'il s'agit du même.
@@ -603,24 +701,36 @@ class WeeklyPlannerApp {
     }
   }
 
-  // La carte est mise à jour sur place pour laisser voir la coche avant qu'elle ne s'efface.
   #setCooked(slotNumber, isCooked) {
     this.#cookedMeals = setMealCooked(this.#cookedMeals, this.#plan, slotNumber, isCooked);
+    this.#showCookedChange(slotNumber, isCooked);
+    this.#persist();
+    if (isCooked && !this.#showsCookedMeals) {
+      this.#offerUncook(slotNumber);
+    }
+  }
+
+  // La carte est mise à jour sur place pour laisser voir la coche avant qu'elle ne s'efface.
+  #showCookedChange(slotNumber, isCooked) {
     const cardElement = this.#elements.planList.querySelector(`[data-action="cooked"][data-slot-index="${slotNumber}"]`)?.closest('.meal');
     if (cardElement) {
       updateCookedCard(cardElement, isCooked);
     }
     this.#renderCookedProgress();
     this.#renderNextRecipe();
-    this.#persist();
+  }
+
+  // Le plat coché disparaît de la liste : « Annuler » rattrape un appui sur la mauvaise carte.
+  #offerUncook(slotNumber) {
     const recipe = RECIPES_BY_ID.get(this.#plan.mainRecipeIds[slotNumber]);
-    if (isCooked && recipe && !this.#showsCookedMeals) {
-      this.#offerUndo(`« ${recipe.name} » cuisiné.`, () => {
-        this.#cookedMeals = setMealCooked(this.#cookedMeals, this.#plan, slotNumber, false);
-        this.#renderPlanning();
-        this.#persist();
-      });
+    if (!recipe) {
+      return;
     }
+    this.#undoToast.offer(`« ${recipe.name} » cuisiné.`, () => {
+      this.#cookedMeals = setMealCooked(this.#cookedMeals, this.#plan, slotNumber, false);
+      this.#renderPlanning();
+      this.#persist();
+    });
   }
 
   #renderNextRecipe() {
@@ -638,7 +748,7 @@ class WeeklyPlannerApp {
     this.#persist();
   }
 
-  // Résumé « 3 sur 7 », bouton d'affichage des plats cuisinés et message « tout est cuisiné ».
+  // Mis à jour à part du reste : cocher un plat ne doit pas reconstruire toute la semaine.
   #renderCookedProgress() {
     const cookedCount = listCookedSlotIndexes(this.#cookedMeals, this.#plan).length;
     const dishCount = this.#plan.mainRecipeIds.filter(Boolean).length;
@@ -653,42 +763,24 @@ class WeeklyPlannerApp {
       : `Afficher les plats cuisinés (${cookedCount})`;
   }
 
-  // Le plat est retiré de tous les jours où il apparaît. Un appui raté se rattrape avec « Annuler ».
+  // Le plat est retiré de tous les jours où il apparaît, sauf là où il est déjà cuisiné.
+  // Un appui raté se rattrape avec « Annuler ».
   #dislikeRecipe(recipeId) {
     const recipe = RECIPES_BY_ID.get(recipeId);
     if (!recipe) {
-      return;
+      return false;
     }
-    const previousState = { plan: this.#plan, preferences: this.#preferences };
+    const previousState = { plan: this.#plan, preferences: this.#preferences, cookedMeals: this.#cookedMeals };
     this.#preferences = markDisliked(this.#preferences, recipeId);
-    this.#plan = reconcilePlan(this.#plan, this.#planningSettings());
+    this.#reconcileKeepingCooked();
     this.#renderAll();
-    this.#offerUndo(`« ${recipe.name} » écarté.`, () => {
+    this.#undoToast.offer(`« ${recipe.name} » écarté.`, () => {
       this.#plan = previousState.plan;
       this.#preferences = previousState.preferences;
+      this.#cookedMeals = previousState.cookedMeals;
       this.#renderAll();
     });
-  }
-
-  #offerUndo(message, undoAction) {
-    clearTimeout(this.#undoTimeoutId);
-    this.#undoAction = undoAction;
-    this.#elements.undoMessage.textContent = message;
-    this.#elements.undoToast.hidden = false;
-    this.#undoTimeoutId = setTimeout(() => this.#closeUndo(), UNDO_DURATION_MILLISECONDS);
-  }
-
-  #undoLastAction() {
-    const undoAction = this.#undoAction;
-    this.#closeUndo();
-    undoAction?.();
-  }
-
-  #closeUndo() {
-    clearTimeout(this.#undoTimeoutId);
-    this.#undoTimeoutId = null;
-    this.#undoAction = null;
-    this.#elements.undoToast.hidden = true;
+    return false;
   }
 
   #resetDislikes() {
@@ -728,7 +820,16 @@ class WeeklyPlannerApp {
   }
 
   #uncheckAll() {
-    this.#checkedProductIds.clear();
+    const previousCheckedProductIds = this.#checkedProductIds;
+    if (previousCheckedProductIds.size === 0) {
+      return;
+    }
+    this.#replaceCheckedProductIds(new Set());
+    this.#undoToast.offer('Liste décochée.', () => this.#replaceCheckedProductIds(previousCheckedProductIds));
+  }
+
+  #replaceCheckedProductIds(checkedProductIds) {
+    this.#checkedProductIds = checkedProductIds;
     this.#renderReceipt();
     this.#persist();
   }
@@ -759,14 +860,18 @@ class WeeklyPlannerApp {
   }
 
   #renderAll() {
+    this.#renderWithoutSaving();
+    this.#persist();
+  }
+
+  #renderWithoutSaving() {
     // Les ajouts à la main vont sur la liste mais restent hors du choix des menus et du budget.
     this.#shoppingList = buildShoppingList(this.#plan, { ...this.#planningSettings(), extraItems: this.#extraItems });
     this.#renderPlanning();
     this.#renderReceipt();
-    this.#persist();
   }
 
-  // Tout sauf le ticket : réglages, résumé, menus et suivi du poids.
+  // Séparé du ticket : cocher un article ou marquer un produit introuvable ne doit pas reconstruire la liste.
   #renderPlanning() {
     const planningSettings = this.#planningSettings();
     this.#elements.profileFields.hidden = !hasWeightLossGoal(this.#settings);
@@ -803,12 +908,17 @@ class WeeklyPlannerApp {
   }
 
   #updateProgress() {
+    const { doneCount, lineCount } = this.#countReceiptLines();
+    updateReceiptProgress(this.#elements.receipt, doneCount, lineCount);
+  }
+
+  #countReceiptLines() {
     const listedProductIds = this.#shoppingList.aisleGroups.flatMap((group) => [
       ...group.lines.map((line) => line.product.id),
       ...group.extraLines.map((line) => line.extra.id),
     ]);
-    const checkedCount = listedProductIds.filter((productId) => isLineDone(productId, this.#checkedProductIds, this.#storeSetup)).length;
-    updateReceiptProgress(this.#elements.receipt, checkedCount, listedProductIds.length);
+    const doneCount = listedProductIds.filter((productId) => isLineDone(productId, this.#checkedProductIds, this.#storeSetup)).length;
+    return { doneCount, lineCount: listedProductIds.length };
   }
 
   #persist() {
@@ -827,6 +937,7 @@ class WeeklyPlannerApp {
       isHistoryRecoveryDone: this.#isHistoryRecoveryDone,
       interface: {
         isStoreMode: this.#isStoreMode,
+        storeModeDate: this.#storeModeDate,
         hidesCheckedItems: this.#hidesCheckedItems,
         showsCookedMeals: this.#showsCookedMeals,
       },
@@ -850,6 +961,7 @@ async function registerOfflineSupport() {
 
 const weeklyPlannerApp = new WeeklyPlannerApp(document);
 weeklyPlannerApp.start();
+// Pas d'attente : l'enregistrement gère lui-même son échec, l'appli marche sans.
 registerOfflineSupport();
 // Une page mise en cache (bfcache, persisted) peut être restaurée : on ne détruit que les sorties définitives.
 function destroyOnFinalPageExit(pagehideEvent) {
