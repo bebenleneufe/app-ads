@@ -101,7 +101,7 @@ export const PRODUCTS = Object.freeze([
   defineProduct({ id: 'concombre', name: 'Concombre', aisle: AISLES.PRODUCE, packageLabel: 'à la pièce', packageSize: 1, unit: UNITS.PIECE, price: 0.99, shortName: 'concombre', pieceNames: ['concombre', 'concombres'] }),
   defineProduct({ id: 'avocat', name: 'Avocat', aisle: AISLES.PRODUCE, packageLabel: 'à la pièce', packageSize: 1, unit: UNITS.PIECE, price: 0.99, shortName: 'avocat', pieceNames: ['avocat', 'avocats'] }),
   defineProduct({ id: 'citron', name: 'Citrons jaunes', aisle: AISLES.PRODUCE, packageLabel: 'filet 750 g (5 citrons)', packageSize: 5, unit: UNITS.PIECE, price: 1.85, shortName: 'citron', pieceNames: ['citron', 'citrons'] }),
-  defineProduct({ id: 'banane', name: 'Bananes', aisle: AISLES.PRODUCE, packageLabel: 'régime ≈ 1 kg', packageSize: 1000, unit: UNITS.GRAM, price: 0.99, shortName: 'banane' }),
+  defineProduct({ id: 'banane', name: 'Bananes', aisle: AISLES.PRODUCE, packageLabel: 'régime ≈ 1 kg', packageSize: 1000, unit: UNITS.GRAM, price: 1.49, shortName: 'banane' }),
   defineProduct({ id: 'pomme', name: 'Pommes Golden', aisle: AISLES.PRODUCE, packageLabel: 'sachet 1,5 kg', packageSize: 1500, unit: UNITS.GRAM, price: 2.79, shortName: 'pomme' }),
   defineProduct({ id: 'persil', name: 'Persil plat', aisle: AISLES.PRODUCE, packageLabel: 'bouquet', packageSize: 1, unit: UNITS.PIECE, price: 0.79, shortName: 'persil', pieceNames: ['bouquet de persil', 'bouquets de persil'] }),
 
@@ -114,9 +114,9 @@ export const PRODUCTS = Object.freeze([
   defineProduct({ id: 'jambon', name: 'Jambon supérieur', brand: 'Saint Alby', aisle: AISLES.MEAT, packageLabel: '4 tranches, 140 g', packageSize: 140, unit: UNITS.GRAM, price: 1.85, shortName: 'jambon blanc' }),
   defineProduct({ id: 'chorizo', name: 'Chorizo doux', aisle: AISLES.MEAT, packageLabel: 'pièce 225 g', packageSize: 225, unit: UNITS.GRAM, price: 2.29, shortName: 'chorizo' }),
 
-  defineProduct({ id: 'saumon', name: 'Pavés de saumon', brand: 'Landfein', aisle: AISLES.FISH, packageLabel: '4 pavés, 500 g', packageSize: 500, unit: UNITS.GRAM, price: 11.49, shortName: 'saumon' }),
+  defineProduct({ id: 'saumon', name: 'Pavés de saumon', aisle: AISLES.FISH, packageLabel: '4 pavés, 500 g', packageSize: 500, unit: UNITS.GRAM, price: 11.49, shortName: 'saumon' }),
   defineProduct({ id: 'crevettes', name: 'Crevettes cuites décortiquées', aisle: AISLES.FISH, packageLabel: 'barquette 200 g', packageSize: 200, unit: UNITS.GRAM, price: 3.79, shortName: 'crevettes' }),
-  defineProduct({ id: 'thon', name: 'Filets de thon au naturel', brand: 'Nixe', aisle: AISLES.CANS, packageLabel: 'boîte 150 g', packageSize: 150, unit: UNITS.GRAM, price: 1.45, shortName: 'thon' }),
+  defineProduct({ id: 'thon', name: 'Filets de thon au naturel', brand: 'Nixe', aisle: AISLES.CANS, packageLabel: 'boîte 140 g (104 g égouttés)', packageSize: 104, unit: UNITS.GRAM, price: 1.45, shortName: 'thon' }),
 
   defineProduct({ id: 'oeuf', name: 'Œufs de poules élevées en plein air', aisle: AISLES.DAIRY, packageLabel: 'boîte de 12', packageSize: 12, unit: UNITS.PIECE, price: 2.88, shortName: 'œuf', pieceNames: ['œuf', 'œufs'] }),
   defineProduct({ id: 'lait', name: 'Lait demi-écrémé', brand: 'Milbona', aisle: AISLES.DAIRY, packageLabel: 'bouteille 1 L', packageSize: 1000, unit: UNITS.MILLILITER, price: 0.99, shortName: 'lait' }),
@@ -128,7 +128,7 @@ export const PRODUCTS = Object.freeze([
   defineProduct({ id: 'feta', name: 'Feta grecque', brand: 'Milbona', aisle: AISLES.DAIRY, packageLabel: 'bloc 200 g', packageSize: 200, unit: UNITS.GRAM, price: 2.45, shortName: 'feta' }),
   defineProduct({ id: 'fromage-blanc', name: 'Fromage blanc 0 %', brand: 'Envia', aisle: AISLES.DAIRY, packageLabel: 'pot 1 kg', packageSize: 1000, unit: UNITS.GRAM, price: 1.79, shortName: 'fromage blanc 0 %' }),
   defineProduct({ id: 'ricotta', name: 'Ricotta', brand: 'Italiamo', aisle: AISLES.DAIRY, packageLabel: 'pot 250 g', packageSize: 250, unit: UNITS.GRAM, price: 1.39, shortName: 'ricotta' }),
-  defineProduct({ id: 'chevre', name: 'Bûche de chèvre Sainte-Maure', brand: 'Soignon', aisle: AISLES.DAIRY, packageLabel: 'bûche 200 g', packageSize: 200, unit: UNITS.GRAM, price: 2.18, shortName: 'chèvre' }),
+  defineProduct({ id: 'chevre', name: 'Bûche de chèvre', brand: 'Soignon', aisle: AISLES.DAIRY, packageLabel: 'bûche 200 g', packageSize: 200, unit: UNITS.GRAM, price: 2.18, shortName: 'chèvre' }),
   defineProduct({ id: 'tofu', name: 'Tofu nature', brand: 'Vemondo', aisle: AISLES.CHILLED, packageLabel: 'bloc 180 g', packageSize: 180, unit: UNITS.GRAM, price: 1.59, shortName: 'tofu' }),
 
   defineProduct({ id: 'pain-complet', name: 'Pain de mie complet grandes tranches', brand: 'Maître Jean Pierre', aisle: AISLES.BAKERY, packageLabel: 'sachet 750 g', packageSize: 750, unit: UNITS.GRAM, price: 1.6, shortName: 'pain complet' }),

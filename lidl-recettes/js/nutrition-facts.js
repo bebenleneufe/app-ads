@@ -3,7 +3,7 @@
 // Pour les produits à la pièce : kcal pour une pièce.
 export const KCAL_BY_PRODUCT_ID = Object.freeze({
   oignon: 40,
-  ail: 150,
+  ail: 131,
   carotte: 41,
   'pomme-de-terre': 77,
   'patate-douce': 86,
@@ -54,7 +54,8 @@ export const KCAL_BY_PRODUCT_ID = Object.freeze({
   'pate-brisee': 920,
   'pate-feuilletee': 970,
   gnocchi: 150,
-  tortilla: 125,
+  // Un wrap de blé pèse environ 62 g.
+  tortilla: 185,
   'pain-burger': 160,
   'pain-pita': 160,
   houmous: 300,
@@ -133,7 +134,7 @@ export const PROTEIN_BY_PRODUCT_ID = Object.freeze({
   oeuf: 7, lait: 3.3, 'creme-epaisse': 2.5, beurre: 0.7, emmental: 28, mozzarella: 18, parmesan: 33, feta: 16,
   'fromage-blanc': 8, ricotta: 9, chevre: 18, tofu: 13,
 
-  'pain-complet': 9, 'pain-pita': 5.5, 'pate-brisee': 15, 'pate-feuilletee': 14, gnocchi: 3.5, tortilla: 3.5,
+  'pain-complet': 9, 'pain-pita': 5.5, 'pate-brisee': 15, 'pate-feuilletee': 14, gnocchi: 3.5, tortilla: 5,
   'pain-burger': 5, houmous: 7, falafels: 7,
 
   'flocons-avoine': 13, amandes: 21, spaghetti: 12.5, penne: 12.5, riz: 7.5, semoule: 12, nouilles: 13,
