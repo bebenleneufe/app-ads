@@ -171,6 +171,27 @@ export const PRODUCTS = Object.freeze([
   defineProduct({ id: 'poelee-legumes', name: 'Poêlée de légumes méridionale', aisle: AISLES.FROZEN, packageLabel: 'sachet 750 g', packageSize: 750, unit: UNITS.GRAM, price: 1.99, shortName: 'poêlée de légumes surgelée' }),
   defineProduct({ id: 'colin', name: "Filets de colin d'Alaska", aisle: AISLES.FROZEN, packageLabel: 'étui 400 g', packageSize: 400, unit: UNITS.GRAM, price: 3.49, shortName: 'colin surgelé' }),
 
+  // Ajoutés en octobre 2026 pour élargir les recettes. Prix relevés dans les Lidl de Lyon et de
+  // la région (Open Prices, 2025-2026) ou dans les listes de prix nationaux Lidl.
+  defineProduct({ id: 'mache', name: 'Mâche', brand: 'Saladinettes', aisle: AISLES.PRODUCE, packageLabel: 'sachet 125 g', packageSize: 125, unit: UNITS.GRAM, price: 0.99, shortName: 'mâche' }),
+  defineProduct({ id: 'endives', name: 'Endives', aisle: AISLES.PRODUCE, packageLabel: 'sachet 500 g', packageSize: 500, unit: UNITS.GRAM, price: 1.49, shortName: 'endives' }),
+  defineProduct({ id: 'blanc-poulet', name: 'Blanc de poulet doré au four', brand: 'Saint Alby', aisle: AISLES.MEAT, packageLabel: '4 tranches, 160 g', packageSize: 160, unit: UNITS.GRAM, price: 1.44, shortName: 'blanc de poulet' }),
+  defineProduct({ id: 'yaourt-grec', name: 'Yaourt à la grecque', brand: 'Envia', aisle: AISLES.DAIRY, packageLabel: 'pot 600 g', packageSize: 600, unit: UNITS.GRAM, price: 1.29, shortName: 'yaourt à la grecque' }),
+  defineProduct({ id: 'bifidus', name: 'Bifidus nature', brand: 'Milbona', aisle: AISLES.DAIRY, packageLabel: '6 pots de 125 g', packageSize: 750, unit: UNITS.GRAM, price: 2.23, shortName: 'bifidus nature' }),
+  defineProduct({ id: 'fromage-frais', name: 'Spécialité fromagère ail et fines herbes', brand: 'Milbona', aisle: AISLES.DAIRY, packageLabel: 'pot 150 g', packageSize: 150, unit: UNITS.GRAM, price: 0.99, shortName: 'fromage frais ail et fines herbes' }),
+  defineProduct({ id: 'quenelles', name: 'Quenelles aux œufs frais', brand: 'Toque du Chef', aisle: AISLES.CHILLED, packageLabel: 'barquette 240 g', packageSize: 240, unit: UNITS.GRAM, price: 1.15, shortName: 'quenelles' }),
+  defineProduct({ id: 'ravioles', name: 'Ravioles du Dauphiné', brand: 'Saveurs de nos Régions', aisle: AISLES.CHILLED, packageLabel: 'barquette 240 g', packageSize: 240, unit: UNITS.GRAM, price: 2.99, shortName: 'ravioles' }),
+  defineProduct({ id: 'tortelloni', name: 'Tortelloni ricotta et épinards', brand: 'Toque du Chef', aisle: AISLES.CHILLED, packageLabel: 'sachet 300 g', packageSize: 300, unit: UNITS.GRAM, price: 1.49, shortName: 'tortelloni' }),
+  defineProduct({ id: 'betteraves', name: "Betteraves rouges à l'échalote", brand: 'Saladinettes', aisle: AISLES.CHILLED, packageLabel: 'barquette 500 g', packageSize: 500, unit: UNITS.GRAM, price: 1.89, shortName: 'betteraves' }),
+  defineProduct({ id: 'champignons-boite', name: 'Champignons de Paris entiers', brand: 'Freshona', aisle: AISLES.CANS, packageLabel: 'boîte 230 g égouttés', packageSize: 230, unit: UNITS.GRAM, price: 0.98, shortName: 'champignons en boîte' }),
+  defineProduct({ id: 'artichauts', name: "Cœurs d'artichauts", brand: 'Freshona', aisle: AISLES.CANS, packageLabel: 'bocal 350 g', packageSize: 350, unit: UNITS.GRAM, price: 1.67, shortName: "cœurs d'artichauts" }),
+  defineProduct({ id: 'pousses-soja', name: 'Pousses de haricot mungo', brand: 'Vitasia', aisle: AISLES.WORLD, packageLabel: 'bocal 180 g égouttés', packageSize: 180, unit: UNITS.GRAM, price: 0.89, shortName: 'pousses de soja' }),
+  defineProduct({ id: 'galettes-mais', name: 'Galettes de maïs', brand: 'Sondey', aisle: AISLES.BREAKFAST, packageLabel: 'paquet 130 g', packageSize: 130, unit: UNITS.GRAM, price: 0.91, shortName: 'galettes de maïs' }),
+  defineProduct({ id: 'beurre-cacahuete', name: 'Beurre de cacahuète', brand: 'Maribel', aisle: AISLES.BREAKFAST, packageLabel: 'pot 350 g', packageSize: 350, unit: UNITS.GRAM, price: 2.49, shortName: 'beurre de cacahuète' }),
+  defineProduct({ id: 'miel', name: 'Miel de fleurs crémeux', brand: 'Maribel', aisle: AISLES.BREAKFAST, packageLabel: 'pot 500 g', packageSize: 500, unit: UNITS.GRAM, price: 3.39, shortName: 'miel' }),
+  defineProduct({ id: 'compote', name: 'Purée de pomme sans sucres ajoutés', brand: 'Les Vergers Gourmands', aisle: AISLES.BREAKFAST, packageLabel: 'bocal 800 g', packageSize: 800, unit: UNITS.GRAM, price: 1.99, shortName: 'compote de pomme' }),
+  defineProduct({ id: 'pommes-rissolees', name: 'Pommes rissolées', brand: 'Harvest Basket', aisle: AISLES.FROZEN, packageLabel: 'sachet 1 kg', packageSize: 1000, unit: UNITS.GRAM, price: 0.99, shortName: 'pommes rissolées surgelées' }),
+
   defineProduct({ id: 'huile-olive', name: "Huile d'olive vierge extra", brand: 'Primadonna', aisle: AISLES.PANTRY, packageLabel: 'bouteille 1 L', packageSize: 1000, unit: UNITS.MILLILITER, price: 7.89, shortName: "huile d'olive", isPantryStaple: true }),
   defineProduct({ id: 'vinaigre', name: 'Vinaigre balsamique de Modène', brand: 'Kania', aisle: AISLES.PANTRY, packageLabel: 'bouteille 350 ml', packageSize: 350, unit: UNITS.MILLILITER, price: 1.57, shortName: 'vinaigre balsamique', isPantryStaple: true }),
   defineProduct({ id: 'moutarde', name: 'Moutarde de Dijon', brand: 'Kania', aisle: AISLES.PANTRY, packageLabel: 'bocal 440 g', packageSize: 440, unit: UNITS.GRAM, price: 0.9, shortName: 'moutarde', isPantryStaple: true }),
