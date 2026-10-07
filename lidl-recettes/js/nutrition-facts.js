@@ -99,6 +99,25 @@ export const KCAL_BY_PRODUCT_ID = Object.freeze({
   cumin: 375,
   herbes: 270,
   poivre: 250,
+
+  mache: 20,
+  endives: 17,
+  'blanc-poulet': 110,
+  'yaourt-grec': 130,
+  bifidus: 60,
+  'fromage-frais': 280,
+  quenelles: 190,
+  ravioles: 270,
+  tortelloni: 260,
+  betteraves: 55,
+  'champignons-boite': 22,
+  artichauts: 30,
+  'pousses-soja': 25,
+  'galettes-mais': 380,
+  'beurre-cacahuete': 620,
+  miel: 320,
+  compote: 55,
+  'pommes-rissolees': 135,
 });
 
 // Protéines moyennes (Ciqual), mêmes unités que les calories : g pour 100 g / 100 ml, ou g par pièce.
@@ -126,4 +145,8 @@ export const PROTEIN_BY_PRODUCT_ID = Object.freeze({
 
   'huile-olive': 0, vinaigre: 0.5, moutarde: 7, 'sauce-soja': 8, bouillon: 0.5, curry: 12, paprika: 14, cumin: 18,
   herbes: 9, poivre: 10,
+
+  mache: 2, endives: 1, 'blanc-poulet': 22, 'yaourt-grec': 3.8, bifidus: 4.5, 'fromage-frais': 7, quenelles: 6.5,
+  ravioles: 11, tortelloni: 9, betteraves: 1.4, 'champignons-boite': 2, artichauts: 2, 'pousses-soja': 2.5,
+  'galettes-mais': 8, 'beurre-cacahuete': 25, miel: 0.4, compote: 0.3, 'pommes-rissolees': 2.5,
 });
