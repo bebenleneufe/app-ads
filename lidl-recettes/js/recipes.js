@@ -1970,6 +1970,22 @@ export const RECIPES = Object.freeze([
     steps: ['Verser le fromage blanc, ajouter la compote et les flocons.'],
   }),
 
+  // Le granola se prépare une fois pour la semaine : la liste de courses compte les 7 matins,
+  // et la portion est pesée chaque matin, car un granola à 430 kcal/100 g se ressert sans s'en rendre compte.
+  defineRecipe({
+    id: 'granola-maison-fromage-blanc',
+    name: 'Granola maison, fromage blanc et pomme',
+    category: CATEGORIES.VEGETARIAN,
+    mealType: MEAL_TYPES.BREAKFAST,
+    prepMinutes: 5,
+    ingredients: { 'flocons-avoine': 36, amandes: 7, miel: 5, 'huile-olive': 2, 'fromage-blanc': 250, pomme: 120 },
+    steps: [
+      'Le week-end, pour toute la semaine : mélanger les flocons d’avoine, les amandes concassées, le miel et l’huile des 7 matins (les quantités de la liste de courses).',
+      'Étaler sur une plaque couverte de papier cuisson et cuire 25 min au four à 160 °C, en remuant à mi-cuisson. Laisser refroidir puis garder dans un bocal fermé.',
+      'Chaque matin : peser un septième de la fournée (environ 50 g) et le verser sur le fromage blanc, avec la pomme en dés.',
+    ],
+  }),
+
   defineRecipe({
     id: 'collation-yaourt-grec-miel',
     name: 'Yaourt grec au miel',
