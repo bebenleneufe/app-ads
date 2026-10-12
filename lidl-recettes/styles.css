@@ -1825,30 +1825,47 @@ body.is-store-mode .aisle-head {
 }
 
 /* En magasin, une ligne par article : nom, prix et « Introuvable » côte à côte. */
+/* En magasin, le nom (avec la marque) prend toute la largeur ; dessous : prix, format et
+   quantités, puis « Introuvable ». Le libellé est « aplati » (display: contents) pour que ses
+   morceaux se rangent dans la grille de la ligne, tout en gardant le clic qui coche la case. */
 body.is-store-mode .receipt-line {
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
   column-gap: 8px;
+  row-gap: 2px;
+  align-items: baseline;
   padding-block: 4px;
 }
 
+body.is-store-mode .receipt-line input {
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+
 body.is-store-mode .line-label {
-  grid-template-columns: minmax(0, 1fr);
+  display: contents;
+}
+
+body.is-store-mode .line-name {
+  grid-column: 2 / -1;
+  grid-row: 1;
 }
 
 body.is-store-mode .line-price {
+  grid-column: 2;
+  grid-row: 2;
   text-align: start;
   font-size: var(--step-small);
-  color: var(--muted);
 }
 
-body.is-store-mode :is(.line-detail, .line-brand) {
-  display: none;
+body.is-store-mode .line-detail {
+  grid-column: 3;
+  grid-row: 2;
 }
 
 body.is-store-mode .missing-button {
-  grid-column: 3;
-  grid-row: 1;
+  grid-column: 4;
+  grid-row: 2;
+  align-self: center;
   padding-inline: 6px;
 }
 
