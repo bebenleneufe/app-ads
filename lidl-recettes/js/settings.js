@@ -9,10 +9,7 @@ export const SETTINGS_LIMITS = Object.freeze({
   age: { min: 18, max: 99 },
   weightKg: { min: 40, max: 250 },
   heightCm: { min: 130, max: 220 },
-  kcalAdjustment: { min: -500, max: 500 },
 });
-
-export const KCAL_ADJUSTMENT_STEP = 100;
 
 export const PREP_TIME_CHOICES = Object.freeze([15, 20, 30, 0]);
 
@@ -34,7 +31,6 @@ export const DEFAULT_SETTINGS = Object.freeze({
   weightKg: 85,
   heightCm: 178,
   activityLevel: 'sedentaire',
-  kcalAdjustment: 0,
 });
 
 function clampInteger(rawValue, { min, max }, fallback) {
@@ -79,19 +75,7 @@ export function normalizeSettings(savedSettings) {
     weightKg: clampToTenth(rawSettings.weightKg, SETTINGS_LIMITS.weightKg, DEFAULT_SETTINGS.weightKg),
     heightCm: clampInteger(rawSettings.heightCm, SETTINGS_LIMITS.heightCm, DEFAULT_SETTINGS.heightCm),
     activityLevel: pickKnownValue(rawSettings.activityLevel, Object.keys(ACTIVITY_FACTORS), DEFAULT_SETTINGS.activityLevel),
-    kcalAdjustment: roundToAdjustmentStep(rawSettings.kcalAdjustment),
   };
-}
-
-// Les calories se règlent par pas de 100 kcal autour du calcul automatique.
-function roundToAdjustmentStep(rawValue) {
-  const parsedValue = Number.parseInt(rawValue, 10);
-  if (Number.isNaN(parsedValue)) {
-    return DEFAULT_SETTINGS.kcalAdjustment;
-  }
-  const { min, max } = SETTINGS_LIMITS.kcalAdjustment;
-  const roundedValue = Math.round(parsedValue / KCAL_ADJUSTMENT_STEP) * KCAL_ADJUSTMENT_STEP;
-  return Math.min(max, Math.max(min, roundedValue));
 }
 
 export function readSettingsFromForm(formElement) {
@@ -114,7 +98,6 @@ export function readSettingsFromForm(formElement) {
     weightKg: formData.get('weightKg'),
     heightCm: formData.get('heightCm'),
     activityLevel: formData.get('activityLevel'),
-    kcalAdjustment: formData.get('kcalAdjustment'),
   });
 }
 
@@ -137,5 +120,4 @@ export function writeSettingsToForm(formElement, settings) {
   elements.weightKg.value = String(settings.weightKg);
   elements.heightCm.value = String(settings.heightCm);
   elements.activityLevel.value = settings.activityLevel;
-  elements.kcalAdjustment.value = String(settings.kcalAdjustment);
 }
