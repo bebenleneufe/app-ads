@@ -11,6 +11,7 @@ import {
 import { createElement, debounce, replaceChildrenWithFragment } from './dom.js';
 import { addExtraItem, keepUnboughtExtraItems, normalizeExtraItems, removeExtraItem } from './extra-items.js';
 import { setUpInstallButton } from './install-prompt.js';
+import { LeftoversDialog } from './leftovers-dialog.js';
 import { buildShoppingListText } from './list-text.js';
 import { createMainSlotMapper, generatePlan, PLAN_KINDS, reconcilePlan, restorePlan, swapMeal } from './planner.js';
 import { createEmptyPlan, getServingsPerBreakfast, getServingsPerMainSlot, getServingsPerSnack } from './meal-structure.js';
@@ -93,6 +94,7 @@ class WeeklyPlannerApp {
   // Recettes déjà proposées par « Changer », pour chaque repas de la semaine en cours.
   #swapHistoryBySlot = new Map();
   #cookMode;
+  #leftoversDialog;
   #storeWakeLock = createScreenWakeLock();
   #removeInstallButton = () => {};
   #checkedProductIds = new Set();
@@ -157,6 +159,7 @@ class WeeklyPlannerApp {
       weightAdvice: rootDocument.getElementById('weight-advice'),
       stockSummary: rootDocument.getElementById('stock-summary'),
       clearStockButton: rootDocument.getElementById('clear-stock-button'),
+      editStockButton: rootDocument.getElementById('edit-stock-button'),
       storeModeButton: rootDocument.getElementById('store-mode-button'),
       storeModeEnterButton: rootDocument.getElementById('store-mode-enter-button'),
       installButton: rootDocument.getElementById('install-button'),
@@ -179,6 +182,7 @@ class WeeklyPlannerApp {
     };
     this.#elements.numberInputs = [...this.#elements.settingsForm.querySelectorAll('input[type="number"][name]')];
     this.#cookMode = new CookMode(rootDocument.getElementById('cook-dialog'));
+    this.#leftoversDialog = new LeftoversDialog(rootDocument.getElementById('leftovers-dialog'));
     this.#undoToast = new UndoToast({
       toast: rootDocument.getElementById('undo-toast'),
       message: rootDocument.getElementById('undo-message'),
@@ -306,6 +310,7 @@ class WeeklyPlannerApp {
     this.#undoToast.destroy();
     this.#tabs.destroy();
     this.#cookMode.destroy();
+    this.#leftoversDialog.destroy();
     this.#storeWakeLock.disable();
     this.#removeInstallButton();
   }
@@ -364,6 +369,7 @@ class WeeklyPlannerApp {
     uncheckButton.addEventListener('click', () => this.#uncheckAll(), { signal });
     this.#elements.resetDislikesButton.addEventListener('click', () => this.#resetDislikes(), { signal });
     this.#elements.clearStockButton.addEventListener('click', () => this.#clearStock(), { signal });
+    this.#elements.editStockButton.addEventListener('click', () => this.#reviewStock(), { signal });
     this.#elements.storeModeButton.addEventListener('click', () => this.#toggleStoreMode(), { signal });
     this.#elements.storeModeEnterButton.addEventListener('click', () => this.#toggleStoreMode(), { signal });
     this.#elements.addWeightButton.addEventListener('click', () => this.#recordWeight(), { signal });
@@ -454,15 +460,40 @@ class WeeklyPlannerApp {
     this.#renderAll();
   }
 
+  // Avant de préparer la semaine suivante, les restes estimés sont montrés pour validation :
+  // le calcul suppose que rien n'a été jeté ni mangé à côté, ce que seule la personne sait.
   #regenerateWeek() {
-    const hasCheckedItems = this.#checkedProductIds.size > 0;
-    // Une liste cochée veut dire des courses faites : la remplacer est une décision à confirmer.
-    if (hasCheckedItems && !window.confirm('Passer à la semaine suivante ? Les articles cochés seront comptés comme achetés et la liste sera remise à zéro.')) {
+    const estimatedStock = this.#estimateNextStock();
+    if (Object.keys(estimatedStock).length > 0) {
+      this.#leftoversDialog.open(estimatedStock, {
+        title: 'Avant la nouvelle semaine : il te reste quoi ?',
+        confirmLabel: 'Valider les restes',
+        onConfirm: (confirmedStock) => this.#goToNextWeek(confirmedStock),
+      });
       return;
     }
-    this.#startNextWeek();
+    // Une liste cochée veut dire des courses faites : la remplacer est une décision à confirmer.
+    if (this.#checkedProductIds.size > 0 && !window.confirm('Passer à la semaine suivante ? La liste cochée sera remise à zéro.')) {
+      return;
+    }
+    this.#goToNextWeek({});
+  }
+
+  #goToNextWeek(confirmedStock) {
+    this.#startNextWeek(confirmedStock);
     this.#renderAll();
     this.#undoToast.offer('Nouvelle semaine préparée.', () => this.#swapWithPreviousWeek());
+  }
+
+  #reviewStock() {
+    this.#leftoversDialog.open(this.#pantryStock, {
+      title: 'Restes en stock',
+      confirmLabel: 'Enregistrer',
+      onConfirm: (confirmedStock) => {
+        this.#pantryStock = normalizeStock(confirmedStock);
+        this.#renderAll();
+      },
+    });
   }
 
   // Les deux semaines sont échangées, jamais écrasées : un appui par erreur se rattrape
@@ -531,9 +562,9 @@ class WeeklyPlannerApp {
 
   // Passer à une nouvelle semaine : on garde une copie de celle-ci pour pouvoir y revenir,
   // ses restes en stock, et ses plats en mémoire pour ne pas les resservir tout de suite.
-  #startNextWeek() {
+  #startNextWeek(confirmedStock) {
     this.#previousWeek = this.#createCurrentWeekSnapshot();
-    this.#carryLeftoversToStock();
+    this.#pantryStock = normalizeStock(confirmedStock);
     this.#preferences = rememberWeek(this.#preferences, this.#plan.mainRecipeIds);
     this.#extraItems = keepUnboughtExtraItems(this.#extraItems, this.#checkedProductIds);
     this.#cookedMeals = {};
@@ -548,12 +579,12 @@ class WeeklyPlannerApp {
   }
 
   // Sans case cochée, rien ne prouve que les courses ont été faites : le stock ne change pas.
-  #carryLeftoversToStock() {
+  #estimateNextStock() {
     if (!hasShoppingEvidence(this.#checkedProductIds)) {
-      return;
+      return { ...this.#pantryStock };
     }
     const planningSettings = this.#planningSettings();
-    this.#pantryStock = computeNextStock({
+    return computeNextStock({
       stock: this.#pantryStock,
       shoppingList: buildShoppingList(this.#plan, planningSettings),
       checkedProductIds: this.#checkedProductIds,
@@ -967,6 +998,7 @@ class WeeklyPlannerApp {
     this.#renderNextRecipe();
     renderPreferencesSummary(this.#elements.preferencesSummary, this.#elements.resetDislikesButton, this.#preferences);
     renderStockSummary(this.#elements.stockSummary, this.#elements.clearStockButton, describeStock(this.#pantryStock));
+    this.#elements.editStockButton.hidden = this.#elements.clearStockButton.hidden;
     renderStoreSummary({
       summaryElement: this.#elements.storeSummary,
       clearMissingButton: this.#elements.clearMissingButton,
