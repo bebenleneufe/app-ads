@@ -69,14 +69,15 @@
     <div class="shop-head" id="shop-head"></div>
     <form class="add-item-form" id="add-item-form" autocomplete="off">
       <label for="add-item-input" class="visually-hidden">Ajouter un article à la liste</label>
-      <input id="add-item-input" type="text" list="catalog-products" maxlength="60" enterkeyhint="done" placeholder="Ajouter un article (lessive, pommes…)">
+      <input id="add-item-input" type="text" list="catalog-products" maxlength="60" enterkeyhint="done" placeholder="Ajouter un article">
       <button class="quiet-button" type="submit">Ajouter</button>
       <datalist id="catalog-products"></datalist>
     </form>
     <div class="shopping-list" id="receipt"></div>
+    <p class="store-done">Panier complet ✓</p>
     <div class="receipt-actions">
-      <button id="store-mode-button" class="primary-button store-only" type="button" aria-label="Quitter le mode magasin">Quitter</button>
-      <button id="hide-checked-button" class="quiet-button store-only" type="button" aria-pressed="false">Masquer les cochés</button>
+      <button id="store-mode-button" class="quiet-button store-only" type="button" aria-label="Quitter le mode magasin">Quitter</button>
+      <button id="hide-checked-button" class="primary-button store-only" type="button" aria-pressed="false">Masquer les cochés</button>
     </div>
   </section>
 

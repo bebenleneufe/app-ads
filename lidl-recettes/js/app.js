@@ -69,6 +69,8 @@ import { getUpcomingMonday, isWeekOver, resolveWeekStart, shiftWeek, toIsoDate }
 const SETTINGS_DEBOUNCE_MILLISECONDS = 300;
 const COPY_STATUS_DURATION_MILLISECONDS = 4000;
 const FOLD_DELAY_MILLISECONDS = 600;
+// En dessous d'un tiers de la grande photo à l'écran, on est passé au petit-déjeuner et à la collation.
+const HERO_VISIBLE_SHARE = 0.33;
 // Le budget n'est appliqué qu'à la validation du champ : les valeurs intermédiaires
 // tapées (« 4 » avant « 45 ») remplaceraient des plats pour rien.
 const FIELDS_APPLIED_ON_COMMIT_ONLY = new Set(['weeklyBudget']);
@@ -111,12 +113,15 @@ class WeeklyPlannerApp {
   // Jour affiché dans l'onglet Semaine ; null : celui du prochain plat à cuisiner.
   #selectedDayIndex = null;
   #tabs;
+  // Pendant le démarrage, l'onglet affiché vient de l'adresse : il ne doit pas couper le mode magasin enregistré.
+  #isStarting = true;
   #shoppingList = null;
   #weekStartDate = getUpcomingMonday();
   #listenersController = new AbortController();
   #debouncedSettingsUpdate = debounce(() => this.#applySettingsFromForm(), SETTINGS_DEBOUNCE_MILLISECONDS);
   #copyStatusTimeoutId = null;
   #foldTimeoutIds = new Set();
+  #heroObserver = null;
   #undoToast;
   // Jour où le mode magasin a été ouvert : rouvrir l'appli un autre jour revient à la vue normale.
   #storeModeDate = null;
@@ -205,6 +210,7 @@ class WeeklyPlannerApp {
     this.#applyHideChecked();
     this.#leaveForgottenStoreMode();
     this.#tabs.start();
+    this.#isStarting = false;
     if (this.#isStoreMode) {
       this.#applyStoreMode();
     }
@@ -212,11 +218,13 @@ class WeeklyPlannerApp {
 
   // L'onglet Semaine s'ouvre toujours sur le jour du prochain plat à cuisiner.
   #handleTabChange(tab) {
+    // « Annuler » concerne l'écran qu'on quitte : il ne doit pas cacher le nouvel écran.
+    this.#undoToast.close();
     if (tab === TABS.WEEK) {
       this.#selectedDayIndex = null;
       this.#renderWeek();
     }
-    if (tab !== TABS.SHOPPING && this.#isStoreMode) {
+    if (tab !== TABS.SHOPPING && this.#isStoreMode && !this.#isStarting) {
       this.#toggleStoreMode();
     }
   }
@@ -239,6 +247,7 @@ class WeeklyPlannerApp {
     this.#undoToast.close();
     this.#swapHistoryBySlot.clear();
     this.#restoreSavedState();
+    this.#selectedDayIndex = null;
     writeSettingsToForm(this.#elements.settingsForm, this.#settings);
     this.#renderWithoutSaving();
     this.#applyHideChecked();
@@ -305,6 +314,7 @@ class WeeklyPlannerApp {
     this.#debouncedSettingsUpdate.flush();
     this.#listenersController.abort();
     clearTimeout(this.#copyStatusTimeoutId);
+    this.#heroObserver?.disconnect();
     this.#foldTimeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
     this.#foldTimeoutIds.clear();
     this.#undoToast.destroy();
@@ -464,19 +474,17 @@ class WeeklyPlannerApp {
   // le calcul suppose que rien n'a été jeté ni mangé à côté, ce que seule la personne sait.
   #regenerateWeek() {
     const estimatedStock = this.#estimateNextStock();
-    if (Object.keys(estimatedStock).length > 0) {
-      this.#leftoversDialog.open(estimatedStock, {
-        title: 'Avant la nouvelle semaine : il te reste quoi ?',
-        confirmLabel: 'Valider les restes',
-        onConfirm: (confirmedStock) => this.#goToNextWeek(confirmedStock),
-      });
-      return;
-    }
+    const hasLeftovers = Object.keys(estimatedStock).length > 0;
     // Une liste cochée veut dire des courses faites : la remplacer est une décision à confirmer.
-    if (this.#checkedProductIds.size > 0 && !window.confirm('Passer à la semaine suivante ? La liste cochée sera remise à zéro.')) {
+    if (!hasLeftovers && this.#checkedProductIds.size === 0) {
+      this.#goToNextWeek({});
       return;
     }
-    this.#goToNextWeek({});
+    this.#leftoversDialog.open(estimatedStock, {
+      title: hasLeftovers ? 'Avant la nouvelle semaine : il te reste quoi ?' : 'Passer à la semaine suivante ?',
+      confirmLabel: hasLeftovers ? 'Valider les restes' : 'Préparer la semaine',
+      onConfirm: (confirmedStock) => this.#goToNextWeek(confirmedStock),
+    });
   }
 
   #goToNextWeek(confirmedStock) {
@@ -693,6 +701,7 @@ class WeeklyPlannerApp {
     }
     this.#storeSetup = toggleMissingProduct(this.#storeSetup, productId);
     updateMissingLine(lineElement, product, this.#storeSetup.missingProductIds.includes(productId));
+    lineElement.classList.remove('is-settled');
     lineElement.querySelector('.missing-button')?.focus();
     this.#updateGroupCompletion(lineElement.closest('.receipt-group'));
     this.#updateProgress();
@@ -834,6 +843,21 @@ class WeeklyPlannerApp {
       this.#planningSettings(),
       new Set(listCookedSlotIndexes(this.#cookedMeals, this.#plan)),
     );
+    this.#watchHeroVisibility();
+  }
+
+  // La barre « Cuisiner » fixe ne sert que tant que la grande photo est à l'écran : plus bas,
+  // elle masquerait le petit-déjeuner et se confondrait avec son propre bouton « Cuisiner ».
+  #watchHeroVisibility() {
+    this.#heroObserver?.disconnect();
+    const heroMedia = this.#elements.nextRecipeCard.querySelector('.hero-media');
+    if (!heroMedia || typeof IntersectionObserver === 'undefined') {
+      return;
+    }
+    this.#heroObserver = new IntersectionObserver(([heroEntry]) => {
+      this.#elements.nextRecipeCard.classList.toggle('hero-out-of-view', heroEntry.intersectionRatio < HERO_VISIBLE_SHARE);
+    }, { threshold: [0, HERO_VISIBLE_SHARE, 1] });
+    this.#heroObserver.observe(heroMedia);
   }
 
   // Mis à jour à part du reste : cocher un plat ne doit pas reconstruire toute la semaine.
@@ -843,15 +867,22 @@ class WeeklyPlannerApp {
     renderDayStrip(this.#elements.daysStrip, this.#weekRenderState());
   }
 
+  // Le jour choisi est retenu une fois calculé : cocher un plat ne doit pas faire sauter la vue
+  // au jour suivant. Il reste dans la semaine même si le nombre de jours diminue.
   #weekRenderState() {
     const cookedSlotIndexes = new Set(listCookedSlotIndexes(this.#cookedMeals, this.#plan));
     const planningSettings = this.#planningSettings();
+    const lastDayIndex = Math.max(0, planningSettings.dayCount - 1);
+    this.#selectedDayIndex = Math.min(
+      this.#selectedDayIndex ?? findNextDayIndex(this.#plan, planningSettings, cookedSlotIndexes),
+      lastDayIndex,
+    );
     return {
       plan: this.#plan,
       settings: planningSettings,
       weekStartDate: this.#weekStartDate,
       cookedSlotIndexes,
-      selectedDayIndex: this.#selectedDayIndex ?? findNextDayIndex(this.#plan, planningSettings, cookedSlotIndexes),
+      selectedDayIndex: this.#selectedDayIndex,
     };
   }
 
@@ -902,7 +933,11 @@ class WeeklyPlannerApp {
     } else {
       this.#checkedProductIds.delete(productId);
     }
-    changeEvent.target.closest('.receipt-line')?.classList.toggle('is-checked', changeEvent.target.checked);
+    const lineElement = changeEvent.target.closest('.receipt-line');
+    lineElement?.classList.toggle('is-checked', changeEvent.target.checked);
+    // « is-settled » (réglé dès l'affichage) ne vaut plus une fois la case touchée : sinon « Masquer les cochés »
+    // cacherait un article qu'on vient de décocher.
+    lineElement?.classList.remove('is-settled');
     this.#updateGroupCompletion(changeEvent.target.closest('.receipt-group'));
     this.#updateProgress();
     this.#persist();
@@ -917,6 +952,9 @@ class WeeklyPlannerApp {
     const isComplete = doneCount === lineProductIds.length;
     const wasComplete = groupElement.classList.contains('is-complete');
     groupElement.classList.toggle('is-complete', isComplete);
+    if (!isComplete) {
+      groupElement.classList.remove('is-settled');
+    }
     updateAisleCount(groupElement, doneCount, lineProductIds.length);
     // Le rayon se replie seulement quand il vient d'être fini, après avoir laissé voir la dernière coche.
     if (isComplete && !wasComplete) {
@@ -1014,17 +1052,39 @@ class WeeklyPlannerApp {
   }
 
   #renderReceipt() {
+    const openStateByAisle = this.#readAisleOpenStates();
     renderShopHead(this.#elements.shopHead, this.#shoppingList);
     renderShoppingList(this.#elements.receipt, this.#shoppingList, this.#planningSettings(), this.#checkedProductIds);
+    this.#restoreAisleOpenStates(openStateByAisle);
     if (this.#elements.ticketSheet.open) {
       renderTicket(this.#elements.ticket, this.#shoppingList, this.#planningSettings(), this.#weekStartDate);
     }
     this.#updateProgress();
   }
 
+  // Un rayon replié ou rouvert à la main garde son état quand la liste est reconstruite.
+  // Seulement si le rayon n'a pas changé d'état : un rayon fini la semaine d'avant doit se rouvrir.
+  #readAisleOpenStates() {
+    return new Map([...this.#elements.receipt.querySelectorAll('.receipt-group')]
+      .map((groupElement) => [groupElement.querySelector('.aisle-name')?.textContent, {
+        isOpen: groupElement.open,
+        isComplete: groupElement.classList.contains('is-complete'),
+      }]));
+  }
+
+  #restoreAisleOpenStates(openStateByAisle) {
+    for (const groupElement of this.#elements.receipt.querySelectorAll('.receipt-group')) {
+      const previousState = openStateByAisle.get(groupElement.querySelector('.aisle-name')?.textContent);
+      if (previousState && previousState.isComplete === groupElement.classList.contains('is-complete')) {
+        groupElement.open = previousState.isOpen;
+      }
+    }
+  }
+
   #updateProgress() {
     const { doneCount, lineCount } = this.#countReceiptLines();
     updateReceiptProgress(this.#elements.shopHead, doneCount, lineCount);
+    this.#elements.receipt.classList.toggle('is-all-done', lineCount > 0 && doneCount === lineCount);
   }
 
   #countReceiptLines() {

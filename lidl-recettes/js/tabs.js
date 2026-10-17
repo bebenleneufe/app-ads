@@ -20,8 +20,16 @@ export class TabNavigator {
   }
 
   start() {
-    const rootWindow = this.#links[0]?.ownerDocument.defaultView ?? window;
-    rootWindow.addEventListener('hashchange', () => this.#showTabFromAddress(), { signal: this.#listenersController.signal });
+    const { signal } = this.#listenersController;
+    window.addEventListener('hashchange', () => this.#showTabFromAddress(), { signal });
+    window.addEventListener('popstate', () => this.#showTabFromAddress(), { signal });
+    // L'écran change dès l'appui, sans attendre l'événement « hashchange » qui arrive un peu plus tard.
+    for (const link of this.#links) {
+      link.addEventListener('click', (clickEvent) => {
+        clickEvent.preventDefault();
+        this.open(link.dataset.tabLink);
+      }, { signal });
+    }
     this.#showTabFromAddress();
   }
 
@@ -29,11 +37,10 @@ export class TabNavigator {
     if (!this.#views.has(tab)) {
       return;
     }
-    if (window.location.hash === `#${tab}`) {
-      this.#show(tab);
-      return;
+    if (window.location.hash !== `#${tab}`) {
+      window.history.pushState(null, '', `#${tab}`);
     }
-    window.location.hash = tab;
+    this.#show(tab);
   }
 
   destroy() {
@@ -42,7 +49,10 @@ export class TabNavigator {
 
   #showTabFromAddress() {
     const requestedTab = window.location.hash.slice(1);
-    this.#show(this.#views.has(requestedTab) ? requestedTab : this.#defaultTab);
+    const tab = this.#views.has(requestedTab) ? requestedTab : this.#defaultTab;
+    if (tab !== this.#currentTab) {
+      this.#show(tab);
+    }
   }
 
   #show(tab) {

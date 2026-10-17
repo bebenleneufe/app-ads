@@ -621,12 +621,8 @@ p {
 
 .days-strip {
   display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  margin-inline: calc(var(--gutter) * -1);
-  padding: 4px var(--gutter) 6px;
-  scrollbar-width: none;
-  scroll-snap-type: x proximity;
+  gap: 6px;
+  padding-block: 4px 6px;
 }
 
 .days-strip::-webkit-scrollbar {
@@ -634,7 +630,8 @@ p {
 }
 
 .day-chip {
-  flex: 1 0 48px;
+  flex: 1 1 0;
+  min-inline-size: 0;
   max-inline-size: 72px;
   display: grid;
   justify-items: center;
@@ -1061,8 +1058,8 @@ input::placeholder {
 /* Grandes cases rondes, faciles à toucher d'un pouce dans les rayons. */
 .receipt-line input {
   appearance: none;
-  inline-size: 28px;
-  block-size: 28px;
+  inline-size: 32px;
+  block-size: 32px;
   margin: 0;
   border: 2px solid var(--line-strong);
   border-radius: 9px;
@@ -1344,10 +1341,8 @@ body:not(.is-store-mode) :is(.store-only, .missing-button, .receipt-actions) {
 
 .leftover-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 10px 10px 14px;
+  gap: 8px;
+  padding: 12px 14px;
   border-top: 1px solid var(--line);
 }
 
@@ -1356,7 +1351,10 @@ body:not(.is-store-mode) :is(.store-only, .missing-button, .receipt-actions) {
 }
 
 .leftover-name {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
   font-weight: 700;
   line-height: 1.3;
 }
@@ -1367,35 +1365,8 @@ body:not(.is-store-mode) :is(.store-only, .missing-button, .receipt-actions) {
   color: var(--muted);
 }
 
-.leftover-quantity {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 700;
-  color: var(--muted);
-}
-
-.leftover-quantity input {
-  inline-size: 92px;
-  padding-inline: 8px;
-  text-align: end;
+.leftover-choices {
   background: var(--surface);
-}
-
-.leftover-unit {
-  min-inline-size: 1.5em;
-}
-
-.leftover-none {
-  inline-size: 44px;
-  block-size: 44px;
-  border: 0;
-  border-radius: 50%;
-  background: var(--surface);
-  color: var(--muted);
-  font: inherit;
-  font-weight: 800;
-  cursor: pointer;
 }
 
 .leftover-row.is-empty .leftover-name {
@@ -1403,7 +1374,7 @@ body:not(.is-store-mode) :is(.store-only, .missing-button, .receipt-actions) {
   text-decoration: line-through;
 }
 
-.leftover-row.is-empty .leftover-none {
+.leftover-row.is-empty .leftover-choices input:checked + label {
   background: var(--tomato-soft);
   color: var(--tomato);
 }
@@ -2102,7 +2073,7 @@ body.is-store-mode .undo-toast {
   min-block-size: 54px;
   padding: 4px;
   border-radius: 18px;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.02em;
   color: var(--muted);
@@ -2168,4 +2139,44 @@ body.is-store-mode .undo-toast {
     animation: none;
     display: none;
   }
+}
+
+/* La barre « Cuisiner » : un fond pour ne pas laisser voir la carte entre les boutons,
+   et elle s'efface quand la grande photo sort de l'écran. */
+.cook-bar {
+  padding: 8px;
+  border-radius: 32px;
+  background: color-mix(in srgb, var(--ground) 80%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.hero-out-of-view .cook-bar {
+  opacity: 0;
+  transform: translateY(16px);
+  pointer-events: none;
+}
+
+body:has(.hero-out-of-view) .undo-toast {
+  bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+}
+
+/* En magasin, « Introuvable » seulement sur ce qui reste à trouver. */
+body.is-store-mode .receipt-line.is-checked .missing-button {
+  visibility: hidden;
+}
+
+.store-done {
+  display: none;
+  padding: 36px 20px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+body.is-store-mode.hides-checked .shopping-list.is-all-done + .store-done {
+  display: block;
 }
