@@ -2203,6 +2203,7 @@ body.is-store-mode.hides-checked .shopping-list.is-all-done + .store-done {
 
 .stepper-value {
   min-inline-size: 7.5em;
+  white-space: nowrap;
   text-align: center;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
