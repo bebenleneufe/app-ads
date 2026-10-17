@@ -1330,6 +1330,98 @@ body:not(.is-store-mode) :is(.store-only, .missing-button, .receipt-actions) {
   padding: 10px;
 }
 
+/* Restes à valider avant la nouvelle semaine */
+
+.leftovers-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  overflow: hidden;
+}
+
+.leftover-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 10px 14px;
+  border-top: 1px solid var(--line);
+}
+
+.leftover-row:first-child {
+  border-top: 0;
+}
+
+.leftover-name {
+  display: grid;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.leftover-package {
+  font-size: var(--step-xs);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.leftover-quantity {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.leftover-quantity input {
+  inline-size: 92px;
+  padding-inline: 8px;
+  text-align: end;
+  background: var(--surface);
+}
+
+.leftover-unit {
+  min-inline-size: 1.5em;
+}
+
+.leftover-none {
+  inline-size: 44px;
+  block-size: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.leftover-row.is-empty .leftover-name {
+  color: var(--faint);
+  text-decoration: line-through;
+}
+
+.leftover-row.is-empty .leftover-none {
+  background: var(--tomato-soft);
+  color: var(--tomato);
+}
+
+.leftovers-none-all {
+  white-space: nowrap;
+}
+
+.sheet-footer {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding-top: 4px;
+}
+
+.sheet-footer button {
+  min-block-size: 52px;
+}
+
 /* Mode magasin : la liste seule, en grand, pour cocher d'une main dans les rayons. */
 
 body.is-store-mode :is(.tabbar, .receipt-column-head, .add-item-form, .ticket-button) {

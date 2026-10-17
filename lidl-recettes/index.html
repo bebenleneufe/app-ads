@@ -225,6 +225,7 @@
           </label>
           <div class="setting-row setting-row-block preferences-row">
             <p class="hint" id="stock-summary"></p>
+            <button id="edit-stock-button" class="text-button" type="button" hidden>Vérifier les restes</button>
             <button id="clear-stock-button" class="text-button" type="button" hidden>Vider le stock de restes</button>
           </div>
         </div>
@@ -270,6 +271,21 @@
     </div>
     <p class="copy-status" id="copy-status" role="status"></p>
     <textarea id="copy-fallback" class="copy-fallback" rows="8" readonly hidden aria-label="Liste de courses à copier"></textarea>
+  </div>
+</dialog>
+
+<dialog class="sheet leftovers-sheet" id="leftovers-dialog" aria-labelledby="leftovers-title">
+  <span class="sheet-grab" aria-hidden="true"></span>
+  <div class="sheet-head">
+    <h2 id="leftovers-title" class="section-title" data-leftovers="title">Il te reste quoi ?</h2>
+    <button class="quiet-button leftovers-none-all" type="button" data-leftovers="none">Tout à zéro</button>
+  </div>
+  <div class="sheet-body">
+    <ul class="leftovers-list" data-leftovers="list"></ul>
+  </div>
+  <div class="sheet-actions sheet-footer">
+    <button class="quiet-button" type="button" data-leftovers="cancel">Annuler</button>
+    <button class="primary-button" type="button" data-leftovers="confirm">Valider</button>
   </div>
 </dialog>
 

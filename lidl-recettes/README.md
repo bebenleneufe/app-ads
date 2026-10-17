@@ -13,7 +13,7 @@ Générateur de menus pour la semaine. Il produit aussi la liste de courses et u
 - **Quatre onglets** (barre flottante en bas, thème sombre) : Aujourd'hui, Semaine, Courses, Réglages. Le bouton retour du téléphone revient à l'onglet précédent.
 - **Aujourd'hui** : le premier plat de la semaine pas encore cuisiné (quel que soit le jour prévu), en grande photo, avec « Cuisiner » toujours sous le pouce ; il passe au suivant dès qu'un plat est coché « Cuisiné ». Dessous, le petit-déjeuner et la collation.
 - **Semaine** : les jours en pastilles (point vert quand le jour est cuisiné), un jour affiché à la fois.
-- **Plats cuisinés** : « Cuisiné ? » sur chaque plat (coché tout seul en terminant le mode cuisine), « 3 sur 7 » dans le résumé. Un plat cuisiné s'efface des menus (la journée aussi quand tout y est cuisiné), avec « Annuler » ; « Afficher les plats cuisinés » les fait revenir. Au passage à la semaine suivante, les restes ne comptent comme mangés que les plats cuisinés (si au moins un est coché).
+- **Plats cuisinés** : « Cuisiné ? » sur chaque plat (coché tout seul en terminant le mode cuisine), « 3 sur 7 » dans le résumé. Un plat cuisiné passe en grisé, le jour reçoit un point vert, et la recette suivante passe au plat d'après, avec « Annuler ». Au passage à la semaine suivante, les restes ne comptent comme mangés que les plats cuisinés (si au moins un est coché).
 - **Quantités à la pièce** arrondies au demi supérieur par plat cuisiné (« ½ laitue », « 1 poivron »), dans les recettes comme dans la liste.
 - **Photos** : une photo indicative par recette (`images/recettes/<id>.webp`, 480 × 320, environ 18 Ko chacune).
 - **Régimes** : tout, sans viande (poisson autorisé), végétarien, avec une option sans porc.
@@ -29,7 +29,7 @@ Générateur de menus pour la semaine. Il produit aussi la liste de courses et u
 - **Liste rangée par rayon** dans l'ordre du parcours habituel d'un magasin Lidl (surgelés en dernier), avec besoin réel et reste de chaque paquet. Un rayon fini se replie tout seul ; le ticket détaillé (totaux, restes, copie de la liste) s'ouvre dans une feuille à part.
 - **Mode magasin** : la liste seule, en grand, avec l'écran qui reste allumé (retenu si l'appli est fermée en plein rayon). « Masquer les cochés » fait disparaître les articles déjà pris et les rayons terminés.
 - **Mon Lidl** : dans les réglages, les flèches rangent les rayons dans l'ordre de son magasin ; en mode magasin, « Introuvable » écarte un produit des prochains menus (les plats déjà prévus restent, signalés).
-- **Restes reportés** : quand on passe à la semaine suivante, les restes d'épicerie, de conserves et de surgelés **cochés** (donc achetés) sont gardés en stock et déduits des courses suivantes ; le générateur privilégie les plats qui les finissent.
+- **Restes reportés** : quand on passe à la semaine suivante, les restes d'épicerie, de conserves et de surgelés **cochés** (donc achetés) sont proposés en stock. Avant de préparer la nouvelle semaine, l'appli affiche ces restes estimés : on corrige chaque quantité (ou ✕ « plus rien ») puis on valide. Seuls les restes validés sont déduits des courses suivantes ; le générateur privilégie les plats qui les finissent. « Vérifier les restes » dans les réglages permet de les corriger à tout moment.
 - **Budget** : plafond respecté à la génération, avec « Changer », et quand un réglage renchérit la semaine (un réglage sans effet sur le prix ne remplace jamais de plat).
 - **Ajouter un article** à la liste : un produit du catalogue se range dans son rayon avec son prix, un texte libre (« lessive ») va dans « Autres articles ». Un ajout pas encore acheté reste sur la liste de la semaine suivante.
 - **Copie** de la liste en texte (pour l'envoyer par message, par exemple).
@@ -86,7 +86,7 @@ Les tests tournent aussi automatiquement sur GitHub à chaque push et pull reque
 | `js/week.js` | Date de la semaine enregistrée |
 | `js/render.js`, `js/render-weight.js` | Affichage (DocumentFragment, aucun `innerHTML`) |
 | `js/cook-mode.js`, `js/wake-lock.js` | Mode cuisine, minuteur, écran allumé |
-| `js/tabs.js`, `js/undo-toast.js` | Onglets (adresse #semaine, #courses…) et bandeau « Annuler » |
+| `js/tabs.js`, `js/undo-toast.js`, `js/leftovers-dialog.js` | Onglets (adresse #semaine, #courses…), bandeau « Annuler », validation des restes |
 | `js/app.js` | Contrôleur : état, écouteurs (debounce, nettoyage via `AbortController`) |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Installation sur téléphone et mode hors ligne |
 
