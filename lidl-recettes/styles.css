@@ -2180,3 +2180,31 @@ body.is-store-mode .receipt-line.is-checked .missing-button {
 body.is-store-mode.hides-checked .shopping-list.is-all-done + .store-done {
   display: block;
 }
+
+/* Réglage des calories : − valeur + */
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stepper-button {
+  inline-size: 44px;
+  block-size: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-raised);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.25rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.stepper-value {
+  min-inline-size: 7.5em;
+  text-align: center;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
