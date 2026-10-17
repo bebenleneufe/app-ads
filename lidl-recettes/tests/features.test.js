@@ -106,9 +106,9 @@ describe('protéines', () => {
     }
   });
 
-  it('calcule l’objectif sur le poids de référence au-delà d’un IMC de 25', () => {
-    assert.equal(computeDailyProteinTarget({ ...defaultSettings, weightKg: 85, heightCm: 178 }), 127);
-    assert.equal(computeDailyProteinTarget({ ...defaultSettings, weightKg: 70, heightCm: 178 }), 112);
+  it('vise 1,8 g de protéines par kilo de poids', () => {
+    assert.equal(computeDailyProteinTarget({ ...defaultSettings, weightKg: 85, heightCm: 178 }), 153);
+    assert.equal(computeDailyProteinTarget({ ...defaultSettings, weightKg: 70, heightCm: 178 }), 126);
     assert.equal(computeDailyProteinTarget({ ...defaultSettings, goal: GOALS.NONE }), null);
   });
 

@@ -58,9 +58,9 @@ export const PRIORITIES = Object.freeze({
 // Le bonus protéines suit la priorité : quand le prix compte peu, un bonus fort pousserait
 // toujours vers les mêmes viandes et poissons chers, au détriment du prix et de la variété.
 const SCORING_WEIGHTS_BY_PRIORITY = Object.freeze({
-  [PRIORITIES.PRICE]: { marginalCost: 1.0, randomness: 3.5, protein: 6 },
-  [PRIORITIES.BALANCED]: { marginalCost: 0.6, randomness: 4, protein: 3 },
-  [PRIORITIES.VARIETY]: { marginalCost: 0.3, randomness: 4.5, protein: 1.5 },
+  [PRIORITIES.PRICE]: { marginalCost: 1.0, randomness: 3.5, protein: 18 },
+  [PRIORITIES.BALANCED]: { marginalCost: 0.6, randomness: 4, protein: 9 },
+  [PRIORITIES.VARIETY]: { marginalCost: 0.3, randomness: 4.5, protein: 4.5 },
 });
 const REPEATED_RECIPE_PENALTY = 10;
 const CATEGORY_BALANCE_WEIGHT = 2;

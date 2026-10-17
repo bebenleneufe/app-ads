@@ -15,7 +15,7 @@ import { LeftoversDialog } from './leftovers-dialog.js';
 import { buildShoppingListText } from './list-text.js';
 import { createMainSlotMapper, generatePlan, PLAN_KINDS, reconcilePlan, restorePlan, swapMeal } from './planner.js';
 import { createEmptyPlan, getServingsPerBreakfast, getServingsPerMainSlot, getServingsPerSnack } from './meal-structure.js';
-import { hasWeightLossGoal } from './nutrition.js';
+import { computeDailyTargetKcal, hasWeightLossGoal } from './nutrition.js';
 import {
   clearDisliked,
   EMPTY_PREFERENCES,
@@ -46,7 +46,7 @@ import {
   updateMissingLine,
   updateReceiptProgress,
 } from './render.js';
-import { normalizeSettings, readSettingsFromForm, writeSettingsToForm } from './settings.js';
+import { KCAL_ADJUSTMENT_STEP, normalizeSettings, readSettingsFromForm, writeSettingsToForm } from './settings.js';
 import { buildShoppingList } from './shopping-list.js';
 import { renderWeightTracker } from './render-weight.js';
 import { computeNextStock, describeStock, hasShoppingEvidence, normalizeStock } from './stock.js';
@@ -156,6 +156,8 @@ class WeeklyPlannerApp {
       copyFallback: rootDocument.getElementById('copy-fallback'),
       profileFields: rootDocument.getElementById('profile-fields'),
       goalHint: rootDocument.getElementById('kcal-hint'),
+      kcalAdjustmentInput: rootDocument.getElementById('kcal-adjustment'),
+      kcalAdjustmentValue: rootDocument.getElementById('kcal-adjustment-value'),
       preferencesSummary: rootDocument.getElementById('preferences-summary'),
       resetDislikesButton: rootDocument.getElementById('reset-dislikes-button'),
       weightEntryInput: rootDocument.getElementById('weight-entry'),
@@ -348,6 +350,7 @@ class WeeklyPlannerApp {
       }
     }, { signal });
     settingsForm.addEventListener('submit', (submitEvent) => submitEvent.preventDefault(), { signal });
+    settingsForm.addEventListener('click', (clickEvent) => this.#stepKcalAdjustment(clickEvent), { signal });
     settingsForm.addEventListener('input', (inputEvent) => this.#handleSettingsInput(inputEvent), { signal });
     settingsForm.addEventListener('change', (changeEvent) => this.#handleSettingsCommit(changeEvent), { signal });
     regenerateButton.addEventListener('click', () => this.#regenerateWeek(), { signal });
@@ -406,6 +409,18 @@ class WeeklyPlannerApp {
       }
       return;
     }
+    this.#applySettingsFromForm();
+  }
+
+  // Les calories se règlent par pas de 100 autour du calcul automatique, par exemple +200
+  // en cas de fatigue ou de perte trop rapide.
+  #stepKcalAdjustment(clickEvent) {
+    const stepButton = clickEvent.target.closest('[data-kcal-step]');
+    if (!stepButton) {
+      return;
+    }
+    const { kcalAdjustmentInput } = this.#elements;
+    kcalAdjustmentInput.value = String(this.#settings.kcalAdjustment + Number(stepButton.dataset.kcalStep) * KCAL_ADJUSTMENT_STEP);
     this.#applySettingsFromForm();
   }
 
@@ -555,6 +570,15 @@ class WeeklyPlannerApp {
     this.#checkedProductIds = new Set(snapshot.checkedProductIds);
     this.#swapHistoryBySlot.clear();
     this.#selectedDayIndex = null;
+  }
+
+  #renderKcalAdjustment() {
+    const dailyTargetKcal = computeDailyTargetKcal(this.#settings);
+    const { kcalAdjustment } = this.#settings;
+    const adjustmentText = kcalAdjustment === 0 ? '' : ` (${kcalAdjustment > 0 ? '+' : '−'}${Math.abs(kcalAdjustment)})`;
+    this.#elements.kcalAdjustmentValue.textContent = dailyTargetKcal === null
+      ? ''
+      : `${dailyTargetKcal.toLocaleString('fr-FR')} kcal${adjustmentText}`;
   }
 
   #renderWeekTools() {
@@ -1027,6 +1051,7 @@ class WeeklyPlannerApp {
     const planningSettings = this.#planningSettings();
     this.#elements.profileFields.hidden = !hasWeightLossGoal(this.#settings);
     renderGoalHint(this.#elements.goalHint, this.#settings);
+    this.#renderKcalAdjustment();
     this.#renderWeek();
     renderWeeklyMeals(this.#elements.weeklyMeals, this.#plan, planningSettings);
     renderWeeklyMeals(this.#elements.todayWeekly, this.#plan, planningSettings);

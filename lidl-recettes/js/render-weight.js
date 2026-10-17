@@ -103,7 +103,7 @@ function describeTrend(analysis) {
   }
   const weeklyText = `${formatSignedKg(weeklyChangeKg)} par semaine`;
   if (status === TREND_STATUSES.TOO_FAST) {
-    return `${weeklyText} : c’est rapide. Mange bien tes trois repas : au-delà d’1 kg par semaine, on perd aussi du muscle.`;
+    return `${weeklyText} : plus de 1 % de ton poids par semaine. Remonte les calories de 200 à 300 kcal (bouton + de « Calories »).`;
   }
   if (status === TREND_STATUSES.STALLED) {
     return 'Ton poids ne bouge plus depuis trois semaines. C’est courant : surveille l’huile et le fromage ajoutés, marche 20 minutes par jour, et tiens deux semaines avant de réduire les calories.';
