@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Un thème clair fait choisir le thème clair à la page (prefers-color-scheme) ; values-night fait l'inverse. -->
-    <style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:colorPrimary">#2c6a4c</item>
-        <item name="android:colorAccent">#2c6a4c</item>
-        <item name="android:statusBarColor">#2c6a4c</item>
-        <item name="android:navigationBarColor">#f1f4ee</item>
-        <item name="android:windowLightNavigationBar">true</item>
+    <!-- L'appli est toujours sombre : mêmes barres système en thème clair et sombre du téléphone. -->
+    <style name="AppTheme" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">#101211</item>
+        <item name="android:colorAccent">#7dd3a3</item>
+        <item name="android:statusBarColor">#101211</item>
+        <item name="android:navigationBarColor">#101211</item>
+        <item name="android:windowLightNavigationBar">false</item>
         <item name="android:windowBackground">@color/window_background</item>
     </style>
-    <color name="window_background">#f1f4ee</color>
+    <color name="window_background">#101211</color>
     <color name="launcher_background">#2c6a4c</color>
 </resources>

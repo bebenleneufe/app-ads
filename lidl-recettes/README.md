@@ -10,7 +10,9 @@ Générateur de menus pour la semaine. Il produit aussi la liste de courses et u
 - **« J'aime » / « Pas pour moi »** : un plat aimé revient plus souvent, un plat écarté disparaît de toute la semaine et ne revient plus (« Annuler » pendant 6 secondes, réautorisable dans les réglages). Les plats des deux dernières semaines sont évités.
 - **Bouton « Changer »** : remplace un seul repas, ou le petit-déjeuner et la collation de toute la semaine.
 - **Mode cuisine** : les ingrédients puis une étape à la fois, en grand, avec un minuteur quand l'étape annonce une durée. Le minuteur continue quand on change d'étape ou qu'on ferme la fenêtre, et reste juste même écran éteint. À la fin, une alarme (bips forts et vibrations) se répète jusqu'à « OK », 3 minutes au plus, et la fenêtre se rouvre. L'écran reste allumé.
-- **Recette suivante** : en haut de l'appli, le premier plat de la semaine pas encore cuisiné (quel que soit le jour prévu), avec les mêmes boutons ; il passe au suivant dès qu'un plat est coché « Cuisiné ».
+- **Quatre onglets** (barre flottante en bas, thème sombre) : Aujourd'hui, Semaine, Courses, Réglages. Le bouton retour du téléphone revient à l'onglet précédent.
+- **Aujourd'hui** : le premier plat de la semaine pas encore cuisiné (quel que soit le jour prévu), en grande photo, avec « Cuisiner » toujours sous le pouce ; il passe au suivant dès qu'un plat est coché « Cuisiné ». Dessous, le petit-déjeuner et la collation.
+- **Semaine** : les jours en pastilles (point vert quand le jour est cuisiné), un jour affiché à la fois.
 - **Plats cuisinés** : « Cuisiné ? » sur chaque plat (coché tout seul en terminant le mode cuisine), « 3 sur 7 » dans le résumé. Un plat cuisiné s'efface des menus (la journée aussi quand tout y est cuisiné), avec « Annuler » ; « Afficher les plats cuisinés » les fait revenir. Au passage à la semaine suivante, les restes ne comptent comme mangés que les plats cuisinés (si au moins un est coché).
 - **Quantités à la pièce** arrondies au demi supérieur par plat cuisiné (« ½ laitue », « 1 poivron »), dans les recettes comme dans la liste.
 - **Photos** : une photo indicative par recette (`images/recettes/<id>.webp`, 480 × 320, environ 18 Ko chacune).
@@ -24,9 +26,9 @@ Générateur de menus pour la semaine. Il produit aussi la liste de courses et u
 
 ### Courses
 - **Petit prix** : le générateur calcule ce que chaque recette ajoute vraiment au ticket, en tenant compte des paquets déjà ouverts. Environ 37 € la semaine pour 1 personne, 3 repas et une collation par jour (médiane mesurée sur 200 semaines). Les priorités « Prix et variété » (≈ 39 €) et « Variété » (≈ 43 €) proposent plus de plats différents.
-- **Liste rangée par rayon** dans l'ordre du parcours habituel d'un magasin Lidl (surgelés en dernier), avec sous-total par rayon, besoin réel, reste de chaque paquet et barre de progression.
+- **Liste rangée par rayon** dans l'ordre du parcours habituel d'un magasin Lidl (surgelés en dernier), avec besoin réel et reste de chaque paquet. Un rayon fini se replie tout seul ; le ticket détaillé (totaux, restes, copie de la liste) s'ouvre dans une feuille à part.
 - **Mode magasin** : la liste seule, en grand, avec l'écran qui reste allumé (retenu si l'appli est fermée en plein rayon). « Masquer les cochés » fait disparaître les articles déjà pris et les rayons terminés.
-- **Mon Lidl** : en mode magasin, les flèches rangent les rayons dans l'ordre de son magasin, et « Introuvable » écarte un produit des prochains menus (les plats déjà prévus restent, signalés).
+- **Mon Lidl** : dans les réglages, les flèches rangent les rayons dans l'ordre de son magasin ; en mode magasin, « Introuvable » écarte un produit des prochains menus (les plats déjà prévus restent, signalés).
 - **Restes reportés** : quand on passe à la semaine suivante, les restes d'épicerie, de conserves et de surgelés **cochés** (donc achetés) sont gardés en stock et déduits des courses suivantes ; le générateur privilégie les plats qui les finissent.
 - **Budget** : plafond respecté à la génération, avec « Changer », et quand un réglage renchérit la semaine (un réglage sans effet sur le prix ne remplace jamais de plat).
 - **Ajouter un article** à la liste : un produit du catalogue se range dans son rayon avec son prix, un texte libre (« lessive ») va dans « Autres articles ». Un ajout pas encore acheté reste sur la liste de la semaine suivante.
@@ -84,6 +86,7 @@ Les tests tournent aussi automatiquement sur GitHub à chaque push et pull reque
 | `js/week.js` | Date de la semaine enregistrée |
 | `js/render.js`, `js/render-weight.js` | Affichage (DocumentFragment, aucun `innerHTML`) |
 | `js/cook-mode.js`, `js/wake-lock.js` | Mode cuisine, minuteur, écran allumé |
+| `js/tabs.js`, `js/undo-toast.js` | Onglets (adresse #semaine, #courses…) et bandeau « Annuler » |
 | `js/app.js` | Contrôleur : état, écouteurs (debounce, nettoyage via `AbortController`) |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Installation sur téléphone et mode hors ligne |
 
