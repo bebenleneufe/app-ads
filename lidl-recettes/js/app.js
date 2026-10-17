@@ -69,6 +69,8 @@ import { getUpcomingMonday, isWeekOver, resolveWeekStart, shiftWeek, toIsoDate }
 const SETTINGS_DEBOUNCE_MILLISECONDS = 300;
 const COPY_STATUS_DURATION_MILLISECONDS = 4000;
 const FOLD_DELAY_MILLISECONDS = 600;
+// En dessous d'un tiers de la grande photo à l'écran, on est passé au petit-déjeuner et à la collation.
+const HERO_VISIBLE_SHARE = 0.33;
 // Le budget n'est appliqué qu'à la validation du champ : les valeurs intermédiaires
 // tapées (« 4 » avant « 45 ») remplaceraient des plats pour rien.
 const FIELDS_APPLIED_ON_COMMIT_ONLY = new Set(['weeklyBudget']);
@@ -119,6 +121,7 @@ class WeeklyPlannerApp {
   #debouncedSettingsUpdate = debounce(() => this.#applySettingsFromForm(), SETTINGS_DEBOUNCE_MILLISECONDS);
   #copyStatusTimeoutId = null;
   #foldTimeoutIds = new Set();
+  #heroObserver = null;
   #undoToast;
   // Jour où le mode magasin a été ouvert : rouvrir l'appli un autre jour revient à la vue normale.
   #storeModeDate = null;
@@ -215,6 +218,8 @@ class WeeklyPlannerApp {
 
   // L'onglet Semaine s'ouvre toujours sur le jour du prochain plat à cuisiner.
   #handleTabChange(tab) {
+    // « Annuler » concerne l'écran qu'on quitte : il ne doit pas cacher le nouvel écran.
+    this.#undoToast.close();
     if (tab === TABS.WEEK) {
       this.#selectedDayIndex = null;
       this.#renderWeek();
@@ -309,6 +314,7 @@ class WeeklyPlannerApp {
     this.#debouncedSettingsUpdate.flush();
     this.#listenersController.abort();
     clearTimeout(this.#copyStatusTimeoutId);
+    this.#heroObserver?.disconnect();
     this.#foldTimeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
     this.#foldTimeoutIds.clear();
     this.#undoToast.destroy();
@@ -468,19 +474,17 @@ class WeeklyPlannerApp {
   // le calcul suppose que rien n'a été jeté ni mangé à côté, ce que seule la personne sait.
   #regenerateWeek() {
     const estimatedStock = this.#estimateNextStock();
-    if (Object.keys(estimatedStock).length > 0) {
-      this.#leftoversDialog.open(estimatedStock, {
-        title: 'Avant la nouvelle semaine : il te reste quoi ?',
-        confirmLabel: 'Valider les restes',
-        onConfirm: (confirmedStock) => this.#goToNextWeek(confirmedStock),
-      });
-      return;
-    }
+    const hasLeftovers = Object.keys(estimatedStock).length > 0;
     // Une liste cochée veut dire des courses faites : la remplacer est une décision à confirmer.
-    if (this.#checkedProductIds.size > 0 && !window.confirm('Passer à la semaine suivante ? La liste cochée sera remise à zéro.')) {
+    if (!hasLeftovers && this.#checkedProductIds.size === 0) {
+      this.#goToNextWeek({});
       return;
     }
-    this.#goToNextWeek({});
+    this.#leftoversDialog.open(estimatedStock, {
+      title: hasLeftovers ? 'Avant la nouvelle semaine : il te reste quoi ?' : 'Passer à la semaine suivante ?',
+      confirmLabel: hasLeftovers ? 'Valider les restes' : 'Préparer la semaine',
+      onConfirm: (confirmedStock) => this.#goToNextWeek(confirmedStock),
+    });
   }
 
   #goToNextWeek(confirmedStock) {
@@ -839,6 +843,21 @@ class WeeklyPlannerApp {
       this.#planningSettings(),
       new Set(listCookedSlotIndexes(this.#cookedMeals, this.#plan)),
     );
+    this.#watchHeroVisibility();
+  }
+
+  // La barre « Cuisiner » fixe ne sert que tant que la grande photo est à l'écran : plus bas,
+  // elle masquerait le petit-déjeuner et se confondrait avec son propre bouton « Cuisiner ».
+  #watchHeroVisibility() {
+    this.#heroObserver?.disconnect();
+    const heroMedia = this.#elements.nextRecipeCard.querySelector('.hero-media');
+    if (!heroMedia || typeof IntersectionObserver === 'undefined') {
+      return;
+    }
+    this.#heroObserver = new IntersectionObserver(([heroEntry]) => {
+      this.#elements.nextRecipeCard.classList.toggle('hero-out-of-view', heroEntry.intersectionRatio < HERO_VISIBLE_SHARE);
+    }, { threshold: [0, HERO_VISIBLE_SHARE, 1] });
+    this.#heroObserver.observe(heroMedia);
   }
 
   // Mis à jour à part du reste : cocher un plat ne doit pas reconstruire toute la semaine.
@@ -1065,6 +1084,7 @@ class WeeklyPlannerApp {
   #updateProgress() {
     const { doneCount, lineCount } = this.#countReceiptLines();
     updateReceiptProgress(this.#elements.shopHead, doneCount, lineCount);
+    this.#elements.receipt.classList.toggle('is-all-done', lineCount > 0 && doneCount === lineCount);
   }
 
   #countReceiptLines() {
