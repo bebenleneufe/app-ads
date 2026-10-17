@@ -3,9 +3,9 @@ const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const MILLISECONDS_PER_DAY = 86_400_000;
 const DAYS_PER_WEEK = 7;
 
-// Seuils des conseils : au-delà de 1 % du poids par semaine la perte se fait souvent au détriment
-// du muscle ; moins de 200 g perdus en trois semaines signifie que le déficit ne fonctionne plus.
-const FAST_LOSS_SHARE_PER_WEEK = 0.01;
+// Seuils des conseils : au-delà d'1 kg par semaine la perte se fait souvent au détriment du muscle ;
+// moins de 200 g perdus en trois semaines signifie que le déficit ne fonctionne plus.
+const FAST_LOSS_KG_PER_WEEK = 1;
 const STALL_WINDOW_DAYS = 21;
 const STALL_MAX_LOSS_KG = 0.2;
 const TREND_WINDOW_DAYS = 28;
@@ -92,7 +92,7 @@ export function analyzeWeightTrend(weightLog, todayIsoDate) {
   let status = TREND_STATUSES.ON_TRACK;
   if (weeklyChangeKg > 0.1) {
     status = TREND_STATUSES.GAINING;
-  } else if (-weeklyChangeKg > latestEntry.kg * FAST_LOSS_SHARE_PER_WEEK) {
+  } else if (-weeklyChangeKg > FAST_LOSS_KG_PER_WEEK) {
     status = TREND_STATUSES.TOO_FAST;
   } else if (stallSpanDays >= STALL_WINDOW_DAYS - DAYS_PER_WEEK && stallLossKg < STALL_MAX_LOSS_KG) {
     status = TREND_STATUSES.STALLED;
