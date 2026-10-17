@@ -28,13 +28,14 @@ import {
   getPortionQuantities,
   hasWeightLossGoal,
 } from './nutrition.js';
-import { DIETS, PLAN_KINDS, PRIORITIES } from './planner.js';
+import { PLAN_KINDS } from './planner.js';
 import { computePortionCost } from './shopping-list.js';
 import { EMPTY_PREFERENCES } from './preferences.js';
 import { CATEGORY_LABELS, countFreshIngredients, MEAL_TYPES, RECIPES_BY_ID } from './recipes.js';
 import { AISLE_MOVES, getStoreSetup, hasCustomAisleOrder, listMissingIngredients } from './store-setup.js';
 
 const DAY_NAMES = Object.freeze(['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']);
+const SHORT_DAY_NAMES = Object.freeze(['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']);
 const WEEKLY_MEALS = Object.freeze([
   { kind: PLAN_KINDS.BREAKFAST, planKey: 'breakfastRecipeIds', label: 'Petit-déjeuner', getServings: getServingsPerBreakfast },
   { kind: PLAN_KINDS.SNACK, planKey: 'snackRecipeIds', label: 'Collation', getServings: getServingsPerSnack },
@@ -242,13 +243,23 @@ function buildDayKcal(weeklyRecipes, mainRecipes, settings) {
   ]);
 }
 
-function buildDayItem(dayIndex, plan, settings, weekStartDate, cookedSlotIndexes) {
+function listDaySlotIndexes(dayIndex, plan, settings) {
   const mainSlotsPerDay = getMainSlotsPerDay(settings);
-  const servingCount = getServingsPerMainSlot(settings);
+  return getMainSlotLabels(settings)
+    .map((_slotLabel, mealIndex) => dayIndex * mainSlotsPerDay + mealIndex)
+    .filter((slotIndex) => RECIPES_BY_ID.has(plan.mainRecipeIds[slotIndex]));
+}
+
+function isDayCooked(dayIndex, plan, settings, cookedSlotIndexes) {
+  const daySlotIndexes = listDaySlotIndexes(dayIndex, plan, settings);
+  return daySlotIndexes.length > 0 && daySlotIndexes.every((slotIndex) => cookedSlotIndexes.has(slotIndex));
+}
+
+function buildDayView(dayIndex, plan, settings, weekStartDate, cookedSlotIndexes) {
+  const mainSlotsPerDay = getMainSlotsPerDay(settings);
   const weeklyRecipes = WEEKLY_MEALS.map(({ planKey }) => RECIPES_BY_ID.get((plan[planKey] ?? [])[dayIndex]));
   const mainRecipes = getMainSlotLabels(settings)
     .map((_slotLabel, mealIndex) => RECIPES_BY_ID.get(plan.mainRecipeIds[dayIndex * mainSlotsPerDay + mealIndex]));
-
   // Avec un seul plat par jour, « Déjeuner et dîner » répété sur chaque carte n'apprend rien.
   const showsSlotLabel = mainSlotsPerDay > 1;
   const mainCards = getMainSlotLabels(settings).map((slotLabel, mealIndex) => {
@@ -260,21 +271,15 @@ function buildDayItem(dayIndex, plan, settings, weekStartDate, cookedSlotIndexes
         kind: PLAN_KINDS.MAIN,
         slotIndex,
         slotLabel: showsSlotLabel ? slotLabel : '',
-        servingCount,
+        servingCount: getServingsPerMainSlot(settings),
         settings,
         isCooked: cookedSlotIndexes.has(slotIndex),
-        isCompact: true,
       })
       : null;
   });
-
-  const presentSlotIndexes = mainRecipes
-    .map((recipe, mealIndex) => (recipe ? dayIndex * mainSlotsPerDay + mealIndex : null))
-    .filter((slotIndex) => slotIndex !== null);
-  const isDayComplete = presentSlotIndexes.length > 0 && presentSlotIndexes.every((slotIndex) => cookedSlotIndexes.has(slotIndex));
-  return createElement('li', { className: isDayComplete ? 'day is-complete is-settled' : 'day' }, [
+  return createElement('article', { className: 'day' }, [
     createElement('div', { className: 'day-head' }, [
-      createElement('h3', { className: 'day-name' }, [
+      createElement('h2', { className: 'day-name' }, [
         createElement('span', { text: DAY_NAMES[dayIndex] }),
         createElement('span', { className: 'day-date', text: formatDayMonth(addDays(weekStartDate, dayIndex)) }),
       ]),
@@ -284,37 +289,94 @@ function buildDayItem(dayIndex, plan, settings, weekStartDate, cookedSlotIndexes
   ]);
 }
 
-function buildWeeklyItem(plan, settings) {
+function isSameDay(firstDate, secondDate) {
+  return firstDate.toDateString() === secondDate.toDateString();
+}
+
+// Les pastilles des jours : un point plein quand tous les plats du jour sont cuisinés.
+export function renderDayStrip(stripElement, { plan, settings, weekStartDate, cookedSlotIndexes, selectedDayIndex }) {
+  const today = new Date();
+  const dayChips = Array.from({ length: settings.dayCount }, (_unused, dayIndex) => {
+    const dayDate = addDays(weekStartDate, dayIndex);
+    const isSelected = dayIndex === selectedDayIndex;
+    const chipClasses = [
+      'day-chip',
+      isSelected ? 'is-active' : '',
+      isDayCooked(dayIndex, plan, settings, cookedSlotIndexes) ? 'is-done' : '',
+      isSameDay(dayDate, today) ? 'is-today' : '',
+    ].filter(Boolean).join(' ');
+    return createElement('button', {
+      className: chipClasses,
+      attributes: {
+        type: 'button',
+        role: 'tab',
+        'data-day-index': String(dayIndex),
+        'aria-selected': String(isSelected),
+        'aria-label': `${DAY_NAMES[dayIndex]} ${formatDayMonth(dayDate)}`,
+      },
+    }, [
+      createElement('span', { className: 'day-chip-name', text: SHORT_DAY_NAMES[dayIndex] }),
+      createElement('span', { className: 'day-chip-date', text: String(dayDate.getDate()) }),
+      createElement('span', { className: 'day-chip-dot' }),
+    ]);
+  });
+  replaceChildrenWithFragment(stripElement, dayChips);
+}
+
+// Le jour d'ouverture de l'onglet : celui du prochain plat à cuisiner, sinon le premier.
+export function findNextDayIndex(plan, settings, cookedSlotIndexes) {
+  const nextSlotIndex = plan.mainRecipeIds.findIndex((recipeId, slotIndex) => RECIPES_BY_ID.has(recipeId) && !cookedSlotIndexes.has(slotIndex));
+  return nextSlotIndex === -1 ? 0 : Math.floor(nextSlotIndex / getMainSlotsPerDay(settings));
+}
+
+export function renderPlan(planListElement, { plan, settings, weekStartDate, cookedSlotIndexes, selectedDayIndex }) {
+  if (plan.mainRecipeIds.length === 0) {
+    replaceChildrenWithFragment(planListElement, [createElement('p', { className: 'empty-plan', text: 'Aucun plat ne correspond à ces critères.' })]);
+    return;
+  }
+  const dayIndex = Math.min(selectedDayIndex, settings.dayCount - 1);
+  replaceChildrenWithFragment(planListElement, [buildDayView(dayIndex, plan, settings, weekStartDate, cookedSlotIndexes)]);
+}
+
+// Le petit-déjeuner et la collation, les mêmes chaque jour de la semaine.
+export function renderWeeklyMeals(containerElement, plan, settings) {
   const weeklyCards = WEEKLY_MEALS.map(({ kind, planKey, label, getServings }) => {
     const recipe = RECIPES_BY_ID.get((plan[planKey] ?? [])[0]);
     return recipe
       ? buildMealCard({ recipe, kind, slotIndex: 0, slotLabel: label, servingCount: getServings(settings), settings, isCompact: true })
       : null;
   }).filter(Boolean);
-  if (weeklyCards.length === 0) {
-    return null;
-  }
-  return createElement('li', { className: 'day week-breakfast' }, [
-    createElement('div', { className: 'day-head' }, [
-      createElement('h3', { className: 'day-name' }, [
-        createElement('span', { text: 'Tous les jours' }),
-        createElement('span', { className: 'day-date', text: 'les mêmes toute la semaine' }),
-      ]),
-    ]),
-    createElement('div', { className: 'day-meals' }, weeklyCards),
-  ]);
+  replaceChildrenWithFragment(containerElement, weeklyCards);
 }
 
-export function renderPlan(planListElement, plan, settings, weekStartDate, cookedSlotIndexes = new Set()) {
-  const dayItems = [buildWeeklyItem(plan, settings)].filter(Boolean);
-  for (let dayIndex = 0; dayIndex < settings.dayCount; dayIndex += 1) {
-    dayItems.push(buildDayItem(dayIndex, plan, settings, weekStartDate, cookedSlotIndexes));
-  }
-  if (plan.mainRecipeIds.length === 0) {
-    dayItems.unshift(createElement('li', { className: 'empty-plan', text: 'Aucun plat ne correspond à ces critères.' }));
-  }
-  dayItems.push(createElement('li', { className: 'all-cooked-note', text: 'Tous les plats de la semaine sont cuisinés.' }));
-  replaceChildrenWithFragment(planListElement, dayItems);
+// Grande carte : photo plein cadre avec le nom par-dessus, et une barre « Cuisiner » toujours sous le pouce.
+function buildHeroCard({ recipe, slotIndex, slotLabel, servingCount, settings }) {
+  const kind = PLAN_KINDS.MAIN;
+  const photo = buildMealPhoto(recipe);
+  photo.setAttribute('loading', 'eager');
+  return createElement('article', { className: 'meal is-hero', attributes: { 'data-category': recipe.category } }, [
+    createElement('div', { className: 'hero-media' }, [
+      photo,
+      createElement('div', { className: 'hero-text' }, [
+        createElement('p', { className: 'meal-slot', text: slotLabel }),
+        createElement('h2', { className: 'meal-name', text: recipe.name }),
+        createElement('p', { className: 'meal-tag', text: CATEGORY_LABELS[recipe.category] }),
+        buildMealFacts(recipe, settings),
+      ]),
+    ]),
+    buildMissingWarning(recipe, settings),
+    createElement('div', { className: 'meal-preferences' }, [
+      buildActionButton({
+        action: 'cooked', text: describeCookedButton(false), kind, slotIndex, recipe, className: 'chip-button cooked-button', pressed: false,
+      }),
+      ...buildPreferenceButtons(recipe, kind, slotIndex, settings),
+    ]),
+    buildRecipeDetails(recipe, servingCount, settings),
+    createElement('div', { className: 'cook-bar' }, [
+      buildActionButton({ action: 'cook', text: 'Cuisiner', kind, slotIndex, recipe, className: 'primary-button cook-button' }),
+      buildSwapButton(recipe, kind, slotIndex),
+    ]),
+  ]);
 }
 
 // Le premier plat pas encore cuisiné, quel que soit son jour : on ne cuisine pas forcément à la date prévue.
@@ -323,19 +385,18 @@ export function renderNextRecipe({ cardContainer, progressElement }, plan, setti
     .map((recipeId, slotIndex) => (RECIPES_BY_ID.has(recipeId) ? slotIndex : null))
     .filter((slotIndex) => slotIndex !== null);
   const nextSlotIndex = plannedSlotIndexes.find((slotIndex) => !cookedSlotIndexes.has(slotIndex));
+  progressElement.textContent = plannedSlotIndexes.length > 0 ? `${cookedSlotIndexes.size} sur ${plannedSlotIndexes.length} cuisinés` : '';
   if (nextSlotIndex === undefined) {
-    progressElement.textContent = '';
     const message = plannedSlotIndexes.length > 0 ? 'Tous les plats de la semaine sont cuisinés.' : 'Aucun plat prévu.';
     replaceChildrenWithFragment(cardContainer, [createElement('p', { className: 'next-recipe-done', text: message })]);
     return;
   }
   const slotLabels = getMainSlotLabels(settings);
-  progressElement.textContent = `${cookedSlotIndexes.size} sur ${plannedSlotIndexes.length} cuisinés`;
-  replaceChildrenWithFragment(cardContainer, [buildMealCard({
+  const dayName = DAY_NAMES[Math.floor(nextSlotIndex / getMainSlotsPerDay(settings))] ?? '';
+  replaceChildrenWithFragment(cardContainer, [buildHeroCard({
     recipe: RECIPES_BY_ID.get(plan.mainRecipeIds[nextSlotIndex]),
-    kind: PLAN_KINDS.MAIN,
     slotIndex: nextSlotIndex,
-    slotLabel: slotLabels[nextSlotIndex % slotLabels.length],
+    slotLabel: [dayName, slotLabels[nextSlotIndex % slotLabels.length]].filter(Boolean).join(' · '),
     servingCount: getServingsPerMainSlot(settings),
     settings,
   })]);
@@ -350,12 +411,6 @@ export function updateCookedCard(cardElement, isCooked) {
   if (cookedButton) {
     cookedButton.textContent = describeCookedButton(isCooked);
     cookedButton.setAttribute('aria-pressed', String(isCooked));
-  }
-  const dayElement = cardElement.closest('.day');
-  if (dayElement && !dayElement.classList.contains('week-breakfast')) {
-    const dayCards = [...dayElement.querySelectorAll('.meal')];
-    dayElement.classList.toggle('is-complete', dayCards.length > 0 && dayCards.every((card) => card.classList.contains('is-cooked')));
-    dayElement.classList.remove('is-settled');
   }
 }
 
@@ -494,21 +549,14 @@ function buildPantrySection(lines, title) {
   ]);
 }
 
-function buildReceiptProgress() {
-  return createElement('div', { className: 'receipt-progress' }, [
-    createElement('span', { className: 'progress-text', attributes: { 'aria-live': 'polite' } }),
-    createElement('span', { className: 'progress-bar' }, [createElement('span', { className: 'progress-fill' })]),
-  ]);
-}
-
 export function updateMissingLine(lineElement, product, isMissing) {
   lineElement.classList.toggle('is-missing', isMissing);
   lineElement.querySelector('.missing-button')?.replaceWith(buildMissingButton(product, isMissing));
 }
 
-export function updateReceiptProgress(receiptElement, checkedCount, lineCount) {
-  const progressText = receiptElement.querySelector('.progress-text');
-  const progressFill = receiptElement.querySelector('.progress-fill');
+export function updateReceiptProgress(progressContainer, checkedCount, lineCount) {
+  const progressText = progressContainer.querySelector('.progress-text');
+  const progressFill = progressContainer.querySelector('.progress-fill');
   if (!progressText || !progressFill) {
     return;
   }
@@ -537,18 +585,28 @@ export function isLineDone(productId, checkedProductIds, storeSetup) {
   return checkedProductIds.has(productId) || storeSetup.missingProductIds.includes(productId);
 }
 
-function buildAisleSection(group, groupIndex, groupCount, { checkedProductIds, storeSetup }) {
+function describeAisleCount(doneCount, lineCount) {
+  return doneCount === lineCount ? '✓ fini' : `${doneCount}/${lineCount}`;
+}
+
+export function updateAisleCount(groupElement, doneCount, lineCount) {
+  const countElement = groupElement.querySelector('.aisle-count');
+  if (countElement) {
+    countElement.textContent = describeAisleCount(doneCount, lineCount);
+  }
+}
+
+// Un rayon fini se replie tout seul : il ne reste sous les yeux que ce qu'il faut encore prendre.
+function buildAisleSection(group, groupIndex, { checkedProductIds, storeSetup }) {
   const lineKeys = [...group.lines.map((line) => line.product.id), ...group.extraLines.map((line) => line.extra.id)];
-  const isComplete = lineKeys.every((lineKey) => isLineDone(lineKey, checkedProductIds, storeSetup));
-  return createElement('section', { className: isComplete ? 'receipt-group is-complete is-settled' : 'receipt-group' }, [
-    createElement('h3', { className: 'aisle-head' }, [
+  const doneCount = lineKeys.filter((lineKey) => isLineDone(lineKey, checkedProductIds, storeSetup)).length;
+  const isComplete = doneCount === lineKeys.length;
+  const attributes = isComplete ? {} : { open: '' };
+  return createElement('details', { className: isComplete ? 'receipt-group is-complete is-settled' : 'receipt-group', attributes }, [
+    createElement('summary', { className: 'aisle-head' }, [
       createElement('span', { className: 'aisle-step', text: String(groupIndex + 1).padStart(2, '0') }),
       createElement('span', { className: 'aisle-name', text: group.aisle }),
-      createElement('span', { className: 'aisle-subtotal', text: formatEuros(group.subtotal) }),
-      createElement('span', { className: 'aisle-moves' }, [
-        buildAisleMoveButton(group.aisle, AISLE_MOVES.UP, groupIndex === 0),
-        buildAisleMoveButton(group.aisle, AISLE_MOVES.DOWN, groupIndex === groupCount - 1),
-      ]),
+      createElement('span', { className: 'aisle-count', text: describeAisleCount(doneCount, lineKeys.length) }),
     ]),
     createElement('ul', {}, [
       ...group.lines.map((line) => buildReceiptLine(line, {
@@ -560,19 +618,45 @@ function buildAisleSection(group, groupIndex, groupCount, { checkedProductIds, s
   ]);
 }
 
-export function renderReceipt(receiptElement, shoppingList, settings, checkedProductIds, weekStartDate) {
+export function renderShoppingList(listElement, shoppingList, settings, checkedProductIds) {
   const lineStates = { checkedProductIds, storeSetup: getStoreSetup(settings) };
-  const groupCount = shoppingList.aisleGroups.length;
-  const aisleSections = shoppingList.aisleGroups.map((group, groupIndex) => buildAisleSection(group, groupIndex, groupCount, lineStates));
+  const aisleSections = shoppingList.aisleGroups.map((group, groupIndex) => buildAisleSection(group, groupIndex, lineStates));
+  replaceChildrenWithFragment(listElement, aisleSections.length > 0
+    ? aisleSections
+    : [createElement('p', { className: 'empty-plan', text: 'Rien à acheter cette semaine.' })]);
+}
 
-  replaceChildrenWithFragment(receiptElement, [
+// En tête des courses : le total, la progression du panier et l'accès au ticket détaillé.
+export function renderShopHead(headElement, shoppingList) {
+  replaceChildrenWithFragment(headElement, [
+    createElement('div', { className: 'shop-total' }, [
+      createElement('span', { className: 'shop-total-label', text: 'Ticket estimé' }),
+      createElement('span', { className: 'shop-total-amount', text: formatEuros(shoppingList.totalToPay) }),
+    ]),
+    createElement('span', { className: 'progress-bar' }, [createElement('span', { className: 'progress-fill' })]),
+    createElement('div', { className: 'shop-head-foot' }, [
+      createElement('span', { className: 'progress-text', attributes: { 'aria-live': 'polite' } }),
+      createElement('button', { className: 'text-button ticket-button', text: 'Voir le ticket', attributes: { type: 'button', 'data-open-ticket': '' } }),
+    ]),
+  ]);
+}
+
+function buildTicketLine(line) {
+  return createElement('div', { className: 'total-row' }, [
+    createElement('span', { text: `${line.packageCount} × ${line.product.name}` }),
+    createElement('span', { text: formatEuros(line.cost) }),
+  ]);
+}
+
+export function renderTicket(ticketElement, shoppingList, settings, weekStartDate) {
+  const ticketLines = shoppingList.aisleGroups.flatMap((group) => group.lines.map(buildTicketLine));
+  replaceChildrenWithFragment(ticketElement, [
     createElement('header', { className: 'receipt-head' }, [
       createElement('p', { className: 'receipt-title', text: 'Liste de courses Lidl' }),
       createElement('p', { text: `Semaine du ${formatFullDate(weekStartDate)}` }),
       createElement('p', { text: describeWeek(settings) }),
     ]),
-    buildReceiptProgress(),
-    ...aisleSections,
+    createElement('div', { className: 'ticket-lines' }, ticketLines),
     createElement('div', { className: 'receipt-totals' }, [
       buildTotalRow('Articles', String(shoppingList.articleCount), 'total-row'),
       buildTotalRow('Total estimé', formatEuros(shoppingList.totalToPay), 'total-row is-grand-total'),
@@ -585,6 +669,19 @@ export function renderReceipt(receiptElement, shoppingList, settings, checkedPro
   ].filter(Boolean));
 }
 
+// L'ordre des rayons de mon magasin, réglé une fois pour toutes dans les réglages.
+export function renderAisleOrder(listElement, storeSetup) {
+  const lastIndex = storeSetup.aisleOrder.length - 1;
+  replaceChildrenWithFragment(listElement, storeSetup.aisleOrder.map((aisle, aisleIndex) => createElement('li', { className: 'aisle-order-row' }, [
+    createElement('span', { className: 'aisle-step', text: String(aisleIndex + 1).padStart(2, '0') }),
+    createElement('span', { className: 'aisle-name', text: aisle }),
+    createElement('span', { className: 'aisle-moves' }, [
+      buildAisleMoveButton(aisle, AISLE_MOVES.UP, aisleIndex === 0),
+      buildAisleMoveButton(aisle, AISLE_MOVES.DOWN, aisleIndex === lastIndex),
+    ]),
+  ])));
+}
+
 export function renderGoalHint(hintElement, settings) {
   if (!hasWeightLossGoal(settings)) {
     hintElement.textContent = '';
@@ -592,39 +689,6 @@ export function renderGoalHint(hintElement, settings) {
   }
   hintElement.textContent = `Besoin ${formatKcal(computeMaintenanceKcal(settings))} → objectif ${formatKcal(computeDailyTargetKcal(settings))} et `
     + `${computeDailyProteinTarget(settings)} g de protéines par jour (${formatKcal(computeMealTargetKcal(settings, MEAL_TYPES.MAIN))} par plat).`;
-}
-
-const MEAL_MODE_RECAPS = Object.freeze({
-  'midi-soir-identiques': 'même plat midi et soir',
-  'midi-soir-differents': 'deux plats par jour',
-  diner: 'dîner seulement',
-});
-const DIET_RECAPS = Object.freeze({
-  [DIETS.OMNIVORE]: '',
-  [DIETS.PESCETARIAN]: 'sans viande',
-  [DIETS.VEGETARIAN]: 'végétarien',
-});
-const PRIORITY_RECAPS = Object.freeze({
-  [PRIORITIES.PRICE]: 'Petit prix',
-  [PRIORITIES.BALANCED]: 'Prix et variété',
-  [PRIORITIES.VARIETY]: 'Variété',
-});
-
-// Les groupes de réglages sont repliés : leur titre montre les valeurs en cours.
-export function renderSettingsRecap({ goalRecap, mealsRecap, shoppingRecap }, settings) {
-  goalRecap.textContent = hasWeightLossGoal(settings)
-    ? `Perdre du poids · ${settings.weightKg.toLocaleString('fr-FR')} kg`
-    : 'Équilibré';
-  mealsRecap.textContent = [
-    `${settings.dayCount} j`,
-    MEAL_MODE_RECAPS[settings.mainMealMode],
-    settings.maxPrepMinutes > 0 ? `${settings.maxPrepMinutes} min` : 'sans limite',
-    DIET_RECAPS[settings.diet],
-  ].filter(Boolean).join(' · ');
-  shoppingRecap.textContent = [
-    PRIORITY_RECAPS[settings.priority],
-    settings.weeklyBudget > 0 ? `budget ${formatEuros(settings.weeklyBudget)}` : '',
-  ].filter(Boolean).join(' · ');
 }
 
 export function renderPreferencesSummary(summaryElement, resetButton, preferences) {

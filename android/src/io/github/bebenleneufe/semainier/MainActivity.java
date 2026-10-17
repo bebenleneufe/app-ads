@@ -25,9 +25,8 @@ public class MainActivity extends Activity {
     private static final String OFFLINE_PAGE =
         "<!doctype html><html lang=\"fr\"><head><meta charset=\"utf-8\">"
         + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
-        + "<style>body{font-family:sans-serif;margin:0;padding:48px 24px;background:#f1f4ee;color:#1f2420}"
-        + "@media (prefers-color-scheme: dark){body{background:#121a16;color:#e3ebe5}}"
-        + "a{display:inline-block;margin-top:16px;padding:10px 20px;border-radius:999px;background:#2c6a4c;color:#fff;text-decoration:none}</style>"
+        + "<style>body{font-family:sans-serif;margin:0;padding:48px 24px;background:#101211;color:#eef1ec}"
+        + "a{display:inline-block;margin-top:16px;padding:10px 20px;border-radius:999px;background:#7dd3a3;color:#0b1a12;text-decoration:none;font-weight:bold}</style>"
         + "</head><body><h1>Pas de connexion</h1>"
         + "<p>La première ouverture du Semainier a besoin d’internet. Ensuite, l’appli marche aussi hors ligne.</p>"
         + "<a href=\"" + APP_URL + "\">Réessayer</a></body></html>";
