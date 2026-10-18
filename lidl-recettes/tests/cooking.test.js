@@ -54,7 +54,7 @@ describe('quantités à la pièce', () => {
     assert.equal(formatProductQuantity(cumin, 3), '1 ½ c. à café cumin');
     assert.equal(formatProductQuantity(cumin, 1), '½ c. à café cumin');
     assert.equal(formatProductQuantity(cumin, 12), '2 c. à soupe cumin');
-    assert.equal(formatProductQuantity(PRODUCTS_BY_ID.get('piment'), 0.3), '1 pincée piment');
+    assert.equal(formatProductQuantity(PRODUCTS_BY_ID.get('poivre'), 0.3), '1 pincée poivre');
   });
 
   it('ne laisse aucune fraction de pièce dans la liste de courses', () => {

@@ -205,7 +205,6 @@ export const PRODUCTS = Object.freeze([
   defineProduct({ id: 'herbes', name: 'Herbes de Provence', brand: 'Kania', aisle: AISLES.PANTRY, packageLabel: 'pot 20 g', packageSize: 20, unit: UNITS.GRAM, price: 0.49, shortName: 'herbes de Provence', isPantryStaple: true, gramsPerTeaspoon: 1 }),
   defineProduct({ id: 'poivre', name: 'Poivre noir moulu', brand: 'Kania', aisle: AISLES.PANTRY, packageLabel: 'pot 50 g', packageSize: 50, unit: UNITS.GRAM, price: 0.7, shortName: 'poivre', isPantryStaple: true, gramsPerTeaspoon: 2.3 }),
   defineProduct({ id: 'gingembre', name: 'Gingembre moulu', brand: 'Kania', aisle: AISLES.PANTRY, packageLabel: 'pot 40 g', packageSize: 40, unit: UNITS.GRAM, price: 0.79, shortName: 'gingembre', isPantryStaple: true, gramsPerTeaspoon: 1.8 }),
-  defineProduct({ id: 'piment', name: 'Piment de Cayenne moulu', brand: 'Kania', aisle: AISLES.PANTRY, packageLabel: 'pot 40 g', packageSize: 40, unit: UNITS.GRAM, price: 0.79, shortName: 'piment', isPantryStaple: true, gramsPerTeaspoon: 1.8 }),
   defineProduct({ id: 'cannelle', name: 'Cannelle moulue', brand: 'Kania', aisle: AISLES.PANTRY, packageLabel: 'pot 40 g', packageSize: 40, unit: UNITS.GRAM, price: 0.69, shortName: 'cannelle', isPantryStaple: true, gramsPerTeaspoon: 2.6 }),
 ]);
 
