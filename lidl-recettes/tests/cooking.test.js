@@ -48,6 +48,15 @@ describe('quantités à la pièce', () => {
     assert.equal(formatQuantity(2.5, 'pièce'), '2 ½ pc');
   });
 
+  it('mesure les épices à la cuillère plutôt qu’au gramme', () => {
+    const cumin = PRODUCTS_BY_ID.get('cumin');
+    assert.equal(formatProductQuantity(cumin, 4), '2 c. à café cumin');
+    assert.equal(formatProductQuantity(cumin, 3), '1 ½ c. à café cumin');
+    assert.equal(formatProductQuantity(cumin, 1), '½ c. à café cumin');
+    assert.equal(formatProductQuantity(cumin, 12), '2 c. à soupe cumin');
+    assert.equal(formatProductQuantity(PRODUCTS_BY_ID.get('poivre'), 0.3), '1 pincée poivre');
+  });
+
   it('ne laisse aucune fraction de pièce dans la liste de courses', () => {
     for (let seed = 0; seed < 30; seed += 1) {
       const shoppingList = buildShoppingList(generatePlan(defaultSettings, createSeededRandom(seed + 900)), defaultSettings);

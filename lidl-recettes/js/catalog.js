@@ -68,6 +68,7 @@ function defineProduct({
   shortName,
   pieceNames = null,
   isPantryStaple = false,
+  gramsPerTeaspoon = null,
 }) {
   return Object.freeze({
     id,
@@ -81,6 +82,7 @@ function defineProduct({
     shortName,
     pieceNames,
     isPantryStaple,
+    gramsPerTeaspoon,
   });
 }
 
@@ -197,11 +199,13 @@ export const PRODUCTS = Object.freeze([
   defineProduct({ id: 'moutarde', name: 'Moutarde de Dijon', brand: 'Kania', aisle: AISLES.PANTRY, packageLabel: 'bocal 440 g', packageSize: 440, unit: UNITS.GRAM, price: 0.9, shortName: 'moutarde', isPantryStaple: true }),
   defineProduct({ id: 'sauce-soja', name: 'Sauce soja', brand: 'Vitasia', aisle: AISLES.WORLD, packageLabel: 'bouteille 250 ml', packageSize: 250, unit: UNITS.MILLILITER, price: 1.39, shortName: 'sauce soja', isPantryStaple: true }),
   defineProduct({ id: 'bouillon', name: 'Bouillon de légumes', aisle: AISLES.PANTRY, packageLabel: 'boîte de 12 cubes', packageSize: 12, unit: UNITS.PIECE, price: 0.99, shortName: 'cube de bouillon', pieceNames: ['cube de bouillon', 'cubes de bouillon'], isPantryStaple: true }),
-  defineProduct({ id: 'curry', name: 'Curry en poudre', brand: 'Kania', aisle: AISLES.PANTRY, packageLabel: 'pot 47 g', packageSize: 47, unit: UNITS.GRAM, price: 0.61, shortName: 'curry', isPantryStaple: true }),
-  defineProduct({ id: 'paprika', name: 'Paprika doux', brand: 'Kania', aisle: AISLES.PANTRY, packageLabel: 'pot 50 g', packageSize: 50, unit: UNITS.GRAM, price: 0.59, shortName: 'paprika', isPantryStaple: true }),
-  defineProduct({ id: 'cumin', name: 'Cumin moulu', brand: 'Kania', aisle: AISLES.PANTRY, packageLabel: 'pot 45 g', packageSize: 45, unit: UNITS.GRAM, price: 0.83, shortName: 'cumin', isPantryStaple: true }),
-  defineProduct({ id: 'herbes', name: 'Herbes de Provence', brand: 'Kania', aisle: AISLES.PANTRY, packageLabel: 'pot 20 g', packageSize: 20, unit: UNITS.GRAM, price: 0.49, shortName: 'herbes de Provence', isPantryStaple: true }),
-  defineProduct({ id: 'poivre', name: 'Poivre noir moulu', brand: 'Kania', aisle: AISLES.PANTRY, packageLabel: 'pot 50 g', packageSize: 50, unit: UNITS.GRAM, price: 0.7, shortName: 'poivre', isPantryStaple: true }),
+  defineProduct({ id: 'curry', name: 'Curry en poudre', brand: 'Kania', aisle: AISLES.PANTRY, packageLabel: 'pot 47 g', packageSize: 47, unit: UNITS.GRAM, price: 0.61, shortName: 'curry', isPantryStaple: true, gramsPerTeaspoon: 2 }),
+  defineProduct({ id: 'paprika', name: 'Paprika doux', brand: 'Kania', aisle: AISLES.PANTRY, packageLabel: 'pot 50 g', packageSize: 50, unit: UNITS.GRAM, price: 0.59, shortName: 'paprika', isPantryStaple: true, gramsPerTeaspoon: 2.3 }),
+  defineProduct({ id: 'cumin', name: 'Cumin moulu', brand: 'Kania', aisle: AISLES.PANTRY, packageLabel: 'pot 45 g', packageSize: 45, unit: UNITS.GRAM, price: 0.83, shortName: 'cumin', isPantryStaple: true, gramsPerTeaspoon: 2 }),
+  defineProduct({ id: 'herbes', name: 'Herbes de Provence', brand: 'Kania', aisle: AISLES.PANTRY, packageLabel: 'pot 20 g', packageSize: 20, unit: UNITS.GRAM, price: 0.49, shortName: 'herbes de Provence', isPantryStaple: true, gramsPerTeaspoon: 1 }),
+  defineProduct({ id: 'poivre', name: 'Poivre noir moulu', brand: 'Kania', aisle: AISLES.PANTRY, packageLabel: 'pot 50 g', packageSize: 50, unit: UNITS.GRAM, price: 0.7, shortName: 'poivre', isPantryStaple: true, gramsPerTeaspoon: 2.3 }),
+  defineProduct({ id: 'gingembre', name: 'Gingembre moulu', brand: 'Kania', aisle: AISLES.PANTRY, packageLabel: 'pot 40 g', packageSize: 40, unit: UNITS.GRAM, price: 0.79, shortName: 'gingembre', isPantryStaple: true, gramsPerTeaspoon: 1.8 }),
+  defineProduct({ id: 'cannelle', name: 'Cannelle moulue', brand: 'Kania', aisle: AISLES.PANTRY, packageLabel: 'pot 40 g', packageSize: 40, unit: UNITS.GRAM, price: 0.69, shortName: 'cannelle', isPantryStaple: true, gramsPerTeaspoon: 2.6 }),
 ]);
 
 export const PRODUCTS_BY_ID = new Map(PRODUCTS.map((product) => [product.id, product]));

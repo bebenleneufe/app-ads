@@ -52,7 +52,36 @@ export function formatQuantity(quantity, unit) {
   return `${formatPieceCount(quantity)} pc`;
 }
 
+// Personne ne pèse 2 g de cumin : les épices se mesurent à la cuillère, comme dans un livre de cuisine.
+const TEASPOONS_PER_TABLESPOON = 3;
+const PINCH_TEASPOON_LIMIT = 0.2;
+const SPOON_FRACTIONS = Object.freeze({ 0.25: '¼', 0.5: '½', 0.75: '¾' });
+
+function formatSpoonCount(spoonCount, fractionStep) {
+  const roundedCount = Math.max(fractionStep, Math.round(spoonCount / fractionStep) * fractionStep);
+  const wholeCount = Math.floor(roundedCount);
+  const fractionLabel = SPOON_FRACTIONS[roundedCount - wholeCount];
+  if (fractionLabel === undefined) {
+    return String(wholeCount);
+  }
+  return wholeCount === 0 ? fractionLabel : `${wholeCount} ${fractionLabel}`;
+}
+
+function formatSpoonQuantity(grams, gramsPerTeaspoon) {
+  const teaspoonCount = grams / gramsPerTeaspoon;
+  if (teaspoonCount < PINCH_TEASPOON_LIMIT) {
+    return '1 pincée';
+  }
+  if (teaspoonCount >= TEASPOONS_PER_TABLESPOON) {
+    return `${formatSpoonCount(teaspoonCount / TEASPOONS_PER_TABLESPOON, 0.5)} c. à soupe`;
+  }
+  return `${formatSpoonCount(teaspoonCount, 0.25)} c. à café`;
+}
+
 export function formatProductQuantity(product, quantity) {
+  if (product.gramsPerTeaspoon !== null) {
+    return `${formatSpoonQuantity(quantity, product.gramsPerTeaspoon)} ${product.shortName}`;
+  }
   if (product.unit === UNITS.PIECE) {
     const [singularName, pluralName] = product.pieceNames;
     return `${formatPieceCount(quantity)} ${quantity > 1 ? pluralName : singularName}`;

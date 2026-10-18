@@ -100,6 +100,8 @@ export const KCAL_BY_PRODUCT_ID = Object.freeze({
   cumin: 375,
   herbes: 270,
   poivre: 250,
+  gingembre: 335,
+  cannelle: 250,
 
   mache: 20,
   endives: 17,
@@ -145,7 +147,7 @@ export const PROTEIN_BY_PRODUCT_ID = Object.freeze({
   epinards: 3, 'haricots-verts': 2, 'petits-pois': 5.5, 'brocoli-surgele': 3, 'poelee-legumes': 1.5, colin: 17,
 
   'huile-olive': 0, vinaigre: 0.5, moutarde: 7, 'sauce-soja': 8, bouillon: 0.5, curry: 12, paprika: 14, cumin: 18,
-  herbes: 9, poivre: 10,
+  herbes: 9, poivre: 10, gingembre: 9, cannelle: 4,
 
   mache: 2, endives: 1, 'blanc-poulet': 22, 'yaourt-grec': 3.8, bifidus: 4.5, 'fromage-frais': 7, quenelles: 6.5,
   ravioles: 11, tortelloni: 9, betteraves: 1.4, 'champignons-boite': 2, artichauts: 2, 'pousses-soja': 2.5,
