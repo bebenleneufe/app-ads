@@ -670,7 +670,23 @@ class WeeklyPlannerApp {
     const missingButton = clickEvent.target.closest('.missing-button');
     if (missingButton) {
       this.#toggleMissing(missingButton.closest('.receipt-line'), missingButton.dataset.missingProductId);
+      return;
     }
+    const outOfStockButton = clickEvent.target.closest('.out-of-stock-button');
+    if (outOfStockButton) {
+      this.#markOutOfStock(outOfStockButton.dataset.outOfStockProductId);
+    }
+  }
+
+  #markOutOfStock(productId) {
+    const previousStock = this.#pantryStock;
+    const { [productId]: _removedQuantity, ...remainingStock } = previousStock;
+    this.#pantryStock = remainingStock;
+    this.#renderAll();
+    this.#undoToast.offer(`${PRODUCTS_BY_ID.get(productId)?.name ?? 'Produit'} ajouté aux courses.`, () => {
+      this.#pantryStock = previousStock;
+      this.#renderAll();
+    });
   }
 
   // Les suggestions du champ d'ajout : les produits du catalogue, rangés et chiffrés automatiquement.

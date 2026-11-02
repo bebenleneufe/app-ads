@@ -618,12 +618,42 @@ function buildAisleSection(group, groupIndex, { checkedProductIds, storeSetup })
   ]);
 }
 
+function listStockUsedLines(shoppingList) {
+  const aisleLines = shoppingList.aisleGroups.flatMap((group) => group.lines);
+  return [...shoppingList.stockLines, ...aisleLines.filter((line) => line.stockUsedQuantity > 0)]
+    .sort((firstLine, secondLine) => firstLine.product.name.localeCompare(secondLine.product.name, 'fr'));
+}
+
+// Les restes ont été validés en début de semaine, mais un pot a pu être fini depuis :
+// sans cette liste, un produit compté en stock n'apparaît nulle part au moment des courses.
+function buildStockCheckSection(shoppingList) {
+  const stockUsedLines = listStockUsedLines(shoppingList);
+  if (stockUsedLines.length === 0) {
+    return null;
+  }
+  return createElement('section', { className: 'stock-check' }, [
+    createElement('h3', { className: 'stock-check-title', text: 'Chez toi' }),
+    createElement('ul', {}, stockUsedLines.map(({ product, stockUsedQuantity }) => createElement('li', { className: 'stock-check-line' }, [
+      createElement('span', { className: 'line-name', text: product.name }),
+      createElement('span', { className: 'line-detail', text: `besoin ${formatQuantity(stockUsedQuantity, product.unit)}` }),
+      createElement('button', {
+        className: 'out-of-stock-button',
+        text: 'Plus rien',
+        attributes: { type: 'button', 'data-out-of-stock-product-id': product.id, 'aria-label': `${product.name} : plus rien, à acheter` },
+      }),
+    ]))),
+  ]);
+}
+
 export function renderShoppingList(listElement, shoppingList, settings, checkedProductIds) {
   const lineStates = { checkedProductIds, storeSetup: getStoreSetup(settings) };
   const aisleSections = shoppingList.aisleGroups.map((group, groupIndex) => buildAisleSection(group, groupIndex, lineStates));
-  replaceChildrenWithFragment(listElement, aisleSections.length > 0
-    ? aisleSections
-    : [createElement('p', { className: 'empty-plan', text: 'Rien à acheter cette semaine.' })]);
+  replaceChildrenWithFragment(listElement, [
+    buildStockCheckSection(shoppingList),
+    ...(aisleSections.length > 0
+      ? aisleSections
+      : [createElement('p', { className: 'empty-plan', text: 'Rien à acheter cette semaine.' })]),
+  ].filter(Boolean));
 }
 
 // En tête des courses : le total, la progression du panier et l'accès au ticket détaillé.
