@@ -980,6 +980,54 @@ input::placeholder {
   gap: 12px;
 }
 
+.stock-check {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.stock-check-title {
+  margin: 0;
+  padding: 16px 16px 8px;
+  font-size: var(--step-body);
+  font-weight: 800;
+}
+
+.stock-check ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.stock-check-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 14px;
+  min-block-size: 56px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.stock-check-line .line-detail {
+  grid-column: 1;
+}
+
+.out-of-stock-button {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  min-block-size: 44px;
+  padding: 0 4px;
+  font: inherit;
+  font-size: var(--step-xs);
+  font-weight: 800;
+  color: var(--amber);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
 .receipt-group {
   background: var(--surface);
   border-radius: var(--radius);
