@@ -1264,7 +1264,10 @@ body:not(.is-store-mode) :is(.store-only, .missing-button, .receipt-actions) {
 
 .sheet-body {
   display: grid;
+  /* Sans max-content, la grille écrase la liste à la hauteur de la feuille et la coupe au lieu de la faire défiler. */
+  grid-auto-rows: max-content;
   gap: 14px;
+  flex: 1 1 auto;
   min-block-size: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
