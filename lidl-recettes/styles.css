@@ -1229,6 +1229,7 @@ body:not(.is-store-mode) :is(.store-only, .missing-button, .receipt-actions) {
 }
 
 .sheet[open] {
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1700,6 +1701,9 @@ body.is-store-mode.hides-checked .is-settled:is(.receipt-line, .receipt-group) {
 }
 
 .segmented {
+  /* Ancre les boutons radio cachés : sans ça ils se placent par rapport à la feuille entière,
+     et les toucher fait défiler la feuille vers une zone vide. */
+  position: relative;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 4px;
